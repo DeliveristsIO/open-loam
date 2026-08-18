@@ -1,0 +1,27 @@
+<%% policy = Loam::Policy.for(@record) %>
+
+<%%= form_with model: [:admin, @record] do |f| %>
+  <%% if @record.errors.any? %>
+    <ul>
+      <%% @record.errors.full_messages.each do |message| %>
+        <li><%%= message %></li>
+      <%% end %>
+    </ul>
+  <%% end %>
+
+<% attributes.each do |attribute| -%>
+  <%% if policy.writable?(:<%= attribute.name %>) %>
+    <p>
+      <%%= f.label :<%= attribute.name %> %><br>
+      <%%= f.<%= form_field_helper(attribute) %> :<%= attribute.name %> %>
+    </p>
+  <%% else %>
+    <p>
+      <%%= f.label :<%= attribute.name %> %>: <%%= @record.<%= attribute.name %> %>
+      <em>(read-only for your role)</em>
+    </p>
+  <%% end %>
+<% end -%>
+
+  <%%= f.submit %>
+<%% end %>

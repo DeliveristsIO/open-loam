@@ -103,10 +103,33 @@ soil and the gardener.
 
 ## Status
 
-**Concept / early prototype.** This repo currently holds the vision and design.
-The build is an *assembly*, not an invention — each pillar has a proven Rails
-foundation (see [docs/architecture.md](docs/architecture.md)); Loam's work is the
-**fusion, the opinionated conventions, and the agent framing.**
+**Working prototype.** This repo holds the vision and design **and a running
+first cut** of the core loop:
+
+- `lib/` — the `loam` gem: `Loam::TenantRecord` (structural tenant isolation
+  that raises `Loam::MissingTenantError` on any query without tenant context),
+  `Loam::Policy` (roles + field-level `writable:` rules), `Loam::Auditable`
+  (audit-by-default), `Loam::Events` (a `domain.thing.happened` event bus), and
+  the two generators that are the whole interface: `loam:install` and
+  `loam:entity`.
+- `demo/` — an equipment-rental demo app built with those generators, including
+  the generated guardrail tests (tenant isolation, no-context-raises, a lint
+  that fails on any non-scoped model or any `.unscoped` in `app/`).
+
+Prototype deviation from [docs/architecture.md](docs/architecture.md), on
+purpose: the pillars are minimal in-gem implementations rather than wrappers
+around `acts_as_tenant`/`pundit`/`paper_trail`/Rails Event Store — smallest
+possible surface to prove the conventions and the agent flow. Swapping proven
+gems back in behind the same conventions is the roadmap, not a reversal.
+Custom entities (runtime fields) are not in the prototype yet.
+
+Try it:
+
+```bash
+cd demo && bundle install && bin/rails db:migrate db:seed
+bin/rails test            # guardrail + entity tests
+bin/rails server          # → http://localhost:3000/admin
+```
 
 - [Concept & positioning](docs/concept.md)
 - [Architecture](docs/architecture.md)

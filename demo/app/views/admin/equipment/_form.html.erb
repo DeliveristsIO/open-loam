@@ -1,0 +1,47 @@
+<% policy = Loam::Policy.for(@record) %>
+
+<%= form_with model: [:admin, @record] do |f| %>
+  <% if @record.errors.any? %>
+    <ul>
+      <% @record.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  <% end %>
+
+  <% if policy.writable?(:name) %>
+    <p>
+      <%= f.label :name %><br>
+      <%= f.text_field :name %>
+    </p>
+  <% else %>
+    <p>
+      <%= f.label :name %>: <%= @record.name %>
+      <em>(read-only for your role)</em>
+    </p>
+  <% end %>
+  <% if policy.writable?(:daily_rate) %>
+    <p>
+      <%= f.label :daily_rate %><br>
+      <%= f.number_field :daily_rate %>
+    </p>
+  <% else %>
+    <p>
+      <%= f.label :daily_rate %>: <%= @record.daily_rate %>
+      <em>(read-only for your role)</em>
+    </p>
+  <% end %>
+  <% if policy.writable?(:status) %>
+    <p>
+      <%= f.label :status %><br>
+      <%= f.text_field :status %>
+    </p>
+  <% else %>
+    <p>
+      <%= f.label :status %>: <%= @record.status %>
+      <em>(read-only for your role)</em>
+    </p>
+  <% end %>
+
+  <%= f.submit %>
+<% end %>

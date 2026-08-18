@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Admin</title>
+    <%%= csrf_meta_tags %>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; }
+      table { border-collapse: collapse; }
+      th, td { border: 1px solid #ccc; padding: 0.4rem 0.8rem; text-align: left; }
+      nav { margin-bottom: 1.5rem; }
+      nav a { margin-right: 1rem; }
+      .context { color: #555; font-size: 0.9rem; margin-bottom: 1rem; }
+    </style>
+  </head>
+  <body>
+    <%% if defined?(current_tenant) && current_tenant %>
+      <div class="context">
+        Tenant: <strong><%%= current_tenant.name %></strong> ·
+        User: <strong><%%= current_actor&.name %></strong> ·
+        <%%= button_to "Switch", admin_session_path, method: :delete, form: { style: "display:inline" } %>
+      </div>
+      <nav>
+        <%%= link_to "Dashboard", admin_root_path %>
+      </nav>
+    <%% end %>
+    <%%= yield %>
+  </body>
+</html>

@@ -1,0 +1,10 @@
+<h1><%= human_name %> #<%%= @record.id %></h1>
+
+<% attributes.each do |attribute| -%>
+<p><strong><%= attribute.name.humanize %>:</strong> <%%= @record.<%= attribute.name %> %></p>
+<% end -%>
+
+<p>
+  <%%= link_to "Edit", edit_polymorphic_path([:admin, @record]) %>
+  <%%= link_to "Back", [:admin, <%= class_name %>] %>
+</p>

@@ -1,0 +1,13 @@
+<h1>Enter admin</h1>
+
+<%%= form_with url: admin_session_path, method: :post do |f| %>
+  <p>
+    <label>Tenant</label><br>
+    <%%= select_tag :tenant_id, options_from_collection_for_select(@tenants, :id, :name) %>
+  </p>
+  <p>
+    <label>User</label><br>
+    <%%= select_tag :user_id, options_from_collection_for_select(@users, :id, :name) %>
+  </p>
+  <%%= f.submit "Enter" %>
+<%% end %>

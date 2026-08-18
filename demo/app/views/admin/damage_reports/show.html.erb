@@ -1,0 +1,10 @@
+<h1>Damage report #<%= @record.id %></h1>
+
+<p><strong>Equipment:</strong> <%= @record.equipment_id %></p>
+<p><strong>Description:</strong> <%= @record.description %></p>
+<p><strong>Approved:</strong> <%= @record.approved %></p>
+
+<p>
+  <%= link_to "Edit", edit_polymorphic_path([:admin, @record]) %>
+  <%= link_to "Back", [:admin, DamageReport] %>
+</p>

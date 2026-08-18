@@ -1,0 +1,19 @@
+<h1>Dashboard</h1>
+
+<h2>Audit trail (this tenant)</h2>
+<table>
+  <thead>
+    <tr><th>When</th><th>Who</th><th>What</th><th>Action</th><th>Changes</th></tr>
+  </thead>
+  <tbody>
+    <% @audit_records.each do |audit| %>
+      <tr>
+        <td><%= audit.created_at %></td>
+        <td><%= User.find_by(id: audit.actor_id)&.name || "—" %></td>
+        <td><%= audit.auditable_type %> #<%= audit.auditable_id %></td>
+        <td><%= audit.action %></td>
+        <td><code><%= audit.changeset %></code></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

@@ -3,3 +3,14 @@
 /tmp/*
 .env
 *.log
+
+# demo app runtime artifacts
+demo/log/*
+demo/tmp/*
+demo/storage/*
+demo/db/*.sqlite3
+demo/db/*.sqlite3-*
+demo/.bundle/
+!demo/log/.keep
+!demo/tmp/.keep
+!demo/storage/.keep
