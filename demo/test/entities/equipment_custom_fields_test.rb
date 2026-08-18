@@ -8,7 +8,7 @@ class EquipmentCustomFieldsTest < ActiveSupport::TestCase
   setup do
     @tenant_a = Loam::Tenant.create!(name: "Tenant A", slug: "a-equipment-cf")
     @tenant_b = Loam::Tenant.create!(name: "Tenant B", slug: "b-equipment-cf")
-    @manager = User.create!(name: "Manager")
+    @manager = User.create!(name: "Manager", email: "manager@example.test", password: "password")
   end
 
   test "a defined field round-trips through set_custom_field/custom_field with type casting" do

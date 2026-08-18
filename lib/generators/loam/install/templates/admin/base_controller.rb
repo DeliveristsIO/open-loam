@@ -15,11 +15,32 @@ module Admin
     def current_tenant = Loam::Current.tenant
     def current_actor = Loam::Current.actor
 
+    # Establishes Loam::Current from the session, then proves the actor is
+    # allowed to be here.
+    #
+    # The order is load-bearing. Loam::Membership is itself tenant-scoped, so
+    # "is this actor a member?" is a question you can only ask from inside a
+    # tenant — the tenant has to be in Loam::Current first, or the check raises
+    # Loam::MissingTenantError instead of answering. The `&&` chain below
+    # guarantees that: membership is only consulted once both are set.
+    #
+    # If anything fails, BOTH halves of the context are cleared before the
+    # redirect, so a half-established context can never leak into the next
+    # request or into a job enqueued from it.
     def set_loam_context
       Loam::Current.tenant = Loam::Tenant.find_by(id: session[:tenant_id])
       Loam::Current.actor = User.find_by(id: session[:user_id])
 
-      redirect_to new_admin_session_path unless current_tenant && current_actor
+      return if current_tenant && current_actor && member_of_current_tenant?
+
+      Loam::Current.reset
+      redirect_to new_admin_session_path
+    end
+
+    # Scoped to the current tenant by Loam::TenantRecord, which is the whole
+    # point: a membership in some other tenant is not membership here.
+    def member_of_current_tenant?
+      Loam::Membership.exists?(user_id: current_actor.id)
     end
 
     # Drives the bell in the admin layout. One COUNT per admin page render,

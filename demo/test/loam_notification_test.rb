@@ -6,9 +6,9 @@ class LoamNotificationTest < ActiveSupport::TestCase
   setup do
     @warsaw = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-notify")
     @krakow = Loam::Tenant.create!(name: "Branch Krakow", slug: "krakow-notify")
-    @anna = User.create!(name: "Anna")
-    @bogdan = User.create!(name: "Bogdan")
-    @tomek = User.create!(name: "Tomek")
+    @anna = User.create!(name: "Anna", email: "anna@example.test", password: "password")
+    @bogdan = User.create!(name: "Bogdan", email: "bogdan@example.test", password: "password")
+    @tomek = User.create!(name: "Tomek", email: "tomek@example.test", password: "password")
 
     with_tenant(@warsaw) do
       Loam::Membership.create!(user: @anna, role: "manager")

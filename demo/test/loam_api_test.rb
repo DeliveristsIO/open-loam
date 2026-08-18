@@ -7,8 +7,8 @@ class LoamApiTest < ActionDispatch::IntegrationTest
   setup do
     @warsaw = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-api")
     @krakow = Loam::Tenant.create!(name: "Branch Krakow", slug: "krakow-api")
-    @anna = User.create!(name: "Anna")
-    @tomek = User.create!(name: "Tomek")
+    @anna = User.create!(name: "Anna", email: "anna@example.test", password: "password")
+    @tomek = User.create!(name: "Tomek", email: "tomek@example.test", password: "password")
 
     with_tenant(@warsaw) do
       Loam::Membership.create!(user: @anna, role: "manager")

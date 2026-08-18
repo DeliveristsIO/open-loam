@@ -8,8 +8,8 @@ class EquipmentLoamTest < ActiveSupport::TestCase
   setup do
     @tenant_a = Loam::Tenant.create!(name: "Tenant A", slug: "a-equipment")
     @tenant_b = Loam::Tenant.create!(name: "Tenant B", slug: "b-equipment")
-    @manager = User.create!(name: "Manager")
-    @employee = User.create!(name: "Employee")
+    @manager = User.create!(name: "Manager", email: "manager@example.test", password: "password")
+    @employee = User.create!(name: "Employee", email: "employee@example.test", password: "password")
 
     with_tenant(@tenant_a) do
       Loam::Membership.create!(user: @manager, role: "manager")
@@ -74,7 +74,7 @@ class EquipmentLoamTest < ActiveSupport::TestCase
     with_tenant(@tenant_a) do
       assert EquipmentPolicy.new(@manager, record).update?
 
-      outsider = User.create!(name: "Outsider")
+      outsider = User.create!(name: "Outsider", email: "outsider@example.test", password: "password")
       outsider_policy = EquipmentPolicy.new(outsider, record)
       refute outsider_policy.update?
       refute outsider_policy.writable?(:name)

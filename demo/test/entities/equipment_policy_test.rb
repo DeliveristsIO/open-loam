@@ -5,8 +5,8 @@ require "test_helper"
 class EquipmentPolicyTest < ActiveSupport::TestCase
   setup do
     @tenant = Loam::Tenant.create!(name: "Branch A", slug: "branch-a")
-    @manager = User.create!(name: "Manager")
-    @employee = User.create!(name: "Employee")
+    @manager = User.create!(name: "Manager", email: "manager@example.test", password: "password")
+    @employee = User.create!(name: "Employee", email: "employee@example.test", password: "password")
 
     with_tenant(@tenant) do
       Loam::Membership.create!(user: @manager, role: "manager")

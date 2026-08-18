@@ -26,4 +26,10 @@ Gem::Specification.new do |spec|
   spec.files = Dir["{app,lib}/**/*", "LICENSE", "README.md"]
 
   spec.add_dependency "rails", ">= 7.1"
+  # `loam:install` generates a User with has_secure_password, so password
+  # hashing is part of what Loam guarantees rather than homework left to the
+  # app. It must be a gem dependency, not a Gemfile line the generator writes:
+  # apps bundle before they run the generator, so a Gemfile edit would arrive
+  # too late to be installed.
+  spec.add_dependency "bcrypt", "~> 3.1"
 end

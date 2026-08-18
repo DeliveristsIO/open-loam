@@ -1,0 +1,39 @@
+<h1>API tokens</h1>
+
+<p>A token acts as <strong><%%= current_actor.name %></strong> in
+<strong><%%= current_tenant.name %></strong> — same roles, same policies, same
+audit trail. Send it as <code>Authorization: Bearer &lt;token&gt;</code>.</p>
+
+<%% if flash[:token] %>
+  <p>
+    New token (copy it now — this is the only screen that shows it in full):<br>
+    <code><%%= flash[:token] %></code>
+  </p>
+<%% end %>
+
+<%%= form_with url: admin_api_tokens_path, method: :post do |f| %>
+  <%%= label_tag :label, "What is it for?" %>
+  <%%= text_field_tag :label, nil, placeholder: "nightly export" %>
+  <%%= f.submit "Generate token" %>
+<%% end %>
+
+<table>
+  <thead>
+    <tr>
+      <th>Label</th>
+      <th>Created</th>
+      <th>Last used</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <%% @records.each do |record| %>
+      <tr>
+        <td><%%= record.label %></td>
+        <td><%%= record.created_at.to_fs(:short) %></td>
+        <td><%%= record.last_used_at&.to_fs(:short) || "never" %></td>
+        <td><%%= button_to "Revoke", admin_api_token_path(record), method: :delete, form: { style: "display:inline" } %></td>
+      </tr>
+    <%% end %>
+  </tbody>
+</table>

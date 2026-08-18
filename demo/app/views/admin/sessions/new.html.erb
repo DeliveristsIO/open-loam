@@ -1,13 +1,35 @@
-<h1>Enter admin</h1>
+<% if flash[:alert] %>
+  <p style="color:#b00"><%= flash[:alert] %></p>
+<% end %>
+<% if @error %>
+  <p style="color:#b00"><%= @error %></p>
+<% end %>
 
-<%= form_with url: admin_session_path, method: :post do |f| %>
-  <p>
-    <label>Tenant</label><br>
-    <%= select_tag :tenant_id, options_from_collection_for_select(@tenants, :id, :name) %>
-  </p>
-  <p>
-    <label>User</label><br>
-    <%= select_tag :user_id, options_from_collection_for_select(@users, :id, :name) %>
-  </p>
-  <%= f.submit "Enter" %>
+<% if @user %>
+  <h1>Choose a tenant</h1>
+
+  <p>Signed in as <strong><%= @user.name %></strong>. You are a member of more than one tenant.</p>
+
+  <%= form_with url: select_tenant_admin_session_path, method: :post do |f| %>
+    <p>
+      <%= select_tag :tenant_id, options_from_collection_for_select(@tenants, :id, :name) %>
+    </p>
+    <%= f.submit "Enter" %>
+  <% end %>
+
+  <%= button_to "Sign out", admin_session_path, method: :delete %>
+<% else %>
+  <h1>Sign in</h1>
+
+  <%= form_with url: admin_session_path, method: :post do |f| %>
+    <p>
+      <%= label_tag :email %><br>
+      <%= email_field_tag :email, params[:email], autofocus: true %>
+    </p>
+    <p>
+      <%= label_tag :password %><br>
+      <%= password_field_tag :password %>
+    </p>
+    <%= f.submit "Sign in" %>
+  <% end %>
 <% end %>

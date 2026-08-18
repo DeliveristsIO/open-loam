@@ -43,6 +43,7 @@ module Loam
         template "admin/field_definitions_controller.rb", "app/controllers/admin/field_definitions_controller.rb"
         template "admin/notifications_controller.rb", "app/controllers/admin/notifications_controller.rb"
         template "admin/webhook_endpoints_controller.rb", "app/controllers/admin/webhook_endpoints_controller.rb"
+        template "admin/api_tokens_controller.rb", "app/controllers/admin/api_tokens_controller.rb"
         template "admin/layout.html.erb", "app/views/layouts/admin.html.erb"
         template "admin/sessions_new.html.erb", "app/views/admin/sessions/new.html.erb"
         template "admin/dashboard_index.html.erb", "app/views/admin/dashboard/index.html.erb"
@@ -51,6 +52,7 @@ module Loam
         template "admin/notifications_index.html.erb", "app/views/admin/notifications/index.html.erb"
         template "admin/webhook_endpoints_index.html.erb", "app/views/admin/webhook_endpoints/index.html.erb"
         template "admin/webhook_endpoints_new.html.erb", "app/views/admin/webhook_endpoints/new.html.erb"
+        template "admin/api_tokens_index.html.erb", "app/views/admin/api_tokens/index.html.erb"
       end
 
       def create_api
@@ -61,12 +63,15 @@ module Loam
         route <<~RUBY
           namespace :admin do
             root "dashboard#index"
-            resource :session, only: %i[new create destroy]
+            resource :session, only: %i[new create destroy] do
+              post :select_tenant
+            end
             resources :field_definitions, only: %i[index new create destroy]
             resources :notifications, only: %i[index] do
               post :mark_read, on: :member
             end
             resources :webhook_endpoints, only: %i[index new create destroy]
+            resources :api_tokens, only: %i[index create destroy]
           end
 
           namespace :api do

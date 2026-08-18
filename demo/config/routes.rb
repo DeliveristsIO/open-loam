@@ -3,12 +3,15 @@ Rails.application.routes.draw do
     resources :damage_reports
     resources :equipment
     root "dashboard#index"
-    resource :session, only: %i[new create destroy]
+    resource :session, only: %i[new create destroy] do
+      post :select_tenant
+    end
     resources :field_definitions, only: %i[index new create destroy]
     resources :notifications, only: %i[index] do
       post :mark_read, on: :member
     end
     resources :webhook_endpoints, only: %i[index new create destroy]
+    resources :api_tokens, only: %i[index create destroy]
   end
 
   namespace :api do

@@ -136,6 +136,9 @@ bin/rails test            # guardrail + entity tests
 bin/rails server          # → http://localhost:3000/admin
 ```
 
+Sign in as `anna@example.com` (manager in both branches, so she gets the tenant
+picker) or `tomek@example.com` (Warsaw only) — password `password123` for both.
+
 - [Concept & positioning](docs/concept.md)
 - [Architecture](docs/architecture.md)
 - [Manifesto](docs/manifesto.md)

@@ -1,5 +1,20 @@
 # Demo data: an equipment-rental company with two branches (tenants).
-# Log into /admin as different user+tenant combos to see isolation and roles.
+# Log into /admin as different users to see isolation and roles. Anna is a
+# manager in both branches, so she gets the tenant picker; Tomek belongs to
+# Warsaw only and lands straight on the dashboard.
+
+DEMO_PASSWORD = "password123".freeze
+
+# Idempotent: the password is only written for a new user (or one left without
+# a digest by the migration that introduced passwords), never overwriting one
+# somebody changed.
+def seed_user(name, email)
+  user = User.find_or_initialize_by(name: name)
+  user.email = email
+  user.password = DEMO_PASSWORD if user.password_digest.blank?
+  user.save!
+  user
+end
 
 warsaw = Loam::Tenant.find_or_create_by!(slug: "warsaw") { |t| t.name = "Branch Warsaw" }
 krakow = Loam::Tenant.find_or_create_by!(slug: "krakow") { |t| t.name = "Branch Krakow" }
@@ -10,8 +25,9 @@ krakow = Loam::Tenant.find_or_create_by!(slug: "krakow") { |t| t.name = "Branch 
 # `bin/rails loam:sync` does after a deploy that adds a new default.
 Loam.sync_tenants!
 
-anna = User.find_or_create_by!(name: "Anna (manager)")
-tomek = User.find_or_create_by!(name: "Tomek (employee)")
+# Sign in at /admin with either address and the password below.
+anna = seed_user("Anna (manager)", "anna@example.com")
+tomek = seed_user("Tomek (employee)", "tomek@example.com")
 
 # Memberships stay in seeds rather than moving into the on_tenant_created hook:
 # they need users, which are host-app data a tenant hook knows nothing about.

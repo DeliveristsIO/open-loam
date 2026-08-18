@@ -6,8 +6,8 @@ require "test_helper"
 class AdminNotificationsTest < ActionDispatch::IntegrationTest
   setup do
     @tenant = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-admin-notify")
-    @anna = User.create!(name: "Anna")
-    @tomek = User.create!(name: "Tomek")
+    @anna = User.create!(name: "Anna", email: "anna@example.test", password: "password")
+    @tomek = User.create!(name: "Tomek", email: "tomek@example.test", password: "password")
 
     with_tenant(@tenant) do
       Loam::Membership.create!(user: @anna, role: "manager")
@@ -16,7 +16,8 @@ class AdminNotificationsTest < ActionDispatch::IntegrationTest
       Loam::Notifications.notify(@tomek, title: "Not for Anna")
     end
 
-    post admin_session_path, params: { tenant_id: @tenant.id, user_id: @anna.id }
+    # Anna belongs to this tenant only, so signing in selects it for her.
+    post admin_session_path, params: { email: "anna@example.test", password: "password" }
   end
 
   test "the layout shows the unread count and the index lists only your own notifications" do

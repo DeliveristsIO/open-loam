@@ -21,7 +21,7 @@ class LoamWebhookTest < ActiveSupport::TestCase
   setup do
     @warsaw = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-hooks")
     @krakow = Loam::Tenant.create!(name: "Branch Krakow", slug: "krakow-hooks")
-    @anna = User.create!(name: "Anna")
+    @anna = User.create!(name: "Anna", email: "anna@example.test", password: "password")
     with_tenant(@warsaw) { Loam::Membership.create!(user: @anna, role: "manager") }
 
     RecordingDeliveryJob.deliveries.clear

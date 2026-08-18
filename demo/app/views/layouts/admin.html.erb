@@ -17,11 +17,12 @@
       <div class="context">
         Tenant: <strong><%= current_tenant.name %></strong> ·
         User: <strong><%= current_actor&.name %></strong> ·
-        <%= button_to "Switch", admin_session_path, method: :delete, form: { style: "display:inline" } %>
+        <%= button_to "Sign out", admin_session_path, method: :delete, form: { style: "display:inline" } %>
       </div>
       <nav>
         <%= link_to "Dashboard", admin_root_path %>
         <%= link_to "Notifications (#{unread_notification_count})", admin_notifications_path %>
+        <%= link_to "API tokens", admin_api_tokens_path %>
       </nav>
     <% end %>
     <%= yield %>
