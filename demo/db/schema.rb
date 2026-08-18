@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_18_220000) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_18_230000) do
   create_table "damage_reports", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.integer "equipment_id"
@@ -70,6 +70,21 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_18_220000) do
     t.index ["user_id"], name: "index_loam_memberships_on_user_id"
   end
 
+  create_table "loam_notifications", force: :cascade do |t|
+    t.integer "tenant_id", null: false
+    t.integer "user_id", null: false
+    t.string "title", null: false
+    t.text "body"
+    t.datetime "read_at"
+    t.string "source_type"
+    t.bigint "source_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tenant_id", "user_id", "read_at"], name: "index_loam_notifications_on_tenant_id_and_user_id_and_read_at"
+    t.index ["tenant_id"], name: "index_loam_notifications_on_tenant_id"
+    t.index ["user_id"], name: "index_loam_notifications_on_user_id"
+  end
+
   create_table "loam_tenants", force: :cascade do |t|
     t.string "name", null: false
     t.string "slug", null: false
@@ -91,4 +106,6 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_18_220000) do
   add_foreign_key "loam_field_definitions", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_memberships", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_memberships", "users"
+  add_foreign_key "loam_notifications", "loam_tenants", column: "tenant_id"
+  add_foreign_key "loam_notifications", "users"
 end

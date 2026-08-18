@@ -1,0 +1,32 @@
+<h1>Notifications</h1>
+
+<p>Messages for <strong><%%= current_actor.name %></strong> in <strong><%%= current_tenant.name %></strong>.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>When</th>
+      <th>Title</th>
+      <th>About</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <%% @records.each do |record| %>
+      <tr>
+        <td><%%= record.created_at.to_fs(:short) %></td>
+        <td>
+          <%%= tag.strong record.title unless record.read? %>
+          <%%= record.title if record.read? %>
+          <%%= tag.div record.body, style: "color:#555" if record.body.present? %>
+        </td>
+        <td><%%= "#{record.source_type} ##{record.source_id}" if record.source_type %></td>
+        <td>
+          <%% unless record.read? %>
+            <%%= button_to "Mark read", mark_read_admin_notification_path(record), form: { style: "display:inline" } %>
+          <%% end %>
+        </td>
+      </tr>
+    <%% end %>
+  </tbody>
+</table>

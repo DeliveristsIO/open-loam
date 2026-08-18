@@ -15,7 +15,10 @@ Loam.on_tenant_created do |tenant|
   # Loam.as_tenant(tenant), so tenant-scoped writes need no extra ceremony.
 end
 
-# Subscribe to a single event or a whole domain (trailing dot = prefix):
+# Domain event subscriptions. Subscribe to a single event or a whole domain
+# (trailing dot = prefix). Register them here at file scope, not inside
+# `to_prepare`: subscriptions are global, so a reload would add a second copy
+# of each one and every event would be handled twice.
 #
 #   Loam::Events.subscribe("billing.subscription.renewed") do |name, payload|
 #     BillingMailer.renewal_receipt(payload[:id]).deliver_later
@@ -24,5 +27,11 @@ end
 #   Loam::Events.subscribe("rental.") do |name, payload|
 #     Rails.logger.info("[loam event] #{name} #{payload.inspect}")
 #   end
-Rails.application.config.to_prepare do
-end
+#
+# Event -> in-app notification is the intended pattern for telling someone
+# something. The subscriber runs in the publisher's tenant context, so the
+# notification lands in the right tenant with no extra ceremony:
+#
+#   Loam::Events.subscribe("rental.damage_report.approve") do |_name, payload|
+#     Loam::Notifications.notify_role(:manager, title: "Damage report approved")
+#   end

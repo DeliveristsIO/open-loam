@@ -16,6 +16,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Audit trail | automatic (`Loam::Auditable`) | nothing — it is on by default |
 | Migration-free field | `custom_fields` jsonb column, read/written via `Loam::CustomFields` | a `Loam::FieldDefinition` row, created via the admin "Field definitions" screen (`/admin/field_definitions`) — never a migration |
 | States & approvals | a `workflow` block in the model (`Loam::Workflow`) | `include Loam::Workflow`; add a string column for the state |
+| Notifications | `Loam::Notification` rows, read at `/admin/notifications` | `Loam::Notifications.notify(user, title:)` / `notify_role(:manager, title:)`, normally from an event subscriber |
 | Tests | `test/entities/<name>_test.rb` | generated with the entity; extend, never delete |
 | New-tenant defaults | `Loam.on_tenant_created` blocks in `config/initializers/loam.rb` | edit the initializer; backfill with `bin/rails loam:sync` |
 

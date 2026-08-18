@@ -21,6 +21,7 @@
       </div>
       <nav>
         <%= link_to "Dashboard", admin_root_path %>
+        <%= link_to "Notifications (#{unread_notification_count})", admin_notifications_path %>
       </nav>
     <% end %>
     <%= yield %>

@@ -22,14 +22,24 @@ Loam.on_tenant_created do |tenant|
   end
 end
 
-# Subscribe to a single event or a whole domain (trailing dot = prefix):
-#
-#   Loam::Events.subscribe("billing.subscription.renewed") do |name, payload|
-#     BillingMailer.renewal_receipt(payload[:id]).deliver_later
-#   end
+# Domain event subscriptions. Subscribe to a single event or a whole domain
+# (trailing dot = prefix). Registered here at file scope, not inside
+# `to_prepare`: subscriptions are global, so a reload would add a second copy
+# of each one and every event would be handled twice.
 #
 #   Loam::Events.subscribe("rental.") do |name, payload|
 #     Rails.logger.info("[loam event] #{name} #{payload.inspect}")
 #   end
-Rails.application.config.to_prepare do
+
+# Event -> in-app notification: when a manager approves a damage report, the
+# branch's managers find it in their bell at /admin/notifications. The
+# subscriber runs in the publisher's tenant context, so `notify_role` resolves
+# managers of THAT branch and the notifications land in that tenant.
+Loam::Events.subscribe("rental.damage_report.approve") do |_name, payload|
+  Loam::Notifications.notify_role(
+    :manager,
+    title: "Damage report ##{payload[:id]} approved",
+    body: "Moved from #{payload[:from]} to #{payload[:to]}. A penalty charge may follow.",
+    source: DamageReport.find_by(id: payload[:id])
+  )
 end

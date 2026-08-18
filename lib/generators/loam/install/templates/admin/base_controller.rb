@@ -8,7 +8,7 @@ module Admin
       render plain: "403 Forbidden — your role does not permit this action.", status: :forbidden
     end
 
-    helper_method :current_tenant, :current_actor
+    helper_method :current_tenant, :current_actor, :unread_notification_count
 
     private
 
@@ -20,6 +20,14 @@ module Admin
       Loam::Current.actor = User.find_by(id: session[:user_id])
 
       redirect_to new_admin_session_path unless current_tenant && current_actor
+    end
+
+    # Drives the bell in the admin layout. One COUNT per admin page render,
+    # which is fine at this scale; cache it if a screen ever gets hot.
+    def unread_notification_count
+      return 0 unless current_actor
+
+      Loam::Notification.unread.where(user_id: current_actor.id).count
     end
 
     def policy_for(record)

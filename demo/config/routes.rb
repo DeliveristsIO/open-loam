@@ -5,6 +5,9 @@ Rails.application.routes.draw do
     root "dashboard#index"
     resource :session, only: %i[new create destroy]
     resources :field_definitions, only: %i[index new create destroy]
+    resources :notifications, only: %i[index] do
+      post :mark_read, on: :member
+    end
   end
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 

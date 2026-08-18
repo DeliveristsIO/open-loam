@@ -19,6 +19,7 @@ module Loam
         migration_template "migrations/create_loam_memberships.rb", "db/migrate/create_loam_memberships.rb"
         migration_template "migrations/create_loam_audit_records.rb", "db/migrate/create_loam_audit_records.rb"
         migration_template "migrations/create_loam_field_definitions.rb", "db/migrate/create_loam_field_definitions.rb"
+        migration_template "migrations/create_loam_notifications.rb", "db/migrate/create_loam_notifications.rb"
       end
 
       def create_user_model
@@ -38,11 +39,13 @@ module Loam
         template "admin/sessions_controller.rb", "app/controllers/admin/sessions_controller.rb"
         template "admin/dashboard_controller.rb", "app/controllers/admin/dashboard_controller.rb"
         template "admin/field_definitions_controller.rb", "app/controllers/admin/field_definitions_controller.rb"
+        template "admin/notifications_controller.rb", "app/controllers/admin/notifications_controller.rb"
         template "admin/layout.html.erb", "app/views/layouts/admin.html.erb"
         template "admin/sessions_new.html.erb", "app/views/admin/sessions/new.html.erb"
         template "admin/dashboard_index.html.erb", "app/views/admin/dashboard/index.html.erb"
         template "admin/field_definitions_index.html.erb", "app/views/admin/field_definitions/index.html.erb"
         template "admin/field_definitions_new.html.erb", "app/views/admin/field_definitions/new.html.erb"
+        template "admin/notifications_index.html.erb", "app/views/admin/notifications/index.html.erb"
       end
 
       def add_routes
@@ -51,6 +54,9 @@ module Loam
             root "dashboard#index"
             resource :session, only: %i[new create destroy]
             resources :field_definitions, only: %i[index new create destroy]
+            resources :notifications, only: %i[index] do
+              post :mark_read, on: :member
+            end
           end
         RUBY
       end
