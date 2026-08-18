@@ -3,6 +3,7 @@ require "loam/errors"
 require "loam/current"
 require "loam/events"
 require "loam/policy"
+require "loam/lifecycle"
 require "loam/engine" if defined?(Rails::Engine)
 
 module Loam

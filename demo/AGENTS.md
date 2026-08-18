@@ -16,6 +16,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Audit trail | automatic (`Loam::Auditable`) | nothing — it is on by default |
 | Migration-free field | `custom_fields` jsonb column, read/written via `Loam::CustomFields` | a `Loam::FieldDefinition` row, created via the admin "Field definitions" screen (`/admin/field_definitions`) — never a migration |
 | Tests | `test/entities/<name>_test.rb` | generated with the entity; extend, never delete |
+| New-tenant defaults | `Loam.on_tenant_created` blocks in `config/initializers/loam.rb` | edit the initializer; backfill with `bin/rails loam:sync` |
 
 ## The one way to add a feature
 
@@ -42,6 +43,16 @@ screens automatically. Reading or writing a name with no matching
 `Loam::FieldDefinition` raises `Loam::UnknownCustomFieldError` — that means
 the field definition doesn't exist yet, not that you should rescue it.
 
+## Seeding a new tenant
+
+Anything every tenant should start with — roles, default field definitions,
+starter records — belongs in a `Loam.on_tenant_created` block in
+`config/initializers/loam.rb`, never in a one-off script. The block runs inside
+`Loam.as_tenant(tenant)` when the tenant is created, and again for every
+existing tenant when someone runs `bin/rails loam:sync`. That second path is
+the point: it is how a default you add today reaches tenants created last year.
+So the block MUST be idempotent — `find_or_create_by!`, never `create!`.
+
 ## Invariants you MUST NOT break
 
 - **Every business model inherits `Loam::TenantRecord`.** Never `ApplicationRecord`
@@ -56,6 +67,7 @@ the field definition doesn't exist yet, not that you should rescue it.
 - **Every controller action checks a policy** (`authorize!`); every form uses
   `policy.permitted_fields` — no hand-rolled `params.permit` lists.
 - **Event names are `domain.thing.happened`** — three+ dot-separated segments.
+- **`Loam.on_tenant_created` callbacks are idempotent** — `loam:sync` re-runs them.
 
 ## Context helpers
 
@@ -68,3 +80,8 @@ the field definition doesn't exist yet, not that you should rescue it.
 `bin/rails test` fully green, `bin/rails db:migrate` clean, no `.unscoped`,
 no new model outside the generator convention, policy declared for every new
 entity, and the diff small enough that a human reviews it in minutes.
+
+*This file is budgeted: ≤ 32 KB, enforced by `test/loam_guardrails_test.rb`.
+Agent harnesses truncate oversized instruction files without warning, so
+everything past the budget stops being read. Link out to `docs/` instead of
+growing this file.*

@@ -112,7 +112,9 @@ first cut** of the core loop:
   (audit-by-default), `Loam::Events` (a `domain.thing.happened` event bus),
   `Loam::CustomFields` (migration-free fields via a runtime
   `Loam::FieldDefinition`, stored in a `custom_fields` json column and
-  managed from an admin screen — no code deploy needed), and the two
+  managed from an admin screen — no code deploy needed), `Loam::Lifecycle`
+  (`Loam.on_tenant_created` hooks that seed a new tenant, replayable over
+  existing tenants with `bin/rails loam:sync`), and the two
   generators that are the whole interface: `loam:install` and `loam:entity`.
 - `demo/` — an equipment-rental demo app built with those generators, including
   the generated guardrail tests (tenant isolation, no-context-raises, a lint

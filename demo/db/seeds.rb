@@ -4,9 +4,17 @@
 warsaw = Loam::Tenant.find_or_create_by!(slug: "warsaw") { |t| t.name = "Branch Warsaw" }
 krakow = Loam::Tenant.find_or_create_by!(slug: "krakow") { |t| t.name = "Branch Krakow" }
 
+# Per-tenant defaults (the asset_tag field definition) come from the
+# Loam.on_tenant_created hook in config/initializers/loam.rb, which fires only
+# on creation. Syncing backfills tenants that already existed — the same thing
+# `bin/rails loam:sync` does after a deploy that adds a new default.
+Loam.sync_tenants!
+
 anna = User.find_or_create_by!(name: "Anna (manager)")
 tomek = User.find_or_create_by!(name: "Tomek (employee)")
 
+# Memberships stay in seeds rather than moving into the on_tenant_created hook:
+# they need users, which are host-app data a tenant hook knows nothing about.
 Loam.as_tenant(warsaw, actor: anna) do
   Loam::Membership.find_or_create_by!(user: anna) { |m| m.role = "manager" }
   Loam::Membership.find_or_create_by!(user: tomek) { |m| m.role = "employee" }

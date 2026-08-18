@@ -44,6 +44,22 @@ class LoamGuardrailsTest < ActiveSupport::TestCase
       ".unscoped found in: #{offenders.join(', ')}. It bypasses tenant isolation — remove it."
   end
 
+  # Agent harnesses read AGENTS.md into a context window and truncate what
+  # doesn't fit — silently. An overweight file doesn't warn, it just loses its
+  # tail, and the tail is where the invariants live.
+  AGENTS_MD_BUDGET_BYTES = 32_768
+
+  test "AGENTS.md stays inside its byte budget" do
+    path = Rails.root.join("AGENTS.md")
+
+    assert path.exist?, "AGENTS.md is missing from #{Rails.root} — it is the contract AI agents work against."
+    assert path.size <= AGENTS_MD_BUDGET_BYTES,
+      "AGENTS.md is #{path.size} bytes, over the #{AGENTS_MD_BUDGET_BYTES}-byte budget. " \
+      "Agent harnesses truncate instruction files without warning, so the tail — invariants, " \
+      "definition of done — would silently stop being read. Cut prose or move detail into " \
+      "docs/ and link it, rather than raising the budget."
+  end
+
   test "every Loam::FieldDefinition entity_type resolves to a class that uses Loam::CustomFields" do
     Rails.application.eager_load!
 
