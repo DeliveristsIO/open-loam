@@ -132,29 +132,31 @@ module Loam
 
           definition.states.each do |state|
             predicate = "#{state}?"
-            next unless model.loam_workflow_predicate_free?(predicate, state)
+            next unless model.loam_workflow_predicate_free?(predicate)
 
-            define_method(predicate) { self[definition.column].to_s == state }
+            # A state predicate must never shadow a real column: DamageReport
+            # has both a workflow state "approved" and an `approved` boolean
+            # column, and `record.approved?` has to stay the column's. The
+            # column check happens at CALL time, not class-load time — at load
+            # the schema may not be readable yet (fresh CI database, db:create),
+            # and a load-time decision made Loam behave differently on CI than
+            # on a warmed-up dev machine.
+            define_method(predicate) do
+              if self.class.columns_hash.key?(state)
+                query_attribute(state)
+              else
+                self[definition.column].to_s == state
+              end
+            end
           end
         end
       end
 
-      # A state predicate must never shadow a real column or an existing
-      # method: DamageReport has both a workflow state "approved" and an
-      # `approved` boolean column, and `record.approved?` has to stay the
-      # column's. When the schema cannot be read (no database yet, e.g. during
-      # db:create) we assume a conflict — a missing convenience predicate is
-      # harmless, a predicate hiding a column is not.
-      def loam_workflow_predicate_free?(predicate, state)
-        return false if method_defined?(predicate) || private_method_defined?(predicate)
-
-        known_columns = begin
-          table_exists? ? column_names : []
-        rescue ActiveRecord::ActiveRecordError
-          nil
-        end
-
-        !known_columns.nil? && !known_columns.include?(state)
+      # Explicitly defined methods still win — only truly free names get a
+      # workflow predicate. Column collisions are handled inside the predicate
+      # itself (see loam_workflow_module), where the schema is reliably known.
+      def loam_workflow_predicate_free?(predicate)
+        !method_defined?(predicate) && !private_method_defined?(predicate)
       end
     end
 
