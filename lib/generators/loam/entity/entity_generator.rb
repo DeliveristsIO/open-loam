@@ -84,6 +84,13 @@ module Loam
         attributes.map(&:name)
       end
 
+      # Only text-ish columns are worth a LIKE (see Loam::Searchable), so an
+      # entity with none gets no `searchable_by` declaration and stays out of
+      # the global search.
+      def searchable_attributes
+        attributes.select { |attribute| %i[string text].include?(attribute.type) }
+      end
+
       # A plausible literal per attribute type, used by the generated test.
       def sample_value(attribute, variant = 0)
         case attribute.type

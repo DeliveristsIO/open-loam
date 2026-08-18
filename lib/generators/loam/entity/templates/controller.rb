@@ -5,7 +5,13 @@ module Admin
     before_action :set_record, only: %i[show edit update destroy]
 
     def index
-      @records = <%= class_name %>.order(created_at: :desc)
+      # id breaks ties on created_at, so a record can never slip between pages.
+      scope = <%= class_name %>.order(created_at: :desc, id: :desc)
+<% if searchable_attributes.any? -%>
+      scope = scope.search(params[:q])
+<% end -%>
+
+      @records, @page, @has_next = paginate(scope)
     end
 
     def show

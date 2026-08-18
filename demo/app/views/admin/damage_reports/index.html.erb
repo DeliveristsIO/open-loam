@@ -2,6 +2,11 @@
 
 <p><%= link_to "New damage report", new_polymorphic_path([:admin, DamageReport]) %></p>
 
+<%= form_with url: [:admin, DamageReport], method: :get do |f| %>
+  <%= text_field_tag :q, params[:q], placeholder: "Filter damage reports" %>
+  <%= f.submit "Filter" %>
+<% end %>
+
 <table>
   <thead>
     <tr>
@@ -27,3 +32,14 @@
     <% end %>
   </tbody>
 </table>
+
+<%# Page links carry the filter, or page 2 would quietly drop it. %>
+<p>
+  <% if @page > 1 %>
+    <%= link_to "← Previous", polymorphic_path([:admin, DamageReport], page: @page - 1, q: params[:q]) %>
+  <% end %>
+  Page <%= @page %>
+  <% if @has_next %>
+    <%= link_to "Next →", polymorphic_path([:admin, DamageReport], page: @page + 1, q: params[:q]) %>
+  <% end %>
+</p>

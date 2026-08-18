@@ -5,9 +5,11 @@ class DamageReport < Loam::TenantRecord
   include Loam::CustomFields
   include Loam::Commentable
   include Loam::Attachable
+  include Loam::Searchable
   include Loam::Workflow
 
   event_domain :rental
+  searchable_by :description, :state
 
   # A damage report is filed by anyone on site, but only a manager decides what
   # happens to it. The states live in `state`; the older `approved` boolean is

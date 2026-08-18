@@ -1,6 +1,13 @@
 <h1><%= plural_name.humanize %></h1>
 
 <p><%%= link_to "New <%= human_name.downcase %>", new_polymorphic_path([:admin, <%= class_name %>]) %></p>
+<% if searchable_attributes.any? -%>
+
+<%%= form_with url: [:admin, <%= class_name %>], method: :get do |f| %>
+  <%%= text_field_tag :q, params[:q], placeholder: "Filter <%= plural_name.humanize.downcase %>" %>
+  <%%= f.submit "Filter" %>
+<%% end %>
+<% end -%>
 
 <table>
   <thead>
@@ -27,3 +34,14 @@
     <%% end %>
   </tbody>
 </table>
+
+<%%# Page links carry the filter, or page 2 would quietly drop it. %>
+<p>
+  <%% if @page > 1 %>
+    <%%= link_to "← Previous", polymorphic_path([:admin, <%= class_name %>], page: @page - 1, q: params[:q]) %>
+  <%% end %>
+  Page <%%= @page %>
+  <%% if @has_next %>
+    <%%= link_to "Next →", polymorphic_path([:admin, <%= class_name %>], page: @page + 1, q: params[:q]) %>
+  <%% end %>
+</p>

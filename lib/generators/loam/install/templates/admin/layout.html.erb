@@ -9,6 +9,7 @@
       th, td { border: 1px solid #ccc; padding: 0.4rem 0.8rem; text-align: left; }
       nav { margin-bottom: 1.5rem; }
       nav a { margin-right: 1rem; }
+      nav form { display: inline; }
       .context { color: #555; font-size: 0.9rem; margin-bottom: 1rem; }
     </style>
   </head>
@@ -23,6 +24,9 @@
         <%%= link_to "Dashboard", admin_root_path %>
         <%%= link_to "Notifications (#{unread_notification_count})", admin_notifications_path %>
         <%%= link_to "API tokens", admin_api_tokens_path %>
+        <%%= form_with url: admin_search_path, method: :get, class: "search" do %>
+          <%%= text_field_tag :q, params[:q], placeholder: "Search" %>
+        <%% end %>
       </nav>
     <%% end %>
     <%%= yield %>

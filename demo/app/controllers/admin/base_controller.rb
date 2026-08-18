@@ -1,5 +1,7 @@
 module Admin
   class BaseController < ActionController::Base
+    include Pagination
+
     layout "admin"
 
     before_action :set_loam_context

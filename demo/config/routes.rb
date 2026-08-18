@@ -13,6 +13,7 @@ Rails.application.routes.draw do
     resources :webhook_endpoints, only: %i[index new create destroy]
     resources :api_tokens, only: %i[index create destroy]
     resources :comments, only: %i[create]
+    get "search", to: "search#index"
   end
 
   namespace :api do

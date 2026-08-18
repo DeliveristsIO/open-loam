@@ -1,0 +1,23 @@
+<h1>Search</h1>
+
+<%%= form_with url: admin_search_path, method: :get do |f| %>
+  <%%= text_field_tag :q, @query, autofocus: true, placeholder: "Search everything in this tenant" %>
+  <%%= f.submit "Search" %>
+<%% end %>
+
+<%% if @query.present? %>
+  <%% if @results.empty? %>
+    <p>Nothing matches <strong><%%= @query %></strong> in <%%= current_tenant.name %>.</p>
+  <%% end %>
+
+  <%% @results.each do |model, records| %>
+    <h2><%%= model.model_name.human.pluralize %></h2>
+    <ul>
+      <%% records.each do |record| %>
+        <li>
+          <%%= link_to search_result_label(record), [ :admin, record ] %>
+        </li>
+      <%% end %>
+    </ul>
+  <%% end %>
+<%% end %>

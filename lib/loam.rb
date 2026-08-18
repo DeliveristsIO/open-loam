@@ -44,6 +44,7 @@ ActiveSupport.on_load(:active_record) do
   require "loam/eventful"
   require "loam/custom_fields"
   require "loam/workflow"
+  require "loam/searchable"
   require "loam/commentable"
   require "loam/attachable"
 end

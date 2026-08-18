@@ -62,6 +62,8 @@ module Loam
         template "admin/webhook_endpoints_controller.rb", "app/controllers/admin/webhook_endpoints_controller.rb"
         template "admin/api_tokens_controller.rb", "app/controllers/admin/api_tokens_controller.rb"
         template "admin/comments_controller.rb", "app/controllers/admin/comments_controller.rb"
+        template "admin/search_controller.rb", "app/controllers/admin/search_controller.rb"
+        template "admin/pagination.rb", "app/controllers/admin/pagination.rb"
         template "admin/layout.html.erb", "app/views/layouts/admin.html.erb"
         template "admin/sessions_new.html.erb", "app/views/admin/sessions/new.html.erb"
         template "admin/dashboard_index.html.erb", "app/views/admin/dashboard/index.html.erb"
@@ -71,6 +73,7 @@ module Loam
         template "admin/webhook_endpoints_index.html.erb", "app/views/admin/webhook_endpoints/index.html.erb"
         template "admin/webhook_endpoints_new.html.erb", "app/views/admin/webhook_endpoints/new.html.erb"
         template "admin/api_tokens_index.html.erb", "app/views/admin/api_tokens/index.html.erb"
+        template "admin/search_index.html.erb", "app/views/admin/search/index.html.erb"
       end
 
       def create_api
@@ -91,6 +94,7 @@ module Loam
             resources :webhook_endpoints, only: %i[index new create destroy]
             resources :api_tokens, only: %i[index create destroy]
             resources :comments, only: %i[create]
+            get "search", to: "search#index"
           end
 
           namespace :api do
