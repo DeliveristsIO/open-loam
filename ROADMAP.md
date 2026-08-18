@@ -20,12 +20,12 @@ execution backlog in the [Loam GitHub project](https://github.com/orgs/Deliveris
 | Tenant lifecycle | ✅ done | `Loam.on_tenant_created` + `bin/rails loam:sync` (L-701) |
 | Generators as the interface | ✅ done | `loam:install`, `loam:entity` (plan calls it `loam:resource` — same thing) |
 | Demo app, README, tests, CI | ✅ done | `demo/`, generator harness (`rake test`), `.github/workflows/ci.yml` (L-101..L-104) |
-| Workflow (states, transitions, approvals) | 🔨 in progress | night batch |
-| Notifications | 🔨 in progress | night batch |
-| API + webhooks | 🔨 in progress | night batch |
-| Authentication | 🔨 in progress | night batch (replaces the demo session picker) |
-| Comments + attachments | 🔨 in progress | night batch |
-| Search + UI primitives (filters, pagination) | 🔨 in progress | night batch |
+| Workflow (states, transitions, approvals) | ✅ done | `Loam::Workflow` DSL, role-gated transitions, transition events (L-801) |
+| Notifications | ✅ done | `Loam::Notification` + `Loam::Notifications.notify/notify_role`, admin screen (L-802) |
+| API + webhooks | ✅ done | `Loam::ApiToken` bearer auth, generated JSON controllers, signed webhooks (L-803, L-804) |
+| Authentication | ✅ done | password login, membership-limited tenant picker, admin API tokens (L-805) |
+| Comments + attachments | ✅ done | `Loam::Commentable`/`Loam::Attachable`, shared admin comments controller (L-806) |
+| Search + UI primitives (filters, pagination) | ✅ done | `Loam::Searchable`, global admin search, index filter + pagination (L-807) |
 
 Naming decision (2026-08-18): the isolation axis stays **`Loam::Tenant`** — the
 precise technical term. A business-facing `Organization` layer can sit on top
