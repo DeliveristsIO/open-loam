@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # The gem's own harness. It builds real Rails apps in a temp dir and drives
+  # the generators through them, shelling out to the globally installed `rails`
+  # from inside Bundler.with_unbundled_env — so rails has to be installed with
+  # `gem install`, not through Bundler. A bundler-cached install lands in
+  # vendor/bundle, which the unbundled environment cannot see.
+  gem:
+    name: Generator harness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "4.0"
+
+      # rake and minitest ship with Ruby as bundled gems; naming them anyway
+      # keeps the harness working if a future Ruby unbundles one.
+      - name: Install Rails
+        run: gem install rails rake minitest --no-document
+
+      - name: Run harness
+        run: rake test
+
+  demo:
+    name: Demo app
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: demo
+    steps:
+      - uses: actions/checkout@v7
+
+      # working-directory points setup-ruby at demo/.ruby-version and
+      # demo/Gemfile.lock. The `loam` gem resolves through `path: ".."`, which
+      # the checkout already provides.
+      - uses: ruby/setup-ruby@v1
+        with:
+          working-directory: demo
+          bundler-cache: true
+
+      - name: Prepare database
+        run: bin/rails db:migrate db:seed
+
+      - name: Run tests
+        run: bin/rails test

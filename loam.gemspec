@@ -3,7 +3,7 @@ require_relative "lib/loam/version"
 Gem::Specification.new do |spec|
   spec.name        = "loam"
   spec.version     = Loam::VERSION
-  spec.authors     = ["Loam"]
+  spec.authors     = ["Grzegorz Smajdor"]
   spec.summary     = "AI-native Rails business foundation: tenancy, policies, audit, events, admin — decided, not re-litigated."
   spec.description = "Loam pre-decides the 80% every business app shares (multi-tenancy, roles and field-level " \
                      "permissions, audit trails, a domain event bus, an admin surface) and ships the agent " \
@@ -13,7 +13,17 @@ Gem::Specification.new do |spec|
   spec.license     = "MIT"
   spec.required_ruby_version = ">= 3.2"
 
-  spec.files = Dir["lib/**/*", "LICENSE", "README.md"]
+  spec.metadata = {
+    "homepage_uri" => spec.homepage,
+    "source_code_uri" => spec.homepage,
+    "changelog_uri" => "#{spec.homepage}/releases",
+    "rubygems_mfa_required" => "true"
+  }
+
+  # app/ is the engine's own code (Loam::Tenant, Membership, AuditRecord,
+  # FieldDefinition). Omitting it packages a gem that works from a path: source
+  # and breaks the moment anyone installs the release.
+  spec.files = Dir["{app,lib}/**/*", "LICENSE", "README.md"]
 
   spec.add_dependency "rails", ">= 7.1"
 end

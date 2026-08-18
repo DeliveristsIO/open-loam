@@ -4,6 +4,12 @@
 .env
 *.log
 
+# local AI tooling state
+.claude-flow/
+.claude/
+.swarm/
+ruvector.db
+
 # demo app runtime artifacts
 demo/log/*
 demo/tmp/*
