@@ -41,4 +41,5 @@ ActiveSupport.on_load(:active_record) do
   require "loam/auditable"
   require "loam/eventful"
   require "loam/custom_fields"
+  require "loam/workflow"
 end

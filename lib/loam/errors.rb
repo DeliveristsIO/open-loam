@@ -11,8 +11,15 @@ module Loam
     end
   end
 
-  # Raised by admin controllers / callers when a policy check fails.
+  # Raised by admin controllers / callers when a policy check fails, and by a
+  # Loam::Workflow transition the current actor's role may not perform.
   class NotAuthorizedError < Error; end
+
+  # Raised when a Loam::Workflow transition is attempted from a state it does
+  # not move from ("approve a report that was never submitted"). Like every
+  # Loam guardrail it fails at the call site rather than writing a state the
+  # machine says is impossible.
+  class InvalidTransitionError < Error; end
 
   # Raised when an event name does not follow the `domain.thing.happened` convention.
   class InvalidEventNameError < Error; end

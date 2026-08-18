@@ -15,6 +15,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Domain events | published from models/services via `Loam::Events.publish` | subscriptions in `config/initializers/loam.rb` |
 | Audit trail | automatic (`Loam::Auditable`) | nothing — it is on by default |
 | Migration-free field | `custom_fields` jsonb column, read/written via `Loam::CustomFields` | a `Loam::FieldDefinition` row, created via the admin "Field definitions" screen (`/admin/field_definitions`) — never a migration |
+| States & approvals | a `workflow` block in the model (`Loam::Workflow`) | `include Loam::Workflow`; add a string column for the state |
 | Tests | `test/entities/<name>_test.rb` | generated with the entity; extend, never delete |
 | New-tenant defaults | `Loam.on_tenant_created` blocks in `config/initializers/loam.rb` | edit the initializer; backfill with `bin/rails loam:sync` |
 
@@ -43,6 +44,29 @@ screens automatically. Reading or writing a name with no matching
 `Loam::FieldDefinition` raises `Loam::UnknownCustomFieldError` — that means
 the field definition doesn't exist yet, not that you should rescue it.
 
+## States and approvals
+
+A record that moves through stages — open → pending → approved — declares a
+workflow instead of hand-rolled `if state ==` checks. `DamageReport` is the
+worked example. Add a string column for the state, then:
+
+```ruby
+include Loam::Workflow
+
+workflow :state, initial: "open" do
+  state "open"; state "pending_approval"; state "approved"
+  transition :submit,  from: "open",             to: "pending_approval"
+  transition :approve, from: "pending_approval", to: "approved", roles: [:manager]
+end
+```
+
+`report.submit!` moves the record, saves it, and publishes
+`rental.damage_report.submit` with `from`/`to`; an illegal move raises
+`Loam::InvalidTransitionError` and a `roles:`-gated one raises
+`Loam::NotAuthorizedError`. `report.workflow_transitions_available` lists what
+this actor may do next, and `Model.loam_workflow` is the whole machine, frozen
+and readable.
+
 ## Seeding a new tenant
 
 Anything every tenant should start with — roles, default field definitions,
@@ -68,6 +92,8 @@ So the block MUST be idempotent — `find_or_create_by!`, never `create!`.
   `policy.permitted_fields` — no hand-rolled `params.permit` lists.
 - **Event names are `domain.thing.happened`** — three+ dot-separated segments.
 - **`Loam.on_tenant_created` callbacks are idempotent** — `loam:sync` re-runs them.
+- **Never assign a workflow column directly** — call the transition, so the legal
+  moves and the roles that may make them stay in one place.
 
 ## Context helpers
 

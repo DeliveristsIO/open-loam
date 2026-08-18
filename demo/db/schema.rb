@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_18_193001) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_18_220000) do
   create_table "damage_reports", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.integer "equipment_id"
@@ -19,6 +19,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_18_193001) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.json "custom_fields", default: {}, null: false
+    t.string "state"
     t.index ["tenant_id"], name: "index_damage_reports_on_tenant_id"
   end
 
