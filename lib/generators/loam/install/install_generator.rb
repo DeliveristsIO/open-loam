@@ -59,7 +59,19 @@ module Loam
         template "guardrails_test.rb", "test/loam_guardrails_test.rb"
       end
 
+      # An app generated with --skip-test has no test/test_helper.rb. Creating
+      # one here would be Loam deciding how the app tests; saying so and moving
+      # on leaves the install complete either way.
       def wire_test_helpers
+        unless File.file?(File.join(destination_root, "test/test_helper.rb"))
+          say ""
+          say "No test/test_helper.rb (--skip-test?) — skipping Loam test wiring.", :yellow
+          say "  test/loam_guardrails_test.rb was still written. To run it, add to your test setup:"
+          say "    require \"loam/test_helpers\"   (after the environment is loaded)"
+          say "    include Loam::TestHelpers       (in your base test case)"
+          return
+        end
+
         inject_into_file "test/test_helper.rb", "require \"loam/test_helpers\"\n",
                          after: /require_relative "\.\.\/config\/environment"\n/
         inject_into_file "test/test_helper.rb", "    include Loam::TestHelpers\n",

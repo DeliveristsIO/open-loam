@@ -1,11 +1,7 @@
 Rails.application.routes.draw do
   namespace :admin do
-      resources :damage_reports
-    end
-  namespace :admin do
-      resources :equipment
-    end
-  namespace :admin do
+    resources :damage_reports
+    resources :equipment
     root "dashboard#index"
     resource :session, only: %i[new create destroy]
     resources :field_definitions, only: %i[index new create destroy]

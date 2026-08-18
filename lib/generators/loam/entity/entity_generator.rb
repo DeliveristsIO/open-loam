@@ -47,8 +47,13 @@ module Loam
         template "entity_test.rb", "test/entities/#{file_name}_test.rb"
       end
 
+      # `namespace:` makes Rails inject the route INTO the existing
+      # `namespace :admin do` block (the one loam:install wrote) instead of
+      # stacking one admin block per entity, and falls back to creating the
+      # block when there is none. Re-running the generator is a no-op: the
+      # injection is `force: false`, so identical routing code is skipped.
       def add_route
-        route "namespace :admin do\n    resources :#{plural_file_name}\n  end"
+        route "resources :#{plural_file_name}", namespace: :admin
       end
 
       def print_next_steps
