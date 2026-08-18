@@ -58,5 +58,21 @@ module Loam
     def permitted_fields(field_names)
       field_names.select { |f| writable?(f) }
     end
+
+    # Same semantics as the static `field writable:` declaration, but for a
+    # runtime Loam::FieldDefinition (see Loam::CustomFields): no
+    # writable_roles recorded means any member may write it.
+    def custom_field_writable?(field_name)
+      return false unless member?
+
+      definition = record.class.custom_field_definitions.find_by(name: field_name.to_s)
+      return false unless definition
+
+      definition.writable_roles.blank? || definition.writable_roles.map(&:to_sym).include?(role)
+    end
+
+    def permitted_custom_fields(field_names)
+      field_names.select { |f| custom_field_writable?(f) }
+    end
   end
 end

@@ -1,8 +1,12 @@
+<%% policy = Loam::Policy.for(@record) %>
+
 <h1><%= human_name %> #<%%= @record.id %></h1>
 
 <% attributes.each do |attribute| -%>
 <p><strong><%= attribute.name.humanize %>:</strong> <%%= @record.<%= attribute.name %> %></p>
 <% end -%>
+
+<%%= render "loam/custom_fields/fields", record: @record, policy: policy, mode: :show %>
 
 <p>
   <%%= link_to "Edit", edit_polymorphic_path([:admin, @record]) %>

@@ -2,6 +2,7 @@
 class DamageReport < Loam::TenantRecord
   include Loam::Auditable
   include Loam::Eventful
+  include Loam::CustomFields
 
   event_domain :rental
 

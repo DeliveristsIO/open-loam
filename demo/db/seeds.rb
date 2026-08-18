@@ -11,7 +11,20 @@ Loam.as_tenant(warsaw, actor: anna) do
   Loam::Membership.find_or_create_by!(user: anna) { |m| m.role = "manager" }
   Loam::Membership.find_or_create_by!(user: tomek) { |m| m.role = "employee" }
 
-  Equipment.find_or_create_by!(name: "Excavator CAT 320") { |e| e.daily_rate = 950.0; e.status = "available" }
+  # Migration-free fields: added from the admin, not a generator.
+  Loam::FieldDefinition.find_or_create_by!(entity_type: "Equipment", name: "serial_number") do |fd|
+    fd.field_type = "string"
+  end
+  Loam::FieldDefinition.find_or_create_by!(entity_type: "Equipment", name: "warranty_expires_at") do |fd|
+    fd.field_type = "date"
+    fd.writable_roles = [ "manager" ]
+  end
+
+  excavator = Equipment.find_or_create_by!(name: "Excavator CAT 320") { |e| e.daily_rate = 950.0; e.status = "available" }
+  excavator.set_custom_field(:serial_number, "SN-CAT320-001")
+  excavator.set_custom_field(:warranty_expires_at, Date.new(2027, 6, 30))
+  excavator.save!
+
   Equipment.find_or_create_by!(name: "Concrete mixer") { |e| e.daily_rate = 120.0; e.status = "rented" }
 end
 

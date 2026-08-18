@@ -8,6 +8,7 @@ Rails.application.routes.draw do
   namespace :admin do
     root "dashboard#index"
     resource :session, only: %i[new create destroy]
+    resources :field_definitions, only: %i[index new create destroy]
   end
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 

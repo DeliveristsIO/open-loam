@@ -109,9 +109,11 @@ first cut** of the core loop:
 - `lib/` — the `loam` gem: `Loam::TenantRecord` (structural tenant isolation
   that raises `Loam::MissingTenantError` on any query without tenant context),
   `Loam::Policy` (roles + field-level `writable:` rules), `Loam::Auditable`
-  (audit-by-default), `Loam::Events` (a `domain.thing.happened` event bus), and
-  the two generators that are the whole interface: `loam:install` and
-  `loam:entity`.
+  (audit-by-default), `Loam::Events` (a `domain.thing.happened` event bus),
+  `Loam::CustomFields` (migration-free fields via a runtime
+  `Loam::FieldDefinition`, stored in a `custom_fields` json column and
+  managed from an admin screen — no code deploy needed), and the two
+  generators that are the whole interface: `loam:install` and `loam:entity`.
 - `demo/` — an equipment-rental demo app built with those generators, including
   the generated guardrail tests (tenant isolation, no-context-raises, a lint
   that fails on any non-scoped model or any `.unscoped` in `app/`).
@@ -121,7 +123,8 @@ purpose: the pillars are minimal in-gem implementations rather than wrappers
 around `acts_as_tenant`/`pundit`/`paper_trail`/Rails Event Store — smallest
 possible surface to prove the conventions and the agent flow. Swapping proven
 gems back in behind the same conventions is the roadmap, not a reversal.
-Custom entities (runtime fields) are not in the prototype yet.
+The custom-fields storage type is the portable Rails `json` column (not
+Postgres `jsonb`/GIN) since the demo runs on SQLite.
 
 Try it:
 

@@ -5,6 +5,7 @@ class Create<%= table_name.camelize %> < ActiveRecord::Migration[<%= ActiveRecor
 <% attributes.each do |attribute| -%>
       t.<%= attribute.type %> :<%= attribute.name %>
 <% end -%>
+      t.json :custom_fields, null: false, default: {}
       t.timestamps
     end
   end

@@ -16,4 +16,9 @@ module Loam
 
   # Raised when an event name does not follow the `domain.thing.happened` convention.
   class InvalidEventNameError < Error; end
+
+  # Raised by Loam::CustomFields#custom_field/#set_custom_field when the name
+  # has no matching Loam::FieldDefinition for this tenant + entity. Fails
+  # loudly at the access site rather than silently reading/writing nil.
+  class UnknownCustomFieldError < Error; end
 end

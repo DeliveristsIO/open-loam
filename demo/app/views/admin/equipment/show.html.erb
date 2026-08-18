@@ -1,8 +1,12 @@
+<% policy = Loam::Policy.for(@record) %>
+
 <h1>Equipment #<%= @record.id %></h1>
 
 <p><strong>Name:</strong> <%= @record.name %></p>
 <p><strong>Daily rate:</strong> <%= @record.daily_rate %></p>
 <p><strong>Status:</strong> <%= @record.status %></p>
+
+<%= render "loam/custom_fields/fields", record: @record, policy: policy, mode: :show %>
 
 <p>
   <%= link_to "Edit", edit_polymorphic_path([:admin, @record]) %>

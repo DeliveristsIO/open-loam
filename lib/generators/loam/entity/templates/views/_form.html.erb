@@ -23,5 +23,7 @@
   <%% end %>
 <% end -%>
 
+  <%%= render "loam/custom_fields/fields", record: @record, policy: policy, mode: :edit %>
+
   <%%= f.submit %>
 <%% end %>

@@ -43,4 +43,17 @@ class LoamGuardrailsTest < ActiveSupport::TestCase
     assert_empty offenders,
       ".unscoped found in: #{offenders.join(', ')}. It bypasses tenant isolation — remove it."
   end
+
+  test "every Loam::FieldDefinition entity_type resolves to a class that uses Loam::CustomFields" do
+    Rails.application.eager_load!
+
+    offenders = Loam::FieldDefinition.unscoped.distinct.pluck(:entity_type).reject do |entity_type|
+      klass = entity_type.safe_constantize
+      klass && klass.include?(Loam::CustomFields)
+    end
+
+    assert_empty offenders,
+      "These Loam::FieldDefinition entity_type values don't resolve to a class that " \
+      "`include Loam::CustomFields`: #{offenders.join(', ')}. Likely a typo when the field was created."
+  end
 end

@@ -1,0 +1,30 @@
+<%# locals: record, policy, mode (:edit or :show, default :edit) — shared by every
+    generated entity's _form.html.erb and show.html.erb so runtime custom-field
+    rendering lives once in the gem instead of being inlined per entity. %>
+<% mode = local_assigns.fetch(:mode, :edit) %>
+<% record.class.custom_field_definitions.each do |definition| %>
+  <% param_name = "#{record.model_name.param_key}[custom_fields][#{definition.name}]" %>
+  <% value = record.custom_field(definition.name) %>
+  <p>
+    <% if mode == :edit && policy.custom_field_writable?(definition.name) %>
+      <%= label_tag param_name, definition.name.humanize %><br>
+      <% case definition.field_type %>
+      <% when "boolean" %>
+        <%= check_box_tag param_name, "true", value, id: param_name %>
+      <% when "text" %>
+        <%= text_area_tag param_name, value %>
+      <% when "date" %>
+        <%= date_field_tag param_name, value %>
+      <% when "datetime" %>
+        <%= datetime_field_tag param_name, value %>
+      <% when "integer", "decimal" %>
+        <%= number_field_tag param_name, value %>
+      <% else %>
+        <%= text_field_tag param_name, value %>
+      <% end %>
+    <% else %>
+      <%= definition.name.humanize %>: <%= value %>
+      <% if mode == :edit %><em>(read-only for your role)</em><% end %>
+    <% end %>
+  </p>
+<% end %>

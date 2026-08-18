@@ -1,0 +1,30 @@
+<h1>New field definition</h1>
+
+<%= form_with model: @record, url: admin_field_definitions_path do |f| %>
+  <% if @record.errors.any? %>
+    <ul>
+      <% @record.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  <% end %>
+
+  <p>
+    <%= f.label :entity_type %><br>
+    <%= f.text_field :entity_type %>
+  </p>
+  <p>
+    <%= f.label :name %><br>
+    <%= f.text_field :name %>
+  </p>
+  <p>
+    <%= f.label :field_type %><br>
+    <%= f.select :field_type, Loam::FieldDefinition::FIELD_TYPES %>
+  </p>
+  <p>
+    <%= f.label :writable_roles, "Writable by (comma-separated roles, blank = any member)" %><br>
+    <%= f.text_field :writable_roles %>
+  </p>
+
+  <%= f.submit "Create field definition" %>
+<% end %>

@@ -1,0 +1,28 @@
+<h1>Field definitions<%= " — #{@entity_type}" if @entity_type.present? %></h1>
+
+<p>Add a field to an entity with no migration and no deploy.</p>
+
+<%= link_to "New field definition", new_admin_field_definition_path(entity_type: @entity_type) %>
+
+<table>
+  <thead>
+    <tr>
+      <th>Entity type</th>
+      <th>Name</th>
+      <th>Field type</th>
+      <th>Writable by</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @records.each do |record| %>
+      <tr>
+        <td><%= record.entity_type %></td>
+        <td><%= record.name %></td>
+        <td><%= record.field_type %></td>
+        <td><%= record.writable_roles.presence&.join(", ") || "any member" %></td>
+        <td><%= button_to "Delete", admin_field_definition_path(record), method: :delete, form: { style: "display:inline" }, data: { turbo_confirm: "Delete this field? Existing data under this key becomes inaccessible." } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
