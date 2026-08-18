@@ -12,3 +12,7 @@
   <%= link_to "Edit", edit_polymorphic_path([:admin, @record]) %>
   <%= link_to "Back", [:admin, Equipment] %>
 </p>
+
+<%= render "loam/attachments/attachments", record: @record %>
+
+<%= render "loam/comments/comments", record: @record %>

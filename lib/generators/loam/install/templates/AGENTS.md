@@ -17,6 +17,8 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Migration-free field | `custom_fields` jsonb column, read/written via `Loam::CustomFields` | a `Loam::FieldDefinition` row, created via the admin "Field definitions" screen (`/admin/field_definitions`) — never a migration |
 | States & approvals | a `workflow` block in the model (`Loam::Workflow`) | `include Loam::Workflow`; add a string column for the state |
 | Notifications | `Loam::Notification` rows, read at `/admin/notifications` | `Loam::Notifications.notify(user, title:)` / `notify_role(:manager, title:)`, normally from an event subscriber |
+| Comments | `Loam::Comment` rows via `Loam::Commentable` | `record.comment!("...")`, or the form on the entity's show screen; publishes `loam.comment.created` |
+| Attachments | ActiveStorage `files` via `Loam::Attachable` | `record.files.attach(...)`, or the file field on the entity's form — uploading counts as an update, so the entity's policy decides |
 | Sign-in | `app/controllers/admin/sessions_controller.rb` (`has_secure_password` on `User`) | email + password, then a tenant — the picker only ever lists tenants you hold a `Loam::Membership` in |
 | JSON API | `app/controllers/api/<plural>_controller.rb` | generated with the entity; auth is `Authorization: Bearer <Loam::ApiToken>`, and the same policies apply |
 | Webhooks | `Loam::WebhookEndpoint` rows, managed at `/admin/webhook_endpoints` | add an endpoint with an event pattern; matching events POST signed JSON via `Loam::WebhookDeliveryJob` |
@@ -98,6 +100,10 @@ So the block MUST be idempotent — `find_or_create_by!`, never `create!`.
 - **`Loam.on_tenant_created` callbacks are idempotent** — `loam:sync` re-runs them.
 - **Never assign a workflow column directly** — call the transition, so the legal
   moves and the roles that may make them stay in one place.
+- **Attachment URLs are capabilities, not addresses.** ActiveStorage blobs live in
+  global tables Loam does not tenant-scope: a signed blob URL is fetchable by
+  whoever holds it, with no tenant check. Gate files at the record that owns
+  them, through its policy, and never paste those URLs anywhere public.
 
 ## Context helpers
 

@@ -1,0 +1,24 @@
+<%# locals: record — shared by every generated entity's show.html.erb so the
+    discussion is rendered once, in the gem, instead of per entity. Posting is
+    open to any member: BaseController has already proven that whoever is here
+    holds a membership in this tenant. %>
+<h2>Comments</h2>
+
+<% if flash[:alert] %>
+  <p style="color:#b00"><%= flash[:alert] %></p>
+<% end %>
+
+<% record.loam_comments.oldest_first.each do |comment| %>
+  <p>
+    <strong><%= User.find_by(id: comment.author_id)&.name || "—" %></strong>
+    <em><%= comment.created_at.to_fs(:short) %></em><br>
+    <%= comment.body %>
+  </p>
+<% end %>
+
+<%= form_with url: admin_comments_path, method: :post do |f| %>
+  <%= hidden_field_tag :commentable_type, record.class.name %>
+  <%= hidden_field_tag :commentable_id, record.id %>
+  <%= text_area_tag :body, nil, rows: 3, placeholder: "Add a comment" %>
+  <%= f.submit "Comment" %>
+<% end %>

@@ -23,6 +23,7 @@ module Admin
       authorize!(policy, :create?)
       @record.assign_attributes(permitted_params(policy))
       assign_custom_fields!(@record, params, policy)
+      attach_files!(@record, policy)
 
       if @record.save
         redirect_to [:admin, @record]
@@ -39,6 +40,7 @@ module Admin
       policy = policy_for(@record)
       authorize!(policy, :update?)
       assign_custom_fields!(@record, params, policy)
+      attach_files!(@record, policy)
 
       if @record.update(permitted_params(policy))
         redirect_to [:admin, @record]

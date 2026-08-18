@@ -1,0 +1,16 @@
+<%# locals: record — shared by every generated entity's show.html.erb.
+    Uploading happens through the entity's own form (it is an update, and the
+    entity's policy decides who may do it); this partial only lists what is
+    already attached. Note that these links are signed URLs, not tenant-checked
+    addresses — see Loam::Attachable. %>
+<h2>Files</h2>
+
+<% if record.files.attached? %>
+  <ul>
+    <% record.files.each do |file| %>
+      <li><%= link_to file.filename.to_s, url_for(file) %> (<%= number_to_human_size(file.byte_size) %>)</li>
+    <% end %>
+  </ul>
+<% else %>
+  <p>No files attached.</p>
+<% end %>

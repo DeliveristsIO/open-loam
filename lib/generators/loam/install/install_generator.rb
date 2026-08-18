@@ -22,6 +22,23 @@ module Loam
         migration_template "migrations/create_loam_notifications.rb", "db/migrate/create_loam_notifications.rb"
         migration_template "migrations/create_loam_api_tokens.rb", "db/migrate/create_loam_api_tokens.rb"
         migration_template "migrations/create_loam_webhook_endpoints.rb", "db/migrate/create_loam_webhook_endpoints.rb"
+        migration_template "migrations/create_loam_comments.rb", "db/migrate/create_loam_comments.rb"
+      end
+
+      # Attachments (Loam::Attachable, included in every generated entity) are
+      # ActiveStorage, which needs its own tables. The task copies its
+      # migration and says so if it is already there, so running it twice is
+      # harmless.
+      def install_active_storage
+        unless defined?(ActiveStorage::Engine)
+          say ""
+          say "ActiveStorage is not available in this app — attachments will not work.", :yellow
+          say "  Generated entities `include Loam::Attachable`; either re-create the app without"
+          say "  --skip-active-storage, or remove that include from app/models."
+          return
+        end
+
+        rails_command "active_storage:install"
       end
 
       def create_user_model
@@ -44,6 +61,7 @@ module Loam
         template "admin/notifications_controller.rb", "app/controllers/admin/notifications_controller.rb"
         template "admin/webhook_endpoints_controller.rb", "app/controllers/admin/webhook_endpoints_controller.rb"
         template "admin/api_tokens_controller.rb", "app/controllers/admin/api_tokens_controller.rb"
+        template "admin/comments_controller.rb", "app/controllers/admin/comments_controller.rb"
         template "admin/layout.html.erb", "app/views/layouts/admin.html.erb"
         template "admin/sessions_new.html.erb", "app/views/admin/sessions/new.html.erb"
         template "admin/dashboard_index.html.erb", "app/views/admin/dashboard/index.html.erb"
@@ -72,6 +90,7 @@ module Loam
             end
             resources :webhook_endpoints, only: %i[index new create destroy]
             resources :api_tokens, only: %i[index create destroy]
+            resources :comments, only: %i[create]
           end
 
           namespace :api do

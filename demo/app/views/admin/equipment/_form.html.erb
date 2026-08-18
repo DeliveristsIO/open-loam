@@ -45,5 +45,12 @@
 
   <%= render "loam/custom_fields/fields", record: @record, policy: policy, mode: :edit %>
 
+  <% if policy.update? %>
+    <p>
+      <%= f.label :files, "Attach files" %><br>
+      <%= f.file_field :files, multiple: true %>
+    </p>
+  <% end %>
+
   <%= f.submit %>
 <% end %>

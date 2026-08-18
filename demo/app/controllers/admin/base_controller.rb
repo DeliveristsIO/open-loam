@@ -69,6 +69,21 @@ module Admin
       raise Loam::NotAuthorizedError unless roles.include?(current_role)
     end
 
+    # Attaching a file changes the record, so it is an update: a role that may
+    # not update this record may not put files on it either.
+    #
+    # A `multiple: true` file field posts an empty string alongside any real
+    # files, so blanks are dropped BEFORE the authorization check — submitting
+    # a form with no file chosen is not an attempt to upload.
+    def attach_files!(record, policy)
+      submitted = Array(params.dig(record.model_name.param_key, :files)).reject(&:blank?)
+      return if submitted.empty?
+
+      raise Loam::NotAuthorizedError unless policy.update?
+
+      record.files.attach(submitted)
+    end
+
     # Runtime custom fields (see Loam::CustomFields) go through the same
     # field-level enforcement as real columns: only a writable definition's
     # value is ever assigned.
