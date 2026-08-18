@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_18_230000) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_18_240001) do
   create_table "damage_reports", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.integer "equipment_id"
@@ -32,6 +32,19 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_18_230000) do
     t.datetime "updated_at", null: false
     t.json "custom_fields", default: {}, null: false
     t.index ["tenant_id"], name: "index_equipment_on_tenant_id"
+  end
+
+  create_table "loam_api_tokens", force: :cascade do |t|
+    t.integer "tenant_id", null: false
+    t.integer "user_id", null: false
+    t.string "token", null: false
+    t.string "label"
+    t.datetime "last_used_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tenant_id"], name: "index_loam_api_tokens_on_tenant_id"
+    t.index ["token"], name: "index_loam_api_tokens_on_token", unique: true
+    t.index ["user_id"], name: "index_loam_api_tokens_on_user_id"
   end
 
   create_table "loam_audit_records", force: :cascade do |t|
@@ -93,6 +106,18 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_18_230000) do
     t.index ["slug"], name: "index_loam_tenants_on_slug", unique: true
   end
 
+  create_table "loam_webhook_endpoints", force: :cascade do |t|
+    t.integer "tenant_id", null: false
+    t.string "url", null: false
+    t.string "event_pattern", null: false
+    t.string "secret", null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tenant_id", "active"], name: "index_loam_webhook_endpoints_on_tenant_id_and_active"
+    t.index ["tenant_id"], name: "index_loam_webhook_endpoints_on_tenant_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "name", null: false
     t.string "email"
@@ -102,10 +127,13 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_18_230000) do
 
   add_foreign_key "damage_reports", "loam_tenants", column: "tenant_id"
   add_foreign_key "equipment", "loam_tenants", column: "tenant_id"
+  add_foreign_key "loam_api_tokens", "loam_tenants", column: "tenant_id"
+  add_foreign_key "loam_api_tokens", "users"
   add_foreign_key "loam_audit_records", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_field_definitions", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_memberships", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_memberships", "users"
   add_foreign_key "loam_notifications", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_notifications", "users"
+  add_foreign_key "loam_webhook_endpoints", "loam_tenants", column: "tenant_id"
 end

@@ -8,6 +8,12 @@ Rails.application.routes.draw do
     resources :notifications, only: %i[index] do
       post :mark_read, on: :member
     end
+    resources :webhook_endpoints, only: %i[index new create destroy]
+  end
+
+  namespace :api do
+    resources :damage_reports, defaults: { format: :json }
+    resources :equipment, defaults: { format: :json }
   end
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 

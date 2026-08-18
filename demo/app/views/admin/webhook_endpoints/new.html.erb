@@ -1,0 +1,28 @@
+<h1>New webhook endpoint</h1>
+
+<%= form_with model: @record, url: admin_webhook_endpoints_path do |f| %>
+  <% if @record.errors.any? %>
+    <ul>
+      <% @record.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  <% end %>
+
+  <p>
+    <%= f.label :event_pattern, "Event pattern (\"rental.\" for a whole domain, or one exact event name)" %><br>
+    <%= f.text_field :event_pattern %>
+  </p>
+  <p>
+    <%= f.label :url, "URL (http:// or https://)" %><br>
+    <%= f.text_field :url %>
+  </p>
+  <p>
+    <%= f.label :active %>
+    <%= f.check_box :active %>
+  </p>
+
+  <%= f.submit "Create endpoint" %>
+<% end %>
+
+<p>A signing secret is generated for you and shown on the list.</p>

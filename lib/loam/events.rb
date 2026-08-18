@@ -21,6 +21,23 @@ module Loam
       )
     end
 
+    # The subscription rule, in one place: a trailing dot is a domain prefix,
+    # anything else is an exact event name. Loam::WebhookEndpoint matches
+    # against this too, so a pattern means the same thing everywhere.
+    def self.pattern_matches?(pattern, event_name)
+      pattern = pattern.to_s
+      event_name = event_name.to_s
+
+      pattern.end_with?(".") ? event_name.start_with?(pattern) : event_name == pattern
+    end
+
+    # Every Loam event, whatever its domain — the empty prefix matches them
+    # all. Used by the webhook dispatcher, which decides per event which
+    # endpoints care.
+    def self.subscribe_all(&block)
+      subscribe("", &block)
+    end
+
     # Subscribe to one event ("rental.equipment.created") or a whole domain
     # ("rental.") — the block receives (event_name, payload).
     def self.subscribe(name_or_prefix, &block)

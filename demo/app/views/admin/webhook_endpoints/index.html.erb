@@ -1,0 +1,32 @@
+<h1>Webhook endpoints</h1>
+
+<p>Domain events delivered over HTTP. A pattern ending in a dot matches a whole
+domain ("rental."); anything else is one exact event name.</p>
+
+<%= link_to "New endpoint", new_admin_webhook_endpoint_path %>
+
+<table>
+  <thead>
+    <tr>
+      <th>Event pattern</th>
+      <th>URL</th>
+      <th>Active</th>
+      <th>Secret</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @records.each do |record| %>
+      <tr>
+        <td><%= record.event_pattern %></td>
+        <td><%= record.url %></td>
+        <td><%= record.active? ? "yes" : "no" %></td>
+        <td><code><%= record.secret %></code></td>
+        <td><%= button_to "Delete", admin_webhook_endpoint_path(record), method: :delete, form: { style: "display:inline" } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<p>Each delivery is signed: <code>X-Loam-Signature: sha256=HMAC-SHA256(secret, body)</code>.
+Recompute it on your side and reject anything that does not match.</p>

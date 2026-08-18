@@ -20,6 +20,8 @@ module Loam
         migration_template "migrations/create_loam_audit_records.rb", "db/migrate/create_loam_audit_records.rb"
         migration_template "migrations/create_loam_field_definitions.rb", "db/migrate/create_loam_field_definitions.rb"
         migration_template "migrations/create_loam_notifications.rb", "db/migrate/create_loam_notifications.rb"
+        migration_template "migrations/create_loam_api_tokens.rb", "db/migrate/create_loam_api_tokens.rb"
+        migration_template "migrations/create_loam_webhook_endpoints.rb", "db/migrate/create_loam_webhook_endpoints.rb"
       end
 
       def create_user_model
@@ -40,12 +42,19 @@ module Loam
         template "admin/dashboard_controller.rb", "app/controllers/admin/dashboard_controller.rb"
         template "admin/field_definitions_controller.rb", "app/controllers/admin/field_definitions_controller.rb"
         template "admin/notifications_controller.rb", "app/controllers/admin/notifications_controller.rb"
+        template "admin/webhook_endpoints_controller.rb", "app/controllers/admin/webhook_endpoints_controller.rb"
         template "admin/layout.html.erb", "app/views/layouts/admin.html.erb"
         template "admin/sessions_new.html.erb", "app/views/admin/sessions/new.html.erb"
         template "admin/dashboard_index.html.erb", "app/views/admin/dashboard/index.html.erb"
         template "admin/field_definitions_index.html.erb", "app/views/admin/field_definitions/index.html.erb"
         template "admin/field_definitions_new.html.erb", "app/views/admin/field_definitions/new.html.erb"
         template "admin/notifications_index.html.erb", "app/views/admin/notifications/index.html.erb"
+        template "admin/webhook_endpoints_index.html.erb", "app/views/admin/webhook_endpoints/index.html.erb"
+        template "admin/webhook_endpoints_new.html.erb", "app/views/admin/webhook_endpoints/new.html.erb"
+      end
+
+      def create_api
+        template "api_base_controller.rb", "app/controllers/api/base_controller.rb"
       end
 
       def add_routes
@@ -57,6 +66,11 @@ module Loam
             resources :notifications, only: %i[index] do
               post :mark_read, on: :member
             end
+            resources :webhook_endpoints, only: %i[index new create destroy]
+          end
+
+          namespace :api do
+            # `rails g loam:entity` injects `resources :<entities>` here.
           end
         RUBY
       end

@@ -35,6 +35,10 @@ module Loam
         template "controller.rb", "app/controllers/admin/#{plural_file_name}_controller.rb"
       end
 
+      def create_api_controller
+        template "api_controller.rb", "app/controllers/api/#{plural_file_name}_controller.rb"
+      end
+
       def create_admin_views
         template "views/index.html.erb", "app/views/admin/#{plural_file_name}/index.html.erb"
         template "views/show.html.erb", "app/views/admin/#{plural_file_name}/show.html.erb"
@@ -52,8 +56,14 @@ module Loam
       # stacking one admin block per entity, and falls back to creating the
       # block when there is none. Re-running the generator is a no-op: the
       # injection is `force: false`, so identical routing code is skipped.
+      # The API line carries `defaults: { format: :json }` — it is what an API
+      # namespace wants anyway, and it also has to differ textually from the
+      # admin line above: Rails' route injection skips code the file already
+      # contains (that is what makes re-running this generator a no-op), so two
+      # identical `resources :gadgets` lines would leave the second one out.
       def add_route
         route "resources :#{plural_file_name}", namespace: :admin
+        route "resources :#{plural_file_name}, defaults: { format: :json }", namespace: :api
       end
 
       def print_next_steps
