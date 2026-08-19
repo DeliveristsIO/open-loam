@@ -32,22 +32,16 @@ most agent-friendly framework there is. Loam extends that philosophy from "how t
 structure a controller" up to "how a multi-tenant, permissioned, audited business
 domain is built" — and ships the agent conventions to match.
 
-## The whitespace (why now)
+## Where Loam sits
 
-This exact combination doesn't exist in Rails today. The pieces do — but scattered:
-
-- **Foundation shape** (multi-tenant, RBAC, admin, audit) → Bullet Train, and the
-  commerce products (Spree/Solidus).
-- **Event backbone** → Rails Event Store.
-- **AI-agent conventions** → `rails_ai_agents`, `rails/AGENTS.md`.
-- **Custom entities / metadata modeling** → only inside commerce (Spree metafields).
-
-**No Rails project unifies them.** The nearest *structural* analog — Frappe/ERPNext
-(metadata-driven DocTypes, roles, workflows) — is **Python**. The TypeScript world
-has [Open Mercato](https://github.com/open-mercato/open-mercato) staking this
-claim. Rails, despite being an ideal substrate, has no one holding this ground.
-
-Loam is that ground.
+The pieces exist in Rails, but scattered — foundation shape in Bullet Train and
+the commerce products, an event backbone in Rails Event Store, custom-entity
+modeling only inside commerce. No Rails project unifies them into a single,
+agent-legible business foundation. The closest structural analogs live in other
+stacks: Frappe/ERPNext in Python, and
+**[Open Mercato](https://github.com/open-mercato/open-mercato)** in TypeScript —
+whose module system and convention-first, agent-legible approach directly
+inspired Loam. Loam brings that idea to Rails, the substrate it always suited.
 
 ---
 
@@ -80,8 +74,9 @@ Loam treats "an AI agent will extend this" as a first-class constraint:
 
 - **One obvious way** to add an entity, a permission, an event, a screen — so an
   agent's output is predictable and reviewable.
-- **A shipped agent pack** (specs → implementation, guardrails, MCP schema access)
-  so agents see the live model, routes, and policies.
+- **A contract they read** — an `AGENTS.md` map plus generators as the only
+  interface, so an agent extends the app the same way every time. (Live schema
+  access over MCP is on the roadmap.)
 - **Boundaries agents can't accidentally cross** — tenancy and permissions are
   structural, not conventions an agent might forget.
 
@@ -89,61 +84,33 @@ The result: a codebase where "add a `Subscription` entity with an admin screen,
 tenant-scoped, audited, emitting `subscription.created`" is a *small, safe* task —
 for an agent or a human.
 
-## Better together: Loam × [DevOrch](https://github.com/yourusername/devorch)
-
-Two halves of one idea:
-
-- **Loam** — the substrate you *build on*. Conventions that make a Rails business
-  app coherent and agent-legible.
-- **DevOrch** — the orchestrator you *build with*. Drives AI agents through
-  implement → test → review → PR across your repos.
-
-Point DevOrch at a Loam project and the loop closes: an agent extends a codebase
-*designed* for agents to extend, inside a workflow *designed* to run them. The
-soil and the gardener.
-
 ---
 
 ## Status
 
-**Working prototype.** This repo holds the vision and design **and a running
-first cut** of the core loop:
+**Working prototype — the full Days 1–14 core runs end to end.** The pillars
+above aren't a plan; they're built, tested, and exercised by a demo app and an
+agent benchmark.
 
-- `lib/` — the `loam` gem. Core: `Loam::TenantRecord` (structural tenant
-  isolation that raises `Loam::MissingTenantError` on any query without tenant
-  context), `Loam::Policy` (roles + field-level `writable:` rules),
-  `Loam::Auditable` (audit-by-default), `Loam::Events` (a
-  `domain.thing.happened` event bus), `Loam::CustomFields` (migration-free
-  fields via a runtime `Loam::FieldDefinition` in a `custom_fields` json
-  column, managed from an admin screen), and `Loam::Lifecycle`
-  (`Loam.on_tenant_created` hooks, replayable with `bin/rails loam:sync`).
-  Business layer: `Loam::Workflow` (states, transitions, role-gated
-  approvals), `Loam::Notifications`, a token-authenticated REST API,
-  `Loam::Webhooks` (per-tenant signed outbound delivery), `Loam::Commentable`,
-  `Loam::Attachable` (ActiveStorage), `Loam::Searchable` (+ index filtering and
-  pagination), and password authentication for the admin. The whole interface
-  is two generators: `loam:install` and `loam:entity`.
-- `demo/` — an equipment-rental demo app built with those generators, including
-  the generated guardrail tests (tenant isolation, no-context-raises, a lint
-  that fails on any non-scoped model or any `.unscoped` in `app/`, and a 32 KB
-  budget on `AGENTS.md`).
-- `ai/` — the agent benchmark: `golden_tasks.md` plus recorded runs under
-  `benchmark_runs/`. The first run (10 golden tasks, one agent each on isolated
-  apps) completed 10/10 with zero tenant-isolation or authorization violations;
-  a vanilla-Rails control run under the same prompts enforced isolation in only
-  1 of 10 apps. See `ai/benchmark_runs/`.
-- CI (`.github/workflows/ci.yml`) runs the generator harness and the demo suite
-  on every push.
+**What's in the repo**
 
-Prototype deviation from [docs/architecture.md](docs/architecture.md), on
-purpose: the pillars are minimal in-gem implementations rather than wrappers
-around `acts_as_tenant`/`pundit`/`paper_trail`/Rails Event Store — smallest
-possible surface to prove the conventions and the agent flow. Swapping proven
-gems back in behind the same conventions is the roadmap, not a reversal.
-The custom-fields storage type is the portable Rails `json` column (not
-Postgres `jsonb`/GIN) since the demo runs on SQLite.
+| Path | What it is |
+|------|-----------|
+| `lib/` | The `loam` gem — every pillar as a small `Loam::` module, plus the `loam:install` and `loam:entity` generators that are the whole interface. |
+| `demo/` | An equipment-rental app built with those generators, carrying the generated guardrail tests (tenant isolation, no-context-raises, a lint against `.unscoped` in `app/`, a 32 KB `AGENTS.md` budget). |
+| `ai/` | The agent benchmark — `golden_tasks.md` and recorded runs. First run: **10/10 tasks, zero isolation or authorization violations**; a vanilla-Rails control under the same prompts enforced isolation in **1/10**. |
+| `.github/` | CI runs the generator harness and the demo suite on every push. |
 
-Try it:
+**How honest the "prototype" label is** — deliberately, each pillar is a
+*minimal in-gem implementation* rather than a wrapper around
+`acts_as_tenant`/`pundit`/`paper_trail`/Rails Event Store: the smallest surface
+that proves the conventions and the agent flow. Swapping the proven gems back in
+*behind the same `Loam::` conventions* is the roadmap, not a reversal. Custom
+fields use the portable Rails `json` column (not Postgres `jsonb`/GIN) because
+the demo runs on SQLite. See [docs/architecture.md](docs/architecture.md) for
+the pillar-by-pillar breakdown and the decisions behind them.
+
+**Try it**
 
 ```bash
 cd demo && bundle install && bin/rails db:migrate db:seed
@@ -157,14 +124,8 @@ picker) or `tomek@example.com` (Warsaw only) — password `password123` for both
 - [Concept & positioning](docs/concept.md)
 - [Architecture](docs/architecture.md)
 - [Manifesto](docs/manifesto.md)
+- [Contributing](CONTRIBUTING.md)
 
 ---
 
-## Name
-
-**Loam** — the dark, fertile soil prized for growing things. Not a market
-(*mercato*); the *ground beneath* one. You don't admire loam — you plant in it and
-something grows. That's the promise: rich ground, ready, so what you grow is the
-thing that matters.
-
-*MIT licensed (planned) — open-core, like the foundations it stands on.*
+*MIT licensed — open-core, like the foundations it stands on.*
