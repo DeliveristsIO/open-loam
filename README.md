@@ -121,6 +121,11 @@ bin/rails server          # → http://localhost:3000/admin
 Sign in as `anna@example.com` (manager in both branches, so she gets the tenant
 picker) or `tomek@example.com` (Warsaw only) — password `password123` for both.
 
+**New here? Start with the [Getting Started walkthrough](docs/getting-started.md)** —
+it builds a multi-tenant feature from `rails new` to a working approval flow,
+showing the real commands and exactly what you *didn't* have to write.
+
+- [Getting started](docs/getting-started.md) — hands-on, install to first feature
 - [Concept & positioning](docs/concept.md)
 - [Architecture](docs/architecture.md)
 - [Manifesto](docs/manifesto.md)
