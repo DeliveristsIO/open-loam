@@ -90,7 +90,12 @@ module Admin
     # field-level enforcement as real columns: only a writable definition's
     # value is ever assigned.
     def assign_custom_fields!(record, params, policy)
-      submitted = params[:custom_fields]
+      # The form partial nests inputs under the model's param key
+      # (equipment[custom_fields][serial_number]), so the values must be read
+      # from there — a top-level params[:custom_fields] read silently saves
+      # nothing while the redirect still says success. Found by an agent
+      # during the first golden-tasks benchmark run.
+      submitted = params.dig(record.model_name.param_key, :custom_fields)
       return unless submitted
 
       submitted.each do |name, value|
