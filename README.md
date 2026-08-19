@@ -58,13 +58,16 @@ need to — never a blank page.
 
 | Pillar | What you get, out of the box |
 |--------|------------------------------|
-| 🏢 **Multi-tenancy** | Tenant isolation baked into every query, background job, and event. New models are tenant-scoped by default. |
-| 🔐 **Permissions** | Roles, policies, and field-level access — declared, not hand-rolled per controller. |
-| 🌾 **Custom entities** | Define domain objects and fields at runtime (hybrid columns + JSONB with real indexing), so agents and admins extend the model without a migration for every idea. |
-| 📡 **Event backbone** | A first-class domain event bus (publish/subscribe, sagas, projections) so modules stay decoupled and workflows are legible. |
+| 🏢 **Multi-tenancy** | Tenant isolation baked into every query, background job, and event. New models are tenant-scoped by default; a missing tenant context raises, never silently widens a query. |
+| 🔐 **Permissions & auth** | Password login, roles, policies, and field-level write access — declared, not hand-rolled per controller. Tenant selection limited to a user's memberships. |
+| 🌾 **Custom fields** | Define fields at runtime (a `custom_fields` JSON column + a `Loam::FieldDefinition` row), so agents and admins extend a model without a migration for every idea. |
+| 🔀 **Workflow** | Declared states, transitions, and role-gated approvals on any entity; each transition emits an event and is audited. |
+| 📡 **Event backbone** | A first-class domain event bus (`domain.thing.happened`, publish/subscribe) so modules stay decoupled and workflows are legible. |
+| 🔔 **Notifications** | Tenant-scoped in-app notifications, created from events, surfaced in the admin. |
+| 🔌 **API & webhooks** | Token-authenticated JSON API per entity (policy-aware) and per-tenant signed outbound webhooks on domain events. |
 | 🧾 **Audit** | Every change — who, what, when, in which tenant — recorded by default. |
-| 🖥️ **Admin surface** | An internal console generated from your models, not a second app to maintain. |
-| 🤖 **Agent conventions** | An `AGENTS.md`, an opencode/Claude/Codex agent pack, and strict patterns so an AI agent can add a domain feature **safely** — and a human can read what it did. |
+| 🖥️ **Admin surface** | An internal console generated from your models — comments, attachments, global search, filtering, pagination — not a second app to maintain. |
+| 🤖 **Agent conventions** | An `AGENTS.md` (byte-budgeted), generators as the one interface, and structural guardrails so an AI agent can add a domain feature **safely** — and a human can read what it did. |
 
 You write the **20% that is your business**. Loam is the 80% that every business
 app shares.
@@ -106,19 +109,31 @@ soil and the gardener.
 **Working prototype.** This repo holds the vision and design **and a running
 first cut** of the core loop:
 
-- `lib/` — the `loam` gem: `Loam::TenantRecord` (structural tenant isolation
-  that raises `Loam::MissingTenantError` on any query without tenant context),
-  `Loam::Policy` (roles + field-level `writable:` rules), `Loam::Auditable`
-  (audit-by-default), `Loam::Events` (a `domain.thing.happened` event bus),
-  `Loam::CustomFields` (migration-free fields via a runtime
-  `Loam::FieldDefinition`, stored in a `custom_fields` json column and
-  managed from an admin screen — no code deploy needed), `Loam::Lifecycle`
-  (`Loam.on_tenant_created` hooks that seed a new tenant, replayable over
-  existing tenants with `bin/rails loam:sync`), and the two
-  generators that are the whole interface: `loam:install` and `loam:entity`.
+- `lib/` — the `loam` gem. Core: `Loam::TenantRecord` (structural tenant
+  isolation that raises `Loam::MissingTenantError` on any query without tenant
+  context), `Loam::Policy` (roles + field-level `writable:` rules),
+  `Loam::Auditable` (audit-by-default), `Loam::Events` (a
+  `domain.thing.happened` event bus), `Loam::CustomFields` (migration-free
+  fields via a runtime `Loam::FieldDefinition` in a `custom_fields` json
+  column, managed from an admin screen), and `Loam::Lifecycle`
+  (`Loam.on_tenant_created` hooks, replayable with `bin/rails loam:sync`).
+  Business layer: `Loam::Workflow` (states, transitions, role-gated
+  approvals), `Loam::Notifications`, a token-authenticated REST API,
+  `Loam::Webhooks` (per-tenant signed outbound delivery), `Loam::Commentable`,
+  `Loam::Attachable` (ActiveStorage), `Loam::Searchable` (+ index filtering and
+  pagination), and password authentication for the admin. The whole interface
+  is two generators: `loam:install` and `loam:entity`.
 - `demo/` — an equipment-rental demo app built with those generators, including
   the generated guardrail tests (tenant isolation, no-context-raises, a lint
-  that fails on any non-scoped model or any `.unscoped` in `app/`).
+  that fails on any non-scoped model or any `.unscoped` in `app/`, and a 32 KB
+  budget on `AGENTS.md`).
+- `ai/` — the agent benchmark: `golden_tasks.md` plus recorded runs under
+  `benchmark_runs/`. The first run (10 golden tasks, one agent each on isolated
+  apps) completed 10/10 with zero tenant-isolation or authorization violations;
+  a vanilla-Rails control run under the same prompts enforced isolation in only
+  1 of 10 apps. See `ai/benchmark_runs/`.
+- CI (`.github/workflows/ci.yml`) runs the generator harness and the demo suite
+  on every push.
 
 Prototype deviation from [docs/architecture.md](docs/architecture.md), on
 purpose: the pillars are minimal in-gem implementations rather than wrappers
