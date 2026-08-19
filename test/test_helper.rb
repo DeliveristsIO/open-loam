@@ -117,7 +117,7 @@ module LoamHarness
       return [app, [new_app]] unless new_app.ok?
 
       File.open(File.join(app, "Gemfile"), "a") do |f|
-        f.puts %(gem "loam", path: "#{GEM_ROOT}")
+        f.puts %(gem "open-loam", path: "#{GEM_ROOT}")
       end
 
       bundle = run("bundle install", "bundle install", dir: app, timeout: 600)

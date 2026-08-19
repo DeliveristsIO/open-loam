@@ -1,7 +1,7 @@
 require_relative "lib/loam/version"
 
 Gem::Specification.new do |spec|
-  spec.name        = "loam"
+  spec.name        = "open-loam"
   spec.version     = Loam::VERSION
   spec.authors     = ["Grzegorz Smajdor"]
   spec.summary     = "AI-native Rails business foundation: tenancy, policies, audit, events, admin — decided, not re-litigated."

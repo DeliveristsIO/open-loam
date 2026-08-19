@@ -48,4 +48,4 @@ group :test do
   gem "capybara"
   gem "selenium-webdriver"
 end
-gem "loam", path: ".."
+gem "open-loam", path: ".."

@@ -77,8 +77,8 @@ class GeneratorTemplatesTest < Minitest::Test
   # vanish from a packaged release while still working from a path: source —
   # i.e. this harness would stay green and real users would break.
   def test_the_packaged_gem_would_include_the_generators
-    gemspec = Gem::Specification.load(File.join(LoamHarness::GEM_ROOT, "loam.gemspec"))
-    refute_nil gemspec, "loam.gemspec did not load"
+    gemspec = Gem::Specification.load(File.join(LoamHarness::GEM_ROOT, "open-loam.gemspec"))
+    refute_nil gemspec, "open-loam.gemspec did not load"
 
     Dir.chdir(LoamHarness::GEM_ROOT) do
       packaged = gemspec.files.to_set

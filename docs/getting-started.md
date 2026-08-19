@@ -21,19 +21,18 @@ Loam is a Rails engine gem. Start from a stock Rails 8 app (SQLite is fine):
 rails new rentals
 cd rentals
 
-echo 'gem "loam", github: "DeliveristsIO/loam"' >> Gemfile
+echo 'gem "open-loam", github: "DeliveristsIO/loam"' >> Gemfile
 bundle install
 
 bin/rails g loam:install
 bin/rails db:migrate
 ```
 
-> **On the name.** Install from GitHub as shown — that's canonical while Loam is
-> pre-1.0. Don't reach for a plain `gem "loam"` from RubyGems: that name belongs
-> to an unrelated 2016 placeholder, not this project. When Loam publishes to
-> RubyGems for real, it'll be under its own gem name (the product stays
-> **Loam**; the gem name is decided separately). The Ruby module is `Loam::`
-> regardless of how the gem is named.
+> **On the name.** The product is **Loam**; the gem is distributed as
+> **`open-loam`** (the plain `loam` name is an unrelated 2016 placeholder on
+> RubyGems). Install from GitHub as shown while Loam is pre-1.0. The Ruby module
+> stays `Loam::` and the generators stay `loam:install` / `loam:entity` — only
+> the gem's distribution name is `open-loam`.
 
 `loam:install` is the moment the "80%" arrives. It generates:
 
