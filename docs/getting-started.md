@@ -21,7 +21,7 @@ Loam is a Rails engine gem. Start from a stock Rails 8 app (SQLite is fine):
 rails new rentals
 cd rentals
 
-echo 'gem "open-loam", github: "DeliveristsIO/loam"' >> Gemfile
+echo 'gem "open-loam", github: "DeliveristsIO/open-loam"' >> Gemfile
 bundle install
 
 bin/rails g loam:install
@@ -96,8 +96,8 @@ Create two branches and two users, then sign in. In `bin/rails console`:
 warsaw = Loam::Tenant.create!(name: "Warsaw", slug: "warsaw")
 krakow = Loam::Tenant.create!(name: "Krakow", slug: "krakow")
 
-anna  = User.create!(name: "Anna",  email: "anna@example.com",  password: "secret123")
-tomek = User.create!(name: "Tomek", email: "tomek@example.com", password: "secret123")
+anna  = User.create!(name: "Anna",  email: "anna@example.com",  password: "password123")
+tomek = User.create!(name: "Tomek", email: "tomek@example.com", password: "password123")
 
 # roles are per branch — Anna manages Warsaw, Tomek works there
 Loam.as_tenant(warsaw) do

@@ -24,8 +24,8 @@ Requires Ruby ≥ 3.2 and a recent Rails (CI runs against released Rails; the de
 tracks edge). No database server needed — everything runs on SQLite.
 
 ```bash
-git clone git@github.com:DeliveristsIO/loam.git
-cd loam
+git clone git@github.com:DeliveristsIO/open-loam.git
+cd open-loam
 
 # the gem's generator harness (builds throwaway Rails apps and exercises them)
 gem install rails rake minitest

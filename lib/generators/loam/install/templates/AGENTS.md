@@ -1,6 +1,6 @@
 # AGENTS.md — how to extend this Loam app
 
-This app is built on [Loam](https://github.com/DeliveristsIO/loam): a Rails
+This app is built on [Loam](https://github.com/DeliveristsIO/open-loam): a Rails
 foundation where tenancy, permissions, audit, events, and admin are already
 decided. There is ONE way to do each thing. Follow it and your change is small,
 reviewable, and safe. Improvise and the guardrail tests will fail.

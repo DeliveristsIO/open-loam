@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
                      "permissions, audit trails, a domain event bus, an admin surface) and ships the agent " \
                      "conventions (AGENTS.md, generators as the interface, structural guardrails) that make " \
                      "the codebase safe for AI agents to extend."
-  spec.homepage    = "https://github.com/DeliveristsIO/loam"
+  spec.homepage    = "https://github.com/DeliveristsIO/open-loam"
   spec.license     = "MIT"
   spec.required_ruby_version = ">= 3.2"
 
