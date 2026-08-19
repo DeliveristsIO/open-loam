@@ -28,6 +28,13 @@ bin/rails g loam:install
 bin/rails db:migrate
 ```
 
+> **On the name.** Install from GitHub as shown — that's canonical while Loam is
+> pre-1.0. Don't reach for a plain `gem "loam"` from RubyGems: that name belongs
+> to an unrelated 2016 placeholder, not this project. When Loam publishes to
+> RubyGems for real, it'll be under its own gem name (the product stays
+> **Loam**; the gem name is decided separately). The Ruby module is `Loam::`
+> regardless of how the gem is named.
+
 `loam:install` is the moment the "80%" arrives. It generates:
 
 ```
