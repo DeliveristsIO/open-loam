@@ -10,11 +10,27 @@ module Loam
 
     included do
       after_create  { loam_audit("create") }
-      after_update  { loam_audit("update") if loam_audit_changes.any? }
+      after_update  { loam_audit(loam_audit_action) if loam_audit_changes.any? }
       after_destroy { loam_audit("destroy") }
     end
 
     private
+
+    # Relabel the audit that the save inside the block writes. Loam::SoftDeletable
+    # uses this to record a soft-delete (an UPDATE) as "soft_delete"/"restore"
+    # rather than the "update" it would otherwise be — one audit path, reused,
+    # not a second one to keep in sync.
+    def loam_audit_as(action)
+      previous = @loam_audit_action
+      @loam_audit_action = action
+      yield
+    ensure
+      @loam_audit_action = previous
+    end
+
+    def loam_audit_action
+      @loam_audit_action || "update"
+    end
 
     def loam_audit(action)
       Loam::AuditRecord.create!(

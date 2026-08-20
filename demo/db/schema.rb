@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_18_260000) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_20_000000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -48,6 +48,8 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_18_260000) do
     t.datetime "updated_at", null: false
     t.json "custom_fields", default: {}, null: false
     t.string "state"
+    t.datetime "deleted_at"
+    t.index ["deleted_at"], name: "index_damage_reports_on_deleted_at"
     t.index ["tenant_id"], name: "index_damage_reports_on_tenant_id"
   end
 
@@ -59,6 +61,8 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_18_260000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.json "custom_fields", default: {}, null: false
+    t.datetime "deleted_at"
+    t.index ["deleted_at"], name: "index_equipment_on_deleted_at"
     t.index ["tenant_id"], name: "index_equipment_on_tenant_id"
   end
 

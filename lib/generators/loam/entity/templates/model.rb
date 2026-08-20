@@ -6,6 +6,7 @@ class <%= class_name %> < Loam::TenantRecord
   include Loam::Commentable
   include Loam::Attachable
   include Loam::Searchable
+  include Loam::SoftDeletable
 
   event_domain :<%= domain %>
 <% if searchable_attributes.any? -%>

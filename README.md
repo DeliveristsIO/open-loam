@@ -60,6 +60,7 @@ need to — never a blank page.
 | 🔔 **Notifications** | Tenant-scoped in-app notifications, created from events, surfaced in the admin. |
 | 🔌 **API & webhooks** | Token-authenticated JSON API per entity (policy-aware) and per-tenant signed outbound webhooks on domain events. |
 | 🧾 **Audit** | Every change — who, what, when, in which tenant — recorded by default. |
+| 🗑️ **Soft-delete** | Deleting a record hides it instead of erasing it — excluded from every query by default, still tenant-scoped in the recycle bin, restorable, and recorded in the audit trail. |
 | 🖥️ **Admin surface** | An internal console generated from your models — comments, attachments, global search, filtering, pagination — not a second app to maintain. |
 | 🤖 **Agent conventions** | An `AGENTS.md` (byte-budgeted), generators as the one interface, and structural guardrails so an AI agent can add a domain feature **safely** — and a human can read what it did. |
 

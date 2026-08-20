@@ -1,7 +1,13 @@
 Rails.application.routes.draw do
   namespace :admin do
-    resources :damage_reports
-    resources :equipment
+    resources :damage_reports do
+      get :deleted, on: :collection
+      patch :restore, on: :member
+    end
+    resources :equipment do
+      get :deleted, on: :collection
+      patch :restore, on: :member
+    end
     root "dashboard#index"
     resource :session, only: %i[new create destroy] do
       post :select_tenant

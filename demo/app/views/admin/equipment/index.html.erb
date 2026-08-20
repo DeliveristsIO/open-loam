@@ -1,6 +1,9 @@
 <h1>Equipment</h1>
 
-<p><%= link_to "New equipment", new_polymorphic_path([:admin, Equipment]) %></p>
+<p>
+  <%= link_to "New equipment", new_polymorphic_path([:admin, Equipment]) %>
+  <%= link_to "Deleted equipment", polymorphic_path([:deleted, :admin, Equipment]) %>
+</p>
 
 <%= form_with url: [:admin, Equipment], method: :get do |f| %>
   <%= text_field_tag :q, params[:q], placeholder: "Filter equipment" %>

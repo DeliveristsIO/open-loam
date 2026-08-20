@@ -43,9 +43,12 @@ module Api
       end
     end
 
+    # Soft-delete here too, so DELETE is the ONE way to delete across both
+    # surfaces: the record is hidden and recoverable, not erased. The recycle
+    # bin itself is an admin concern; the API just gets the safer default.
     def destroy
       authorize!(policy_for(@record), :destroy?)
-      @record.destroy!
+      @record.soft_delete!
       head :no_content
     end
 

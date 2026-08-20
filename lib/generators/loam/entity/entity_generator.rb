@@ -41,6 +41,7 @@ module Loam
 
       def create_admin_views
         template "views/index.html.erb", "app/views/admin/#{plural_file_name}/index.html.erb"
+        template "views/deleted.html.erb", "app/views/admin/#{plural_file_name}/deleted.html.erb"
         template "views/show.html.erb", "app/views/admin/#{plural_file_name}/show.html.erb"
         template "views/new.html.erb", "app/views/admin/#{plural_file_name}/new.html.erb"
         template "views/edit.html.erb", "app/views/admin/#{plural_file_name}/edit.html.erb"
@@ -61,8 +62,16 @@ module Loam
       # admin line above: Rails' route injection skips code the file already
       # contains (that is what makes re-running this generator a no-op), so two
       # identical `resources :gadgets` lines would leave the second one out.
+      #
+      # The admin resource carries the soft-delete recycle bin: `deleted` lists
+      # `only_deleted`, `restore` brings one back (see Loam::SoftDeletable).
       def add_route
-        route "resources :#{plural_file_name}", namespace: :admin
+        route <<~RUBY.strip, namespace: :admin
+          resources :#{plural_file_name} do
+            get :deleted, on: :collection
+            patch :restore, on: :member
+          end
+        RUBY
         route "resources :#{plural_file_name}, defaults: { format: :json }", namespace: :api
       end
 

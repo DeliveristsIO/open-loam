@@ -6,6 +6,7 @@ class DamageReport < Loam::TenantRecord
   include Loam::Commentable
   include Loam::Attachable
   include Loam::Searchable
+  include Loam::SoftDeletable
   include Loam::Workflow
 
   event_domain :rental

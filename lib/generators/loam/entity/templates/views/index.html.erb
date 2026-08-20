@@ -1,6 +1,9 @@
 <h1><%= plural_name.humanize %></h1>
 
-<p><%%= link_to "New <%= human_name.downcase %>", new_polymorphic_path([:admin, <%= class_name %>]) %></p>
+<p>
+  <%%= link_to "New <%= human_name.downcase %>", new_polymorphic_path([:admin, <%= class_name %>]) %>
+  <%%= link_to "Deleted <%= plural_name.humanize.downcase %>", polymorphic_path([:deleted, :admin, <%= class_name %>]) %>
+</p>
 <% if searchable_attributes.any? -%>
 
 <%%= form_with url: [:admin, <%= class_name %>], method: :get do |f| %>

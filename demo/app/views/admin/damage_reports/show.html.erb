@@ -10,6 +10,8 @@
 
 <p>
   <%= link_to "Edit", edit_polymorphic_path([:admin, @record]) %>
+  <%# Delete soft-deletes: the record moves to the recycle bin, not oblivion. %>
+  <%= button_to "Delete", [:admin, @record], method: :delete if policy.destroy? %>
   <%= link_to "Back", [:admin, DamageReport] %>
 </p>
 

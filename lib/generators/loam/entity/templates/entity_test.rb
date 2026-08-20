@@ -68,6 +68,30 @@ class <%= class_name %>LoamTest < ActiveSupport::TestCase
     ActiveSupport::Notifications.unsubscribe(subscription)
   end
 
+  test "soft-delete hides a record by default, stays tenant-scoped, and restores" do
+    record_id = with_tenant(@tenant_a, actor: @manager) do
+      record = <%= class_name %>.create!(<%= sample_attributes %>)
+      record.soft_delete
+      record.id
+    end
+
+    with_tenant(@tenant_a) do
+      assert_equal 0, <%= class_name %>.count, "a soft-deleted record is gone from ordinary queries"
+      assert_equal 1, <%= class_name %>.with_deleted.count, "but the row still exists"
+      assert Loam::AuditRecord.exists?(auditable_type: "<%= class_name %>", auditable_id: record_id, action: "soft_delete")
+    end
+
+    # with_deleted lifts the deleted_at filter but NOT the tenant filter.
+    with_tenant(@tenant_b) do
+      assert_equal 0, <%= class_name %>.with_deleted.count, "the recycle bin must never cross tenants"
+    end
+
+    with_tenant(@tenant_a) do
+      <%= class_name %>.with_deleted.find(record_id).restore
+      assert_equal 1, <%= class_name %>.count, "restore returns the record to the default scope"
+    end
+  end
+
   test "policy: only members of the current tenant may act" do
     record = with_tenant(@tenant_a) { <%= class_name %>.create!(<%= sample_attributes %>) }
 

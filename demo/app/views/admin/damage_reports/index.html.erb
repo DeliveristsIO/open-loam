@@ -1,6 +1,9 @@
 <h1>Damage reports</h1>
 
-<p><%= link_to "New damage report", new_polymorphic_path([:admin, DamageReport]) %></p>
+<p>
+  <%= link_to "New damage report", new_polymorphic_path([:admin, DamageReport]) %>
+  <%= link_to "Deleted damage reports", polymorphic_path([:deleted, :admin, DamageReport]) %>
+</p>
 
 <%= form_with url: [:admin, DamageReport], method: :get do |f| %>
   <%= text_field_tag :q, params[:q], placeholder: "Filter damage reports" %>

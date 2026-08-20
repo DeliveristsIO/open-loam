@@ -14,6 +14,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Admin screen | `app/controllers/admin/` + `app/views/admin/` | generated with the entity |
 | Domain events | published from models/services via `Loam::Events.publish` | subscriptions in `config/initializers/loam.rb` |
 | Audit trail | automatic (`Loam::Auditable`) | nothing — it is on by default |
+| Delete / recycle bin | soft-delete via `Loam::SoftDeletable` | `record.soft_delete` hides it (excluded by default, still tenant-scoped, audited); `Model.only_deleted` + `record.restore` bring it back; `destroy` still hard-erases |
 | Migration-free field | `custom_fields` jsonb column, read/written via `Loam::CustomFields` | a `Loam::FieldDefinition` row, created via the admin "Field definitions" screen (`/admin/field_definitions`) — never a migration |
 | States & approvals | a `workflow` block in the model (`Loam::Workflow`) | `include Loam::Workflow`; add a string column for the state |
 | Notifications | `Loam::Notification` rows, read at `/admin/notifications` | `Loam::Notifications.notify(user, title:)` / `notify_role(:manager, title:)`, normally from an event subscriber |
@@ -75,6 +76,17 @@ end
 this actor may do next, and `Model.loam_workflow` is the whole machine, frozen
 and readable.
 
+## Deleting a record
+
+There is ONE way to delete a business record: `record.soft_delete` (the admin
+delete button and the JSON `DELETE` already call it). It sets `deleted_at`, so
+the record is hidden from every ordinary query — excluded by default, never a
+filter you must remember. It stays tenant-scoped in the recycle bin
+(`Model.only_deleted`, `Model.with_deleted`), `record.restore` brings it back,
+and both are recorded in the audit trail as `soft_delete` / `restore`. Real
+`destroy` still hard-erases the row (also audited) — reach for it only for a
+genuine "forget me".
+
 ## Seeding a new tenant
 
 Anything every tenant should start with — roles, default field definitions,
@@ -102,6 +114,9 @@ So the block MUST be idempotent — `find_or_create_by!`, never `create!`.
 - **`Loam.on_tenant_created` callbacks are idempotent** — `loam:sync` re-runs them.
 - **Never assign a workflow column directly** — call the transition, so the legal
   moves and the roles that may make them stay in one place.
+- **Delete with `soft_delete`, not `destroy`.** A business record should be
+  hidden and recoverable, not erased. `destroy` hard-deletes; keep it for a
+  deliberate, permanent "forget me", never as the default delete path.
 - **Attachment URLs are capabilities, not addresses.** ActiveStorage blobs live in
   global tables Loam does not tenant-scope: a signed blob URL is fetchable by
   whoever holds it, with no tenant check. Gate files at the record that owns

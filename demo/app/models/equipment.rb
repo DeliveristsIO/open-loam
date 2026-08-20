@@ -6,6 +6,7 @@ class Equipment < Loam::TenantRecord
   include Loam::Commentable
   include Loam::Attachable
   include Loam::Searchable
+  include Loam::SoftDeletable
 
   event_domain :rental
   searchable_by :name, :status

@@ -14,6 +14,14 @@ module Admin
       @records, @page, @has_next = paginate(scope)
     end
 
+    # The recycle bin: only_deleted stays tenant-scoped, so this never shows
+    # another tenant's deleted rows.
+    def deleted
+      authorize!(policy_for(<%= class_name %>.new), :read?)
+      scope = <%= class_name %>.only_deleted.order(deleted_at: :desc, id: :desc)
+      @records, @page, @has_next = paginate(scope)
+    end
+
     def show
       authorize!(policy_for(@record), :read?)
     end
@@ -55,10 +63,21 @@ module Admin
       end
     end
 
+    # Delete hides, it does not erase — the button is undoable. Reach for the
+    # model's `destroy` only when a row must genuinely leave the database.
     def destroy
       authorize!(policy_for(@record), :destroy?)
-      @record.destroy!
-      redirect_to [:admin, <%= class_name %>]
+      @record.soft_delete!
+      redirect_to [:admin, <%= class_name %>], notice: "<%= human_name %> deleted. Restore it from the recycle bin."
+    end
+
+    # Restore looks through the deleted rows — the default scope hides them, so a
+    # plain find would 404 on the record we are trying to bring back.
+    def restore
+      @record = <%= class_name %>.with_deleted.find(params[:id])
+      authorize!(policy_for(@record), :update?)
+      @record.restore!
+      redirect_to [:deleted, :admin, <%= class_name %>], notice: "<%= human_name %> restored."
     end
 
     private
