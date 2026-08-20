@@ -14,6 +14,16 @@ Loam.config_defaults = {
   "rental.late_fee_per_day" => 25
 }
 
+# Feature flags (Loam::Features): capabilities toggled per tenant for rollout or
+# as a kill-switch, independent of who is signed in. A flag with no row resolves
+# to the declared default here; managers flip a tenant's override at
+# /admin/features. Distinct from roles/policies, which gate a PERSON, not a
+# capability.
+Loam.feature_defaults = {
+  "beta_dashboard" => { default: false, description: "A branch-manager preview dashboard, rolled out branch by branch." },
+  "damage_reports.require_photo" => { default: false, description: "Require a photo attachment before a damage report can be filed." }
+}
+
 # What a brand-new branch (tenant) gets for free. Registered at file scope on
 # purpose: inside `to_prepare` this would re-register on every code reload.
 Loam.on_tenant_created do |tenant|

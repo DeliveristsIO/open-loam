@@ -16,6 +16,19 @@ Loam.default_roles = %w[manager employee]
 # To change the company-wide baseline at runtime (not per tenant), write a
 # global row: `Loam::Configs.set("billing.currency", "EUR", scope: :global)`.
 
+# Feature flags (Loam::Features). Declare known capabilities and their default
+# state; a flag with no row resolves to its declared default, and managers flip
+# a tenant's override at /admin/features. A flag gates a CAPABILITY (is this on
+# for the tenant), orthogonal to roles/policies, which gate a PERSON.
+#
+#   Loam.feature_defaults = {
+#     "beta_dashboard" => { default: false, description: "New dashboard, rolled out per tenant." }
+#   }
+#
+# In a controller: `require_feature!(:beta_dashboard)` (404s when off); in a
+# view: `<%% if feature_on?(:beta_dashboard) %>`. Flip app-wide with
+# `Loam::Features.enable(:beta_dashboard, scope: :global)`.
+
 # What a brand-new tenant gets for free. Registered at file scope on purpose:
 # inside `to_prepare` this would re-register on every code reload.
 Loam.on_tenant_created do |tenant|

@@ -10,7 +10,13 @@ module Admin
       render plain: "403 Forbidden — your role does not permit this action.", status: :forbidden
     end
 
-    helper_method :current_tenant, :current_actor, :unread_notification_count
+    # A disabled feature is "not here" for this tenant, so it 404s — unlike a
+    # policy refusal (403), which is "you may not". Capability vs. person.
+    rescue_from Loam::FeatureDisabledError do
+      render plain: "404 Not Found — this feature is not enabled for your tenant.", status: :not_found
+    end
+
+    helper_method :current_tenant, :current_actor, :unread_notification_count, :feature_on?
 
     private
 
@@ -69,6 +75,17 @@ module Admin
 
     def require_role!(*roles)
       raise Loam::NotAuthorizedError unless roles.include?(current_role)
+    end
+
+    # Feature guards. These gate a CAPABILITY (is the feature on for this
+    # tenant), orthogonal to require_role! / policies, which gate a PERSON.
+    # `feature_on?` is a helper_method, so views can hide UI a flag turns off.
+    def feature_on?(name)
+      Loam::Features.on?(name)
+    end
+
+    def require_feature!(name)
+      raise Loam::FeatureDisabledError unless Loam::Features.on?(name)
     end
 
     # Attaching a file changes the record, so it is an update: a role that may

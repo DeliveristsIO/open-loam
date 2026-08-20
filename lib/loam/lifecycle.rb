@@ -74,6 +74,23 @@ module Loam
     def self.config_defaults=(defaults)
       @config_defaults = defaults.to_h.transform_keys(&:to_s)
     end
+
+    # Known feature flags: `{ "beta_dashboard" => { default: false, description:
+    # "..." } }`, declared in the initializer and read by Loam::Features. A
+    # registry like the others — a flag with no row resolves to its declared
+    # default, and the admin can list EVERY known flag, not just toggled ones.
+    def self.feature_defaults
+      @feature_defaults ||= {}
+    end
+
+    # Normalizes both levels: outer keys to strings, and each flag's own hash to
+    # symbol keys, so `{ "x" => { "default" => true } }` and
+    # `{ x: { default: true } }` behave identically.
+    def self.feature_defaults=(defaults)
+      @feature_defaults = defaults.to_h.each_with_object({}) do |(name, spec), out|
+        out[name.to_s] = spec.to_h.transform_keys(&:to_sym)
+      end
+    end
   end
 
   # The public surface is on Loam itself — apps and agents write
@@ -88,5 +105,9 @@ module Loam
   def self.config_defaults = Lifecycle.config_defaults
   def self.config_defaults=(defaults)
     Lifecycle.config_defaults = defaults
+  end
+  def self.feature_defaults = Lifecycle.feature_defaults
+  def self.feature_defaults=(defaults)
+    Lifecycle.feature_defaults = defaults
   end
 end

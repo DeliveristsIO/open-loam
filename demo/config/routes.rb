@@ -25,6 +25,14 @@ Rails.application.routes.draw do
     get    "configs/edit", to: "configs#edit",   as: :edit_config
     patch  "configs",      to: "configs#update"
     delete "configs",      to: "configs#reset"
+    # Feature flags are keyed by a dotted name too, so the name travels as a param.
+    get    "features",         to: "features#index",   as: :features
+    post   "features/enable",  to: "features#enable",  as: :enable_feature
+    post   "features/disable", to: "features#disable", as: :disable_feature
+    delete "features",         to: "features#reset"
+    # A capability gated by a flag (Loam::Features.require_feature!) — a demo of
+    # the guard: off for Krakow (404), on for Warsaw once enabled in seeds.
+    get "dashboard/beta", to: "dashboard#beta", as: :beta_dashboard
     get "search", to: "search#index"
   end
 

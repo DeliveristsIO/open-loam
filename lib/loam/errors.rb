@@ -28,4 +28,10 @@ module Loam
   # has no matching Loam::FieldDefinition for this tenant + entity. Fails
   # loudly at the access site rather than silently reading/writing nil.
   class UnknownCustomFieldError < Error; end
+
+  # Raised by require_feature! when a capability is turned OFF for the current
+  # tenant. Distinct from NotAuthorizedError on purpose: a disabled feature is
+  # "not here" (the capability does not exist for this tenant), not "you may
+  # not" — so admin controllers render it as 404, not 403.
+  class FeatureDisabledError < Error; end
 end

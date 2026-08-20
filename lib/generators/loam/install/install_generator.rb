@@ -64,6 +64,7 @@ module Loam
         template "admin/api_tokens_controller.rb", "app/controllers/admin/api_tokens_controller.rb"
         template "admin/comments_controller.rb", "app/controllers/admin/comments_controller.rb"
         template "admin/configs_controller.rb", "app/controllers/admin/configs_controller.rb"
+        template "admin/features_controller.rb", "app/controllers/admin/features_controller.rb"
         template "admin/search_controller.rb", "app/controllers/admin/search_controller.rb"
         template "admin/pagination.rb", "app/controllers/admin/pagination.rb"
         template "admin/layout.html.erb", "app/views/layouts/admin.html.erb"
@@ -77,6 +78,7 @@ module Loam
         template "admin/api_tokens_index.html.erb", "app/views/admin/api_tokens/index.html.erb"
         template "admin/configs_index.html.erb", "app/views/admin/configs/index.html.erb"
         template "admin/configs_edit.html.erb", "app/views/admin/configs/edit.html.erb"
+        template "admin/features_index.html.erb", "app/views/admin/features/index.html.erb"
         template "admin/search_index.html.erb", "app/views/admin/search/index.html.erb"
       end
 
@@ -104,6 +106,11 @@ module Loam
             get    "configs/edit", to: "configs#edit",   as: :edit_config
             patch  "configs",      to: "configs#update"
             delete "configs",      to: "configs#reset"
+            # Feature flags are keyed by a dotted name too, so the name travels as a param.
+            get    "features",         to: "features#index",   as: :features
+            post   "features/enable",  to: "features#enable",  as: :enable_feature
+            post   "features/disable", to: "features#disable", as: :disable_feature
+            delete "features",         to: "features#reset"
             get "search", to: "search#index"
           end
 

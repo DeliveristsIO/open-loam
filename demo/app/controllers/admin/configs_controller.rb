@@ -7,7 +7,10 @@ module Admin
     before_action { require_role!(:manager) }
 
     def index
-      @settings = Loam::Configs.defined_keys.map do |key|
+      # Feature flags share the loam_configs store but have their own screen
+      # (/admin/features), so hide their reserved-prefix keys from Settings.
+      keys = Loam::Configs.defined_keys.reject { |key| key.start_with?(Loam::Features::PREFIX) }
+      @settings = keys.map do |key|
         { key: key, value: Loam::Configs.get(key), overridden: Loam::Configs.overridden?(key) }
       end
     end

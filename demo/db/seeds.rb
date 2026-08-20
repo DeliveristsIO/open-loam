@@ -44,6 +44,10 @@ Loam.as_tenant(warsaw, actor: anna) do
   # Warsaw charges a higher late fee than the company baseline.
   Loam::Configs.set("rental.late_fee_per_day", 45)
 
+  # Warsaw is in the beta_dashboard rollout; Krakow is not, so its "Beta" nav
+  # link stays hidden and /admin/dashboard/beta 404s there.
+  Loam::Features.enable(:beta_dashboard)
+
   # Migration-free fields: added from the admin, not a generator.
   Loam::FieldDefinition.find_or_create_by!(entity_type: "Equipment", name: "serial_number") do |fd|
     fd.field_type = "string"
@@ -67,4 +71,4 @@ Loam.as_tenant(krakow, actor: anna) do
   Equipment.find_or_create_by!(name: "Scaffolding set") { |e| e.daily_rate = 80.0; e.status = "available" }
 end
 
-puts "Seeded: 2 tenants, 2 users, 3 equipment records, rental settings (global + Warsaw override)."
+puts "Seeded: 2 tenants, 2 users, 3 equipment records, rental settings (global + Warsaw override), beta_dashboard on for Warsaw."

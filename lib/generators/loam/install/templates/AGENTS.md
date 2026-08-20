@@ -16,6 +16,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Audit trail | automatic (`Loam::Auditable`) | nothing — it is on by default |
 | Delete / recycle bin | soft-delete via `Loam::SoftDeletable` | `record.soft_delete` hides it (excluded by default, still tenant-scoped, audited); `Model.only_deleted` + `record.restore` bring it back; `destroy` still hard-erases |
 | Settings / config | `Loam::Configs` (a `key` + JSON value, global or per-tenant) | `Loam::Configs.get("billing.currency")`; `set(k, v)` overrides for the current tenant, `set(k, v, scope: :global)` sets the app-wide row, `reset(k)` drops the override; declare defaults in the initializer; admin at `/admin/configs` |
+| Feature flags | `Loam::Features` (a capability on/off per tenant, over `Loam::Configs`) | `Loam::Features.on?(:beta)`; `enable(:beta)`/`disable(:beta)` override for the current tenant, `enable(:beta, scope: :global)` app-wide, `reset(:beta)` drops it; declare in `Loam.feature_defaults`; guard via `require_feature!`/`feature_on?`; admin at `/admin/features` |
 | Migration-free field | `custom_fields` jsonb column, read/written via `Loam::CustomFields` | a `Loam::FieldDefinition` row, created via the admin "Field definitions" screen (`/admin/field_definitions`) — never a migration |
 | States & approvals | a `workflow` block in the model (`Loam::Workflow`) | `include Loam::Workflow`; add a string column for the state |
 | Notifications | `Loam::Notification` rows, read at `/admin/notifications` | `Loam::Notifications.notify(user, title:)` / `notify_role(:manager, title:)`, normally from an event subscriber |
@@ -90,7 +91,7 @@ genuine "forget me".
 
 ## Settings
 
-Configurable values — a currency, a fee, a feature flag — go through
+Configurable values — a currency, a fee, a threshold — go through
 `Loam::Configs`, never a hand-rolled constant or a column. `Loam::Configs.get(key)`
 resolves, most specific first: the current tenant's override → the global row →
 the default declared in `Loam.config_defaults` → `nil`. `set(key, value)` writes
@@ -99,6 +100,20 @@ row, and `reset(key)` drops the override so the key falls back. Values keep thei
 JSON type (bool, number, string, hash) and an override never leaks to another
 tenant. Declare app-wide defaults in `config/initializers/loam.rb`; managers edit
 per-tenant values at `/admin/configs`.
+
+## Feature flags
+
+A feature flag answers "is this capability turned ON for this tenant right now",
+independent of who is signed in — for a gradual rollout or a kill-switch. This is
+NOT permissions: a policy gates a PERSON, a flag gates a CAPABILITY, and the two
+coexist. Declare flags in `Loam.feature_defaults` (name → default state +
+description); `Loam::Features.on?(:name)` resolves override → global → declared
+default → false. `enable`/`disable` set the current tenant's override (add
+`scope: :global` for app-wide), `reset` drops it. Guard a controller action with
+`require_feature!(:name)` (raises → 404 when off) and hide view UI with
+`feature_on?(:name)`; managers flip per-tenant flags at `/admin/features`.
+Storage is shared with Settings under the reserved `features.` key prefix, but
+flags have their own screen.
 
 ## Seeding a new tenant
 

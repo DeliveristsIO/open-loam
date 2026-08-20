@@ -25,6 +25,11 @@
         <%= link_to "Notifications (#{unread_notification_count})", admin_notifications_path %>
         <%= link_to "API tokens", admin_api_tokens_path %>
         <%= link_to "Settings", admin_configs_path %>
+        <%= link_to "Features", admin_features_path %>
+        <%# Gated by a flag: the link only appears for tenants with the capability on. %>
+        <% if feature_on?(:beta_dashboard) %>
+          <%= link_to "Beta", admin_beta_dashboard_path %>
+        <% end %>
         <%= form_with url: admin_search_path, method: :get, class: "search" do %>
           <%= text_field_tag :q, params[:q], placeholder: "Search" %>
         <% end %>

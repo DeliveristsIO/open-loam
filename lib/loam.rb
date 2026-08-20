@@ -5,6 +5,7 @@ require "loam/events"
 require "loam/policy"
 require "loam/lifecycle"
 require "loam/configs"
+require "loam/features"
 require "loam/notifications"
 require "loam/webhooks"
 require "loam/engine" if defined?(Rails::Engine)

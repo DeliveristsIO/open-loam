@@ -1,0 +1,37 @@
+<h1>Features</h1>
+
+<p>Feature flags turn a capability on or off for <strong><%= current_tenant.name %></strong>,
+independent of who is signed in. Toggling sets an override for this tenant;
+Reset drops it back to the default.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Flag</th>
+      <th>State</th>
+      <th>Source</th>
+      <th>Description</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @flags.each do |flag| %>
+      <tr>
+        <td><%= flag[:name] %></td>
+        <td><%= flag[:on] ? "on" : "off" %></td>
+        <td><%= flag[:overridden] ? "override" : "default" %></td>
+        <td><%= flag[:description] %></td>
+        <td>
+          <% if flag[:on] %>
+            <%= button_to "Disable", admin_disable_feature_path(name: flag[:name]), form: { style: "display:inline" } %>
+          <% else %>
+            <%= button_to "Enable", admin_enable_feature_path(name: flag[:name]), form: { style: "display:inline" } %>
+          <% end %>
+          <% if flag[:overridden] %>
+            <%= button_to "Reset", admin_features_path(name: flag[:name]), method: :delete, form: { style: "display:inline" } %>
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
