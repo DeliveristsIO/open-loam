@@ -72,16 +72,20 @@ class LoamFeatureTest < ActiveSupport::TestCase
     assert_raises(Loam::MissingTenantError) { Loam::Features.reset(:beta_dashboard) }
   end
 
-  test "on? is memoized per request" do
+  test "on? is memoized per request for a resolved value" do
     with_tenant(@warsaw) do
-      refute Loam::Features.on?(:beta_dashboard) # caches false for this request
+      # A flag backed by a real row caches; an UNSET flag resolving only to its
+      # declared default is NOT cached (that is the caller's fallback — see the
+      # Configs cache fix), so this proves memoization against a resolved value.
+      Loam::Features.enable(:beta_dashboard, scope: :global)
+      assert Loam::Features.on?(:beta_dashboard) # caches true for this request
 
-      # Write the row straight to the store, bypassing the cache-clearing API.
-      Loam::Config.create!(key: "features.beta_dashboard", tenant_id: @warsaw.id, value_json: true)
-      refute Loam::Features.on?(:beta_dashboard), "still false — served from the per-request cache"
+      # Change the row straight in the DB, bypassing the cache-clearing API.
+      Loam::Config.where(key: "features.beta_dashboard", tenant_id: nil).update_all(value_json: false)
+      assert Loam::Features.on?(:beta_dashboard), "still true — served from the per-request cache"
 
       Loam::Current.config_cache = {} # as a fresh request would start
-      assert Loam::Features.on?(:beta_dashboard)
+      refute Loam::Features.on?(:beta_dashboard)
     end
   end
 end

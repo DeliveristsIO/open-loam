@@ -18,10 +18,10 @@ module Loam
         changes = changes.transform_keys(&:to_s)
         key = idempotency_key || compute_key(target_type, target_id, action, changes)
 
-        # The same proposal staged twice collapses to one row — return the
-        # existing one rather than a duplicate. The unique index is the backstop
-        # for a concurrent double-stage (the rescue below).
-        existing = Loam::PendingAction.find_by(idempotency_key: key)
+        # The same proposal staged twice collapses to one row — but only a still
+        # PENDING one. A rejected or executed proposal with this key may be
+        # re-staged as a fresh pending row (the partial index allows the coexist).
+        existing = Loam::PendingAction.pending.find_by(idempotency_key: key)
         return existing if existing
 
         Loam::PendingAction.create!(
@@ -34,7 +34,8 @@ module Loam
           idempotency_key: key
         )
       rescue ActiveRecord::RecordNotUnique
-        Loam::PendingAction.find_by!(idempotency_key: key)
+        # Lost a concurrent double-stage race — return the pending row that won.
+        Loam::PendingAction.pending.find_by!(idempotency_key: key)
       end
 
       private

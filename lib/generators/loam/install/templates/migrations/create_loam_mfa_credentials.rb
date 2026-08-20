@@ -6,6 +6,7 @@ class CreateLoamMfaCredentials < ActiveRecord::Migration[<%= ActiveRecord::VERSI
       t.text :totp_secret            # encrypted at rest, user-scoped (Loam::Encryptable)
       t.text :recovery_codes         # JSON: [{ digest, used_at }], codes stored hashed
       t.datetime :activated_at       # nil until the user confirms a live code
+      t.bigint :last_totp_step       # last accepted TOTP timestep — rejects replays
       t.timestamps
     end
   end

@@ -45,6 +45,8 @@ module Admin
       @user = mfa_challenge_user or return redirect_to new_admin_session_path
     end
 
+    # TODO (follow-up): rate-limit / lock out repeated failed codes here (needs
+    # throttling infra) — a 6-digit TOTP is brute-forceable without it.
     def mfa_verify
       user = mfa_challenge_user or return redirect_to new_admin_session_path
       credential = Loam::MfaCredential.active_for(user)

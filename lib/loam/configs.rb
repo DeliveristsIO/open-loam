@@ -25,7 +25,14 @@ module Loam
 
         return store[cache_key] if store.key?(cache_key)
 
-        store[cache_key] = resolve(key, default)
+        # Only a value that actually RESOLVED (a row or a declared default) is
+        # cached — never the caller's `default:` fallback. The cache key omits
+        # `default:`, so caching it would make a later get with a different
+        # default wrongly return the first one when nothing is configured.
+        found, value = resolve(key)
+        return default unless found
+
+        store[cache_key] = value
       end
 
       # Write a setting. scope: :tenant writes the current tenant's override and
@@ -65,18 +72,20 @@ module Loam
 
       private
 
-      def resolve(key, default)
+      # Returns [found?, value]. `found?` is false only when nothing resolved —
+      # the caller then applies its own `default:` without caching it.
+      def resolve(key)
         if (tenant_id = current_tenant_id)
           override = Loam::Config.find_by(key: key, tenant_id: tenant_id)
-          return override.value_json if override
+          return [true, override.value_json] if override
         end
 
         global = Loam::Config.find_by(key: key, tenant_id: nil)
-        return global.value_json if global
+        return [true, global.value_json] if global
 
-        return Loam.config_defaults[key] if Loam.config_defaults.key?(key)
+        return [true, Loam.config_defaults[key]] if Loam.config_defaults.key?(key)
 
-        default
+        [false, nil]
       end
 
       # The row(s) a write/read targets. :global is the tenant_id NULL row;

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_21_120000) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_21_201000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -161,6 +161,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_21_120000) do
     t.datetime "activated_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "last_totp_step"
     t.index ["user_id"], name: "index_loam_mfa_credentials_on_user_id", unique: true
   end
 
@@ -195,7 +196,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_21_120000) do
     t.text "error"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["tenant_id", "idempotency_key"], name: "index_loam_pending_actions_on_tenant_id_and_idempotency_key", unique: true
+    t.index ["tenant_id", "idempotency_key"], name: "index_loam_pending_actions_pending_key", unique: true, where: "status = 'pending'"
     t.index ["tenant_id", "status"], name: "index_loam_pending_actions_on_tenant_id_and_status"
     t.index ["tenant_id"], name: "index_loam_pending_actions_on_tenant_id"
   end

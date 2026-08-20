@@ -153,7 +153,8 @@ auth and is orthogonal to role — even a manager re-confirms. To force MFA for 
 role, set `security.mfa_required_roles` (a `Loam::Configs` array, global or
 per-tenant); an un-enrolled user with that role is sent to enrollment at login.
 Never store a TOTP secret or recovery code in the clear — `Loam::MfaCredential`
-already encrypts / hashes them.
+already encrypts / hashes them. Recovery codes are for LOGIN only — step-up
+(`require_sudo!`) takes a TOTP code, never a single-use recovery code.
 
 ## Staging a write for approval (confirm-mode)
 
@@ -177,7 +178,10 @@ Loam does not auto-gate Active Record, so a direct `update!` still writes
 immediately when you are NOT under confirm-mode — staging is a call you make.
 One caveat: a staged update applies raw attribute writes, so do not stage a
 workflow-status column directly (that bypasses the transition's role gate) —
-stage the transition as a custom `action:` instead.
+stage the transition as a custom `action:` instead. Segregation of duties: the
+proposer may not approve their own change unless the tenant sets
+`approvals.allow_self_approve` — normally the proposer is the agent and the
+approver a human.
 
 ## Seeding a new tenant
 

@@ -25,6 +25,9 @@ module Loam
         iv = cipher.random_iv
         # No AAD: per-tenant key separation already isolates tenants, so binding
         # extra associated data into the tag would buy nothing here.
+        # TODO (follow-up): bind the column/record identity as AAD so a ciphertext
+        # cannot be transplanted between columns/rows — a documented tradeoff, not
+        # yet enforced.
         ciphertext = cipher.update(plaintext) + cipher.final
         tag = cipher.auth_tag(TAG_BYTES)
         "#{VERSION}:" + [iv + tag + ciphertext].pack("m0")

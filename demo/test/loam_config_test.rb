@@ -105,6 +105,15 @@ class LoamConfigTest < ActiveSupport::TestCase
     assert_includes keys, "z.global_only"
     assert_includes keys, "z.warsaw_only"
   end
+
+  # Regression: the per-request cache key omits `default:`, so an unset key must
+  # not cache the first caller's fallback and hand it to a later caller.
+  test "an unset key never caches the caller's default argument" do
+    with_tenant(@warsaw) do
+      assert_equal 1, Loam::Configs.get("nothing.here", default: 1)
+      assert_equal 2, Loam::Configs.get("nothing.here", default: 2), "the arg default must not be cached"
+    end
+  end
 end
 
 # The admin Settings screen: managers may change a setting, employees may not.

@@ -86,6 +86,16 @@ class LoamEncryptionTest < ActiveSupport::TestCase
     assert_equal w, Loam::Encryption.blind_index("same@x.test", @warsaw.id), "stable within a tenant"
   end
 
+  # Regression: a nil tenant makes the scope "tenant/", a nil owner makes
+  # "user/" — a degenerate scope that must be refused, not keyed to a real key
+  # shared across every such record.
+  test "a nil tenant or degenerate scope refuses to derive a key" do
+    assert_raises(ArgumentError) { Loam::Encryption.encrypt("x", nil) }
+    assert_raises(ArgumentError) { Loam::Encryption.decrypt("v1:whatever", nil) }
+    assert_raises(ArgumentError) { Loam::Encryption.blind_index("x", nil) }
+    assert_raises(ArgumentError) { Loam::Encryption.encrypt_scoped("x", "user/") }
+  end
+
   test "the audit trail records the fact of change, never the plaintext or ciphertext" do
     with_tenant(@warsaw, actor: @anna) do
       c = Customer.create!(name: "Acme", email: "old@acme.test", tax_id: "PL-1")

@@ -38,44 +38,60 @@ module Loam
       activated_at.present?
     end
 
-    # Begin (or restart) enrollment: a fresh secret, not yet active, no recovery
-    # codes until it is confirmed. Idempotent re-enrollment, so a user who never
-    # finished can simply start over instead of hitting the uniqueness index.
-    def start_enrollment!
-      self.totp_secret = Loam::Totp.generate_secret
-      self.activated_at = nil
-      self.recovery_codes = []
-      save!
-      self
-    end
+    # Confirm enrollment against a CANDIDATE secret (held in the session, never
+    # written until proven) with a live code, then activate: adopt the secret,
+    # mint recovery codes, and record the confirming step so it cannot be
+    # replayed at the next login. Returns the plaintext codes (shown ONCE) or nil
+    # if the code is wrong. The old secret stays valid until this succeeds, so a
+    # half-finished re-enrollment never downgrades an active credential.
+    def activate_with!(candidate_secret, code)
+      step = Loam::Totp.matching_step(candidate_secret, code)
+      return nil unless step
 
-    # Confirm enrollment with a live TOTP code, then activate and mint recovery
-    # codes. Returns the plaintext codes (to show ONCE) or nil if the code is
-    # wrong — activating without confirming would lock the user out next login.
-    def activate!(code)
-      return nil unless Loam::Totp.verify(totp_secret, code)
-
+      self.totp_secret = candidate_secret
+      self.activated_at = Time.current
+      self.last_totp_step = step
       plaintext = mint_recovery_codes!
-      update!(activated_at: Time.current)
+      save!
       plaintext
     end
 
+    # Verify a TOTP code AND consume its timestep, so a captured code cannot be
+    # replayed within its ~90s validity window (at login or at sudo). The lock +
+    # last_totp_step check closes the read-modify-write race of two concurrent
+    # submits. On SQLite `FOR UPDATE` is dropped (writer serialization + the
+    # re-check still hold); Postgres takes a real row lock.
     def verify_totp(code)
-      activated? && Loam::Totp.verify(totp_secret, code)
+      return false unless activated?
+
+      with_lock do
+        step = Loam::Totp.matching_step(totp_secret, code)
+        if step && (last_totp_step.nil? || step > last_totp_step)
+          update!(last_totp_step: step)
+          true
+        else
+          false
+        end
+      end
     end
 
-    # Consume a recovery code: valid exactly once. Constant-time per candidate
-    # via BCrypt's own comparison.
+    # Consume a recovery code: valid exactly once. with_lock reloads and
+    # re-checks inside the transaction, so two concurrent submits of the same
+    # code cannot both succeed. Constant-time per candidate via BCrypt.
     def consume_recovery_code(code)
       code = code.to_s.strip.downcase
       return false if code.empty?
 
-      entry = recovery_codes.find { |e| e["used_at"].nil? && BCrypt::Password.new(e["digest"]) == code }
-      return false unless entry
-
-      entry["used_at"] = Time.current.iso8601
-      save!
-      true
+      with_lock do
+        entry = recovery_codes.find { |e| e["used_at"].nil? && BCrypt::Password.new(e["digest"]) == code }
+        if entry
+          entry["used_at"] = Time.current.iso8601
+          save!
+          true
+        else
+          false
+        end
+      end
     end
 
     def unused_recovery_code_count

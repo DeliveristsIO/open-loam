@@ -20,17 +20,26 @@ module Loam
       Loam::Base32.encode(SecureRandom.random_bytes(bytes))
     end
 
-    # True if `code` is valid for `secret` right now. The length/charset check
-    # runs FIRST, so a malformed code is a plain false and never reaches the
-    # constant-time compare (which assumes equal-length inputs).
+    # True if `code` is valid for `secret` right now.
     def self.verify(secret, code, at: Time.now.to_i)
+      !matching_step(secret, code, at: at).nil?
+    end
+
+    # The step counter a code matches (within the drift window), or nil. Callers
+    # that must prevent replay (login, sudo) persist this and reject a code whose
+    # step is not strictly greater than the last accepted one. The length/charset
+    # check runs FIRST, so a malformed code never reaches the constant-time
+    # compare (which assumes equal-length inputs).
+    def self.matching_step(secret, code, at: Time.now.to_i)
       code = code.to_s.gsub(/\s+/, "")
-      return false unless code.match?(/\A\d{#{DIGITS}}\z/)
+      return nil unless code.match?(/\A\d{#{DIGITS}}\z/)
 
       counter = at.to_i / PERIOD
-      (-DRIFT..DRIFT).any? do |offset|
-        ActiveSupport::SecurityUtils.secure_compare(code_at(secret, counter + offset), code)
+      (-DRIFT..DRIFT).each do |offset|
+        step = counter + offset
+        return step if ActiveSupport::SecurityUtils.secure_compare(code_at(secret, step), code)
       end
+      nil
     end
 
     # The HOTP code for a given step counter (RFC 4226 dynamic truncation).

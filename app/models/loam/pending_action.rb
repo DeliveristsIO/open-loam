@@ -25,10 +25,27 @@ module Loam
     encrypts :changeset
 
     validates :action_type, :summary, :idempotency_key, presence: true
-    validates :idempotency_key, uniqueness: { scope: :tenant_id }
+    # Only ONE pending row per proposal per tenant — a rejected/executed row with
+    # the same key may coexist so the proposal can be re-staged later. `conditions`
+    # scopes the existence check to pending rows (so a rejected row does not block
+    # a re-stage); `if: :pending?` skips the check on a non-pending row's own saves.
+    # Both mirror the partial DB index (WHERE status = 'pending').
+    validates :idempotency_key,
+              uniqueness: { scope: :tenant_id, conditions: -> { where(status: "pending") } },
+              if: :pending?
 
     # The review queue: still awaiting a decision.
     scope :pending, -> { where(status: "pending") }
+
+    # status is a workflow column, but a plain column underneath — guard it so a
+    # direct `update!(status: "executed")` cannot skip the manager role gate and
+    # execute_change!. Only a `to_*` transition (which sets the flag below) may
+    # move it. `update_column` / raw SQL remain the deliberate low-level escape
+    # hatch, like `.unscoped`.
+    validate :status_changes_only_through_a_transition, on: :update
+    # ...and a new row must START pending — otherwise create!(status: "executed")
+    # would forge an already-approved/executed record without any transition.
+    validate :status_starts_at_the_initial_state, on: :create
 
     # Transitions are prefixed `to_` so their generated bang methods do not
     # collide with the public approve!/reject!(by:) API below.
@@ -80,6 +97,7 @@ module Loam
     # TARGET's audit names the approving human — the person owns the change.
     def approve!(by:)
       Loam.as_tenant(tenant, actor: by) do
+        reject_self_approval!(by)
         self.reviewed_by_id = by.id
         self.reviewed_at = Time.current
         to_approved!   # NotAuthorizedError if not a manager; InvalidTransitionError if not pending
@@ -100,13 +118,34 @@ module Loam
 
     private
 
+    # Segregation of duties: the person who staged a change must not be the one
+    # who approves it — normally the proposer is an AI agent and the approver a
+    # human. Opt out per tenant with the "approvals.allow_self_approve" flag. A
+    # proposal with no recorded actor (actor_id nil) bypasses the check.
+    # (reject! is deliberately NOT gated: rejecting your own proposal is a
+    # withdrawal, not a segregation-of-duties concern.)
+    def reject_self_approval!(by)
+      return unless by.id == actor_id
+      return if Loam::Configs.get("approvals.allow_self_approve", default: false)
+
+      raise Loam::NotAuthorizedError, "self-approval is not permitted; a different person must approve this change"
+    end
+
+    # Execution AND its status/result recording share ONE transaction with the
+    # target write: if recording the outcome fails after the target committed,
+    # the whole thing rolls back rather than leaving the change applied but the
+    # status stuck at "approved".
     def execute_and_record!
-      outcome = ActiveRecord::Base.transaction { execute_change! }
-      to_executed!
-      update!(result: outcome)
+      ActiveRecord::Base.transaction do
+        outcome = execute_change!
+        to_executed!
+        update!(result: outcome)
+      end
     rescue StandardError => error
-      # The transaction rolled the target write back; record the failure OUTSIDE
-      # it, so the "failed" status and the error persist.
+      # The transaction rolled back, but Active Record leaves the in-memory
+      # attributes as they were mid-transaction — reload to the real DB state
+      # ("approved") before transitioning to "failed".
+      reload
       to_failed!
       update!(error: error.message)
     end
@@ -142,6 +181,28 @@ module Loam
       return [] unless target_class.respond_to?(:loam_encrypted_attributes)
 
       target_class.loam_encrypted_attributes.map(&:to_s)
+    end
+
+    # Set while a workflow transition is performing its save, so the validation
+    # below can tell a legitimate status move from a direct assignment.
+    def loam_perform_transition!(transition)
+      @loam_status_via_transition = true
+      super
+    ensure
+      @loam_status_via_transition = false
+    end
+
+    def status_changes_only_through_a_transition
+      return unless will_save_change_to_status?
+      return if @loam_status_via_transition
+
+      errors.add(:status, "may only change through an approval transition (approve!/reject!), not a direct write")
+    end
+
+    def status_starts_at_the_initial_state
+      return if status == self.class.loam_workflow.initial
+
+      errors.add(:status, "must start at #{self.class.loam_workflow.initial.inspect} — a staged action begins pending")
     end
   end
 end

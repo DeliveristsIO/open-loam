@@ -17,7 +17,10 @@ class CreateLoamPendingActions < ActiveRecord::Migration[<%= ActiveRecord::VERSI
       t.timestamps
     end
     # One row per distinct proposal per tenant.
-    add_index :loam_pending_actions, %i[tenant_id idempotency_key], unique: true
+    # Only ONE PENDING row per proposal per tenant — a rejected/executed row with
+    # the same key may coexist, so a rejected proposal can be re-staged later.
+    add_index :loam_pending_actions, %i[tenant_id idempotency_key], unique: true,
+              where: "status = 'pending'", name: "index_loam_pending_actions_pending_key"
     add_index :loam_pending_actions, %i[tenant_id status]
   end
 end

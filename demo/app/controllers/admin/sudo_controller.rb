@@ -20,13 +20,14 @@ module Admin
 
     private
 
-    # If the user has MFA, a TOTP or recovery code is the strongest re-proof;
-    # otherwise fall back to the password. Either way it is the SAME person in
-    # Loam::Current re-confirming, never a way to become someone else.
+    # If the user has MFA, step-up takes a TOTP code — NOT a recovery code:
+    # recovery codes are single-use and reserved for LOGIN, so a routine sudo
+    # must never silently burn one. Otherwise fall back to the password. Either
+    # way it is the SAME person in Loam::Current re-confirming.
     def reauthenticated?
       credential = Loam::MfaCredential.active_for(current_actor)
       if credential
-        credential.verify_totp(params[:code]) || credential.consume_recovery_code(params[:code])
+        credential.verify_totp(params[:code])
       else
         User.authenticate_by(email: current_actor.email, password: params[:password].to_s).present?
       end

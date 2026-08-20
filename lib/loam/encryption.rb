@@ -97,7 +97,16 @@ module Loam
         "tenant/#{tenant_id}"
       end
 
+      # Central guard for every crypto path (tenant and explicit scope alike): a
+      # nil tenant makes the scope "tenant/", a nil owner id makes "user/" — a
+      # degenerate scope that would otherwise derive a real, SHARED key. Refuse
+      # it here so `encrypt(x, nil)` fails like the Encryptable-layer guard does,
+      # rather than silently keying unrelated records together.
       def data_key(scope, purpose)
+        if scope.nil? || scope.to_s.strip.empty? || scope.to_s.end_with?("/")
+          raise ArgumentError, "refusing to derive an encryption key from a degenerate scope #{scope.inspect}"
+        end
+
         key_provider.data_key(scope: scope, purpose: purpose)
       end
     end

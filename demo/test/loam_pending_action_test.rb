@@ -155,6 +155,92 @@ class LoamPendingActionTest < ActiveSupport::TestCase
       refute_includes audit.changeset.to_json, "PL-SECRET-999", "no plaintext in the audit trail"
     end
   end
+
+  # Regression (status bypass): status may only move through a workflow
+  # transition, so a direct write can't skip the role gate and execute_change!.
+  test "a direct write to status is refused; only a transition may move it" do
+    id = staged_price_change
+
+    with_tenant(@warsaw) do
+      pending = Loam::PendingAction.find(id)
+
+      assert_raises(ActiveRecord::RecordInvalid) { pending.update!(status: "executed") }
+      assert_raises(ActiveRecord::RecordInvalid) { pending.update!(status: "approved") }
+      assert_equal "pending", pending.reload.status
+
+      # ...and a forged already-executed row cannot be created either.
+      forged = Loam::PendingAction.new(
+        action_type: "update", summary: "forged", idempotency_key: SecureRandom.hex, status: "executed"
+      )
+      refute forged.valid?
+      assert_includes forged.errors[:status].join, "must start"
+
+      pending.approve!(by: @manager) # the sanctioned path still works
+      assert_equal "executed", pending.reload.status
+    end
+  end
+
+  # Regression (segregation of duties): the proposer may not approve their own
+  # change unless the tenant opts in.
+  test "self-approval is refused by default and allowed only when opted in" do
+    id = with_tenant(@warsaw, actor: @manager) do
+      equipment = Equipment.create!(name: "Digger", daily_rate: 950, status: "available")
+      Loam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 }).id
+    end
+
+    with_tenant(@warsaw) do
+      assert_raises(Loam::NotAuthorizedError) { Loam::PendingAction.find(id).approve!(by: @manager) }
+      assert_equal "pending", Loam::PendingAction.find(id).status
+
+      Loam::Configs.set("approvals.allow_self_approve", true, scope: :global)
+      Loam::PendingAction.find(id).approve!(by: @manager)
+      assert_equal "executed", Loam::PendingAction.find(id).status
+    end
+  end
+
+  # Regression (idempotency): a rejected proposal can be re-staged as a NEW
+  # pending row; the key only collapses a still-pending duplicate.
+  test "re-staging after a rejection creates a fresh pending row" do
+    with_tenant(@warsaw, actor: @employee) do
+      equipment = Equipment.create!(name: "Digger", daily_rate: 950, status: "available")
+      first = Loam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 })
+      first.reject!(by: @manager, reason: "no")
+
+      again = Loam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 })
+
+      refute_equal first.id, again.id, "a rejected proposal must be re-stageable"
+      assert_equal "pending", again.status
+      assert_equal 1, Loam::PendingAction.pending.count
+      assert_equal 2, Loam::PendingAction.count
+    end
+  end
+
+  # Regression (atomicity): if recording the outcome fails after the target
+  # write, the whole thing rolls back — no applied change with a stuck status.
+  test "a failure while recording the outcome rolls the target write back" do
+    id = staged_price_change
+
+    with_tenant(@warsaw) do
+      pending = Loam::PendingAction.find(id)
+
+      # Make the outcome-recording step blow up AFTER execute_change! has written
+      # the target inside the transaction.
+      pending.define_singleton_method(:to_executed!) { raise "recording blew up" }
+      pending.approve!(by: @manager)
+
+      assert_equal "failed", pending.reload.status
+      assert_equal 950, Equipment.find(pending.target_id).daily_rate, "the target write must not survive a recording failure"
+    end
+  end
+
+  private
+
+  def staged_price_change
+    with_tenant(@warsaw, actor: @employee) do
+      equipment = Equipment.create!(name: "Digger", daily_rate: 950, status: "available")
+      Loam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 }).id
+    end
+  end
 end
 
 # The admin approval queue end to end.

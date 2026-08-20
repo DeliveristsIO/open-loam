@@ -36,24 +36,30 @@ class LoamMfaTest < ActiveSupport::TestCase
   # one tenant must verify while acting in another — and at login, with none.
   test "MFA enrolled in one tenant verifies in another tenant and with no tenant" do
     secret = with_tenant(@warsaw) { enroll(@user).totp_secret }
-    code = Loam::Totp.code_at(secret, Time.now.to_i / 30)
 
     with_tenant(@krakow) do
+      code = Loam::Totp.code_at(secret, Time.now.to_i / 30)
       assert Loam::MfaCredential.active_for(@user).verify_totp(code), "verifies in a different tenant"
     end
 
-    Loam::Current.reset
-    assert Loam::MfaCredential.active_for(@user).verify_totp(code), "verifies with no tenant (login time)"
+    # Replay protection consumed that step, so use the next window's code — the
+    # property under test (verifies with no tenant, at login time) is unchanged.
+    travel 30.seconds do
+      Loam::Current.reset
+      code = Loam::Totp.code_at(secret, Time.now.to_i / 30)
+      assert Loam::MfaCredential.active_for(@user).verify_totp(code), "verifies with no tenant (login time)"
+    end
   end
 
   test "a credential is not active until a live code confirms enrollment" do
-    credential = Loam::MfaCredential.new(user: @user).start_enrollment!
-    assert_nil Loam::MfaCredential.active_for(@user), "pending enrollment does not gate login"
+    secret = Loam::Totp.generate_secret
+    credential = Loam::MfaCredential.new(user: @user)
+    assert_nil Loam::MfaCredential.active_for(@user), "an unsaved/pending enrollment does not gate login"
 
-    refute credential.activate!("000000"), "a wrong code does not activate"
+    refute credential.activate_with!(secret, "000000"), "a wrong code does not activate"
     assert_nil Loam::MfaCredential.active_for(@user)
 
-    codes = credential.activate!(Loam::Totp.code_at(credential.totp_secret, Time.now.to_i / 30))
+    codes = credential.activate_with!(secret, Loam::Totp.code_at(secret, Time.now.to_i / 30))
     assert_equal Loam::MfaCredential::RECOVERY_CODE_COUNT, codes.size
     assert Loam::MfaCredential.active_for(@user)
   end
@@ -71,12 +77,43 @@ class LoamMfaTest < ActiveSupport::TestCase
     assert_raises(Loam::Encryption::Error) { Loam::MfaCredential.new.totp_secret = "x" }
   end
 
+  # Regression (recovery-code race): a stale in-memory copy cannot re-consume a
+  # code already spent, because with_lock reloads and re-checks under the lock.
+  test "a recovery code cannot be consumed twice, even from a stale instance" do
+    credential = enroll(@user)
+    code = @recovery_codes.first
+    stale = Loam::MfaCredential.find(credential.id) # loaded BEFORE the first consume
+
+    assert credential.consume_recovery_code(code), "valid the first time"
+    refute stale.consume_recovery_code(code), "the stale copy must re-check under the lock and refuse"
+  end
+
+  # Regression (TOTP replay): a captured code cannot be reused within its window;
+  # the next step's code still works.
+  test "a TOTP code cannot be replayed within its validity window" do
+    credential = enroll(@user)
+    code = Loam::Totp.code_at(credential.totp_secret, Time.now.to_i / 30)
+
+    assert credential.verify_totp(code), "accepted once"
+    refute credential.reload.verify_totp(code), "the same code is a replay and is rejected"
+
+    travel 30.seconds do
+      next_code = Loam::Totp.code_at(credential.totp_secret, Time.now.to_i / 30)
+      assert credential.reload.verify_totp(next_code), "a later step's code is not over-rejected"
+    end
+  end
+
   private
 
-  # Enroll + activate, capturing the recovery codes for the test.
+  # Enroll + activate, capturing the recovery codes. Enrollment happens ~2 steps
+  # in the past so codes computed at the real "now" are fresh (not replay-rejected
+  # against the step recorded at activation).
   def enroll(user)
-    credential = Loam::MfaCredential.new(user: user).start_enrollment!
-    @recovery_codes = credential.activate!(Loam::Totp.code_at(credential.totp_secret, Time.now.to_i / 30))
+    secret = Loam::Totp.generate_secret
+    credential = Loam::MfaCredential.new(user: user)
+    travel_to(61.seconds.ago) do
+      @recovery_codes = credential.activate_with!(secret, Loam::Totp.code_at(secret, Time.now.to_i / 30))
+    end
     credential
   end
 end
@@ -162,11 +199,77 @@ class AdminMfaFlowTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # Regression (HIGH — MFA re-enrollment downgrade): a GET to the enroll page
+  # (reachable cross-site) must NOT mutate an active credential. Before the fix,
+  # GET /admin/mfa/new called start_enrollment! and wiped the active secret,
+  # silently downgrading the next login to password-only.
+  test "a GET to the enroll page cannot disable active MFA" do
+    secret = enroll(@anna)
+    raw_before = raw_secret_of(@anna)
+
+    log_in_with_mfa(secret)
+
+    get new_admin_mfa_path
+    assert_response :success
+
+    assert_equal raw_before, raw_secret_of(@anna), "the active secret's ciphertext must be byte-identical after a GET"
+    assert Loam::MfaCredential.active_for(@anna), "MFA is still active — not downgraded to password-only"
+  end
+
+  test "replacing an active credential needs step-up and leaves it untouched until confirmed" do
+    secret = enroll(@anna)
+    log_in_with_mfa(secret)
+    raw_before = raw_secret_of(@anna)
+
+    travel 6.minutes do # sudo has gone stale
+      post admin_mfa_path, params: { code: "000000" } # attempt to activate a new secret
+      assert_redirected_to new_admin_sudo_path, "replacing active MFA is step-up gated"
+      assert_equal raw_before, raw_secret_of(@anna), "the old secret is untouched"
+      assert Loam::MfaCredential.active_for(@anna)
+    end
+  end
+
+  # Regression (sudo burns a recovery code): step-up takes a TOTP code, never a
+  # single-use recovery code — those are for login only and must not be spent.
+  test "step-up does not accept or consume a recovery code" do
+    secret = Loam::Totp.generate_secret
+    recovery_code = nil
+    travel_to(61.seconds.ago) do
+      recovery_code = Loam::MfaCredential.new(user: @anna).activate_with!(secret, Loam::Totp.code_at(secret, Time.now.to_i / 30)).first
+    end
+    log_in_with_mfa(secret)
+
+    travel 6.minutes do
+      token = with_tenant(@tenant) { Loam::ApiToken.create!(user: @anna, label: "x") }
+      delete admin_api_token_path(token)
+      assert_redirected_to new_admin_sudo_path
+
+      post admin_sudo_path, params: { code: recovery_code }
+      assert_response :unauthorized, "a recovery code must not satisfy step-up"
+      assert_equal Loam::MfaCredential::RECOVERY_CODE_COUNT,
+                   Loam::MfaCredential.active_for(@anna).unused_recovery_code_count, "and it must not be burned"
+      assert Loam::MfaCredential.active_for(@anna).consume_recovery_code(recovery_code), "it still works at login"
+    end
+  end
+
   private
 
+  def raw_secret_of(user)
+    Loam::MfaCredential.connection.select_value("SELECT totp_secret FROM loam_mfa_credentials WHERE user_id = #{user.id}")
+  end
+
+  def log_in_with_mfa(secret)
+    post admin_session_path, params: { email: @anna.email, password: "password" }
+    post mfa_verify_admin_session_path, params: { code: Loam::Totp.code_at(secret, Time.now.to_i / 30) }
+  end
+
+  # Enroll ~2 steps in the past so a code computed at the real "now" (during the
+  # login/sudo requests) is fresh, not a replay of the activation step.
   def enroll(user)
-    credential = Loam::MfaCredential.new(user: user).start_enrollment!
-    credential.activate!(Loam::Totp.code_at(credential.totp_secret, Time.now.to_i / 30))
-    credential.totp_secret
+    secret = Loam::Totp.generate_secret
+    travel_to(61.seconds.ago) do
+      Loam::MfaCredential.new(user: user).activate_with!(secret, Loam::Totp.code_at(secret, Time.now.to_i / 30))
+    end
+    secret
   end
 end
