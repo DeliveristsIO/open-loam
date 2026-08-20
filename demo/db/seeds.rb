@@ -70,6 +70,16 @@ Loam.as_tenant(warsaw, actor: anna) do
   # each encryption uses a fresh IV. The tax_id is encrypted but not searchable.
   Customer.find_by_email("orders@acme.example") ||
     Customer.create!(name: "Acme Construction", email: "orders@acme.example", tax_id: "PL5260001246")
+
+  # An AI-proposed price change waiting in the approval queue (Loam::PendingActions):
+  # staged, not applied, until a manager approves it under Approvals. Idempotent —
+  # the idempotency key collapses a re-seed to the same row.
+  Loam::PendingActions.stage(
+    summary: "Raise the concrete mixer's daily rate to 150",
+    on: Equipment.find_by(name: "Concrete mixer"),
+    action: :update,
+    changes: { daily_rate: 150 }
+  )
 end
 
 Loam.as_tenant(krakow, actor: anna) do
@@ -78,4 +88,4 @@ Loam.as_tenant(krakow, actor: anna) do
   Equipment.find_or_create_by!(name: "Scaffolding set") { |e| e.daily_rate = 80.0; e.status = "available" }
 end
 
-puts "Seeded: 2 tenants, 2 users, 3 equipment records, rental settings (global + Warsaw override), beta_dashboard on for Warsaw, 1 customer with encrypted PII."
+puts "Seeded: 2 tenants, 2 users, 3 equipment records, rental settings (global + Warsaw override), beta_dashboard on for Warsaw, 1 customer with encrypted PII, 1 pending approval."

@@ -1,0 +1,40 @@
+<h1>Approvals</h1>
+
+<p>Changes an agent (or any confirm-mode caller) staged for review. Approving
+executes the change; nothing has been applied yet.</p>
+
+<% if @pending.empty? %>
+  <p>Nothing waiting for review.</p>
+<% end %>
+
+<% @pending.each do |pending| %>
+  <section style="border:1px solid #ccc; padding:1rem; margin-bottom:1rem">
+    <h2><%= pending.summary %></h2>
+    <p>
+      <%= pending.action_type %> on <%= pending.target_type %><%= " ##{pending.target_id}" if pending.target_id %> ·
+      staged by <%= User.find_by(id: pending.actor_id)&.name || "—" %>
+      on <%= pending.created_at.to_date %>
+    </p>
+
+    <table>
+      <thead>
+        <tr><th>Field</th><th>From</th><th>To</th></tr>
+      </thead>
+      <tbody>
+        <% pending.preview.each do |field, change| %>
+          <tr>
+            <td><%= field %></td>
+            <td><%= change["from"].nil? ? "—" : change["from"] %></td>
+            <td><%= change["to"] %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+
+    <%= button_to "Approve", approve_admin_pending_action_path(pending), form: { style: "display:inline" } %>
+    <%= form_with url: reject_admin_pending_action_path(pending), method: :post, class: "reject" do %>
+      <%= text_field_tag :reason, nil, placeholder: "Reason (optional)" %>
+      <%= submit_tag "Reject" %>
+    <% end %>
+  </section>
+<% end %>

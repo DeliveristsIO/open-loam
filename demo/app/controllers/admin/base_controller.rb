@@ -16,7 +16,7 @@ module Admin
       render plain: "404 Not Found — this feature is not enabled for your tenant.", status: :not_found
     end
 
-    helper_method :current_tenant, :current_actor, :unread_notification_count, :feature_on?
+    helper_method :current_tenant, :current_actor, :unread_notification_count, :feature_on?, :pending_approval_count
 
     private
 
@@ -57,6 +57,13 @@ module Admin
       return 0 unless current_actor
 
       Loam::Notification.unread.where(user_id: current_actor.id).count
+    end
+
+    # Staged changes awaiting review, for the "Approvals (N)" nav badge.
+    def pending_approval_count
+      return 0 unless current_tenant
+
+      Loam::PendingAction.pending.count
     end
 
     def policy_for(record)

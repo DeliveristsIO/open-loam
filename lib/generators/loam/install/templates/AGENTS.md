@@ -19,6 +19,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Feature flags | `Loam::Features` (a capability on/off per tenant, over `Loam::Configs`) | `Loam::Features.on?(:beta)`; `enable(:beta)`/`disable(:beta)` override for the current tenant, `enable(:beta, scope: :global)` app-wide, `reset(:beta)` drops it; declare in `Loam.feature_defaults`; guard via `require_feature!`/`feature_on?`; admin at `/admin/features` |
 | Encryption at rest | `Loam::Encryptable` (`encrypts :field`, per-tenant AES-256-GCM) | generate with `--encrypt ssn --encrypt-searchable email`, or add `encrypts :ssn` / `encrypts :email, searchable: true` to the model; read/write is transparent, `find_by_email` matches the blind index; set `LOAM_MASTER_KEY`; NEVER `searchable_by` an encrypted field |
 | MFA & step-up | `Loam::MfaCredential` + `Loam::Totp` (per-user TOTP + recovery codes) | second factor at login, automatic once a user enrolls at `/admin/mfa`; gate a sensitive action with `require_sudo!` (re-auth within 5 min); require MFA per role via `security.mfa_required_roles` |
+| AI approval gate | `Loam::PendingActions` + `Loam::PendingAction` (stage → manager approves → executes) | under confirm-mode, `Loam::PendingActions.stage(summary:, on:, action:, changes:)` records a write for review instead of committing; a manager approves at `/admin/pending_actions`; nothing mutates until then |
 | Migration-free field | `custom_fields` jsonb column, read/written via `Loam::CustomFields` | a `Loam::FieldDefinition` row, created via the admin "Field definitions" screen (`/admin/field_definitions`) — never a migration |
 | States & approvals | a `workflow` block in the model (`Loam::Workflow`) | `include Loam::Workflow`; add a string column for the state |
 | Notifications | `Loam::Notification` rows, read at `/admin/notifications` | `Loam::Notifications.notify(user, title:)` / `notify_role(:manager, title:)`, normally from an event subscriber |
@@ -153,6 +154,30 @@ role, set `security.mfa_required_roles` (a `Loam::Configs` array, global or
 per-tenant); an un-enrolled user with that role is sent to enrollment at login.
 Never store a TOTP secret or recovery code in the clear — `Loam::MfaCredential`
 already encrypts / hashes them.
+
+## Staging a write for approval (confirm-mode)
+
+If you are an AI agent running under confirm-mode (`Loam.require_confirmation?`
+is true — the MCP tool that runs you sets it), a WRITE must be STAGED for a
+human, not committed. Instead of `record.update!(...)`, call:
+
+```ruby
+Loam::PendingActions.stage(
+  summary: "Raise the excavator's daily rate to 1100",
+  on: equipment, action: :update, changes: { daily_rate: 1100 }
+)
+```
+
+This records a `Loam::PendingAction` with a before/after preview and touches
+NOTHING on the target. A manager reviews the queue at `/admin/pending_actions`
+and approves — a role-gated workflow transition — and ONLY then does the change
+execute, audited to the approver. Identical proposals collapse (idempotency
+key); encrypted fields show `[encrypted]` in the preview, never their value.
+Loam does not auto-gate Active Record, so a direct `update!` still writes
+immediately when you are NOT under confirm-mode — staging is a call you make.
+One caveat: a staged update applies raw attribute writes, so do not stage a
+workflow-status column directly (that bypasses the transition's role gate) —
+stage the transition as a custom `action:` instead.
 
 ## Seeding a new tenant
 

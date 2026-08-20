@@ -54,6 +54,7 @@ AGENTS.md                agent conventions + guardrails (byte-budgeted)
 | **Feature flags** | `Loam::Features` — a thin boolean wrapper over `Loam::Configs` under the reserved `features.` key prefix; `on?`/`enable`/`disable`/`reset`, a `feature_defaults` registry, and `require_feature!` (404) / `feature_on?` guards. Gates a capability, orthogonal to policy. | percentage / gradual rollout (L-905) |
 | **Encryption at rest** | `Loam::Encryptable` — `encrypts :field` seals with AES-256-GCM under a per-tenant key (`Loam::Encryption`), decrypts on read, keyed by `Loam.tenant!` so a wrong-context read fails the auth tag. Keys derive via HKDF-SHA256 from one master key behind a `KeyProvider` seam. `searchable: true` adds an HMAC blind index for exact-match lookup; audit changesets redact encrypted fields to `[encrypted]`. | Vault/KMS `KeyProvider`, key-version rotation, encrypted custom_fields (L-901) |
 | **MFA & step-up** | `Loam::Totp` (RFC 6238, hand-rolled on OpenSSL) + `Loam::MfaCredential` — a per-user TOTP secret encrypted under a `user/<id>` key (so it verifies at login before any tenant is chosen) and BCrypt-hashed single-use recovery codes. Login gains a second-factor step; `require_sudo!` re-challenges sensitive actions within a 5-min window; `security.mfa_required_roles` (via `Loam::Configs`) forces enrollment. | WebAuthn/passkeys, QR rendering, per-tenant MFA policy UI (L-904) |
+| **AI approval gate** | `Loam::PendingActions` + `Loam::PendingAction` — a `TenantRecord` composing Workflow (approval IS a role-gated `pending → approved → executed` machine), Auditable, and Encryptable (the proposed `changeset` is encrypted at rest so it can't leak through the audit). `stage` records intent without touching the target; `approve!(by:)` executes in a transaction as the approver. Loam does NOT intercept Active Record — this is the primitive a confirm-mode caller invokes. | the human-in-the-loop consumer is the MCP server (L-302) |
 | **Notifications / API / webhooks** | `Loam::Notifications`, a token-auth JSON API per entity, `Loam::Webhooks` with HMAC-signed ActiveJob delivery. | — |
 | **Admin** | Generated Hotwire-free ERB console: CRUD, comments, attachments, global search, filtering, pagination, permission-aware. | evaluate Avo as an alternate backend (L-403) |
 | **Background** | ActiveJob (webhook delivery, digests); tenant context carried explicitly in jobs via `Loam.as_tenant`. | Solid Queue defaults |
@@ -130,3 +131,11 @@ The original open questions, now resolved (revisit if real usage argues otherwis
   option on `encrypts` keys it to the user instead. TOTP is hand-rolled on OpenSSL
   (RFC 6238, verified against the RFC vectors) rather than adding a gem. Deferred:
   WebAuthn/passkeys as a second factor and QR-image rendering (the otpauth URI ships).
+- **Approval gate** → a staging primitive (`Loam::PendingActions.stage` records a
+  `PendingAction` without mutating the target), NOT a global Active Record
+  interceptor — auto-gating every save would be fragile, and Loam has no single
+  write chokepoint. A confirm-mode caller (an MCP tool, L-302) checks
+  `Loam.require_confirmation?` and stages instead of saving; the demo wires one
+  path (a proposed price change) explicitly. Approval reuses `Loam::Workflow` as a
+  role-gated state machine, and the proposed changeset is encrypted at rest so a
+  staged change to an encrypted field never leaks through the row or its audit.

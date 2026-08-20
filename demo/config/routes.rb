@@ -11,6 +11,7 @@ Rails.application.routes.draw do
     resources :equipment do
       get :deleted, on: :collection
       patch :restore, on: :member
+      post :propose_price, on: :member  # an "AI-proposed" change, staged for approval
     end
     root "dashboard#index"
     resource :session, only: %i[new create destroy] do
@@ -20,6 +21,12 @@ Rails.application.routes.draw do
     end
     resource :mfa, only: %i[show new create destroy], controller: "mfa"  # a user's own two-factor setup
     resource :sudo, only: %i[new create], controller: "sudo"             # step-up re-challenge
+    resources :pending_actions, only: %i[index] do                       # the approval queue
+      member do
+        post :approve
+        post :reject
+      end
+    end
     resources :field_definitions, only: %i[index new create destroy]
     resources :notifications, only: %i[index] do
       post :mark_read, on: :member

@@ -9,6 +9,7 @@ require "loam/features"
 require "loam/encryption"
 require "loam/base32"
 require "loam/totp"
+require "loam/pending_actions"
 require "loam/notifications"
 require "loam/webhooks"
 require "loam/engine" if defined?(Rails::Engine)
@@ -27,6 +28,28 @@ module Loam
 
   def self.actor
     Current.actor
+  end
+
+  # The approval-gate seam. When a caller runs under :confirm (an MCP tool acting
+  # for an AI agent), a write should be STAGED for human approval via
+  # Loam::PendingActions.stage instead of committed. Loam does not intercept
+  # Active Record globally — this is the documented hook a write path checks.
+  def self.mutation_mode
+    Current.mutation_mode || :direct
+  end
+
+  def self.require_confirmation?
+    mutation_mode == :confirm
+  end
+
+  # Run a block with writes gated for approval. The one blessed way to enter
+  # confirm-mode; restores the previous mode afterwards.
+  def self.with_confirmation
+    previous = Current.mutation_mode
+    Current.mutation_mode = :confirm
+    yield
+  ensure
+    Current.mutation_mode = previous
   end
 
   # Run a block inside a tenant (and optional actor) context, restoring the

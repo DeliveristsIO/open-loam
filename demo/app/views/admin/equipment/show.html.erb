@@ -15,6 +15,16 @@
   <%= link_to "Back", [:admin, Equipment] %>
 </p>
 
+<fieldset>
+  <legend>Propose a price change (staged for approval)</legend>
+  <%# Simulates an AI agent under confirm-mode: this stages the change rather
+      than applying it — a manager approves it under Approvals. %>
+  <%= form_with url: propose_price_admin_equipment_path(@record), method: :post do %>
+    <%= number_field_tag :daily_rate, @record.daily_rate, step: :any %>
+    <%= submit_tag "Propose" %>
+  <% end %>
+</fieldset>
+
 <%= render "loam/attachments/attachments", record: @record %>
 
 <%= render "loam/comments/comments", record: @record %>

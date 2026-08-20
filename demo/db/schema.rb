@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_21_000000) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_21_120000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -179,6 +179,27 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_21_000000) do
     t.index ["user_id"], name: "index_loam_notifications_on_user_id"
   end
 
+  create_table "loam_pending_actions", force: :cascade do |t|
+    t.integer "tenant_id", null: false
+    t.bigint "actor_id"
+    t.string "status", default: "pending", null: false
+    t.string "action_type", null: false
+    t.string "target_type"
+    t.bigint "target_id"
+    t.text "changeset"
+    t.text "summary", null: false
+    t.string "idempotency_key", null: false
+    t.bigint "reviewed_by_id"
+    t.datetime "reviewed_at"
+    t.text "result"
+    t.text "error"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tenant_id", "idempotency_key"], name: "index_loam_pending_actions_on_tenant_id_and_idempotency_key", unique: true
+    t.index ["tenant_id", "status"], name: "index_loam_pending_actions_on_tenant_id_and_status"
+    t.index ["tenant_id"], name: "index_loam_pending_actions_on_tenant_id"
+  end
+
   create_table "loam_tenants", force: :cascade do |t|
     t.string "name", null: false
     t.string "slug", null: false
@@ -225,5 +246,6 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_21_000000) do
   add_foreign_key "loam_mfa_credentials", "users"
   add_foreign_key "loam_notifications", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_notifications", "users"
+  add_foreign_key "loam_pending_actions", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_webhook_endpoints", "loam_tenants", column: "tenant_id"
 end

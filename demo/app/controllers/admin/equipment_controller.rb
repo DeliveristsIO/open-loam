@@ -69,6 +69,20 @@ module Admin
       redirect_to [:admin, Equipment], notice: "Equipment deleted. Restore it from the recycle bin."
     end
 
+    # Stands in for an AI agent proposing a price change: instead of applying it,
+    # STAGE it as a Loam::PendingAction for a manager to approve. This is the
+    # confirm-mode pattern an MCP tool would follow — nothing is mutated here.
+    def propose_price
+      set_record
+      Loam::PendingActions.stage(
+        summary: "Raise #{@record.name}'s daily rate to #{params[:daily_rate]}",
+        on: @record,
+        action: :update,
+        changes: { daily_rate: params[:daily_rate] }
+      )
+      redirect_to [:admin, @record], notice: "Proposed change staged for approval — see Approvals."
+    end
+
     # Restore looks through the deleted rows — the default scope hides them, so a
     # plain find would 404 on the record we are trying to bring back.
     def restore
