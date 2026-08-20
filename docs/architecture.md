@@ -52,6 +52,7 @@ AGENTS.md                agent conventions + guardrails (byte-budgeted)
 | **Soft-delete** | `Loam::SoftDeletable` — a `deleted_at` column and a second `default_scope` that composes with tenancy; deleted rows are excluded by default, `with_deleted` lifts only the `deleted_at` filter (never tenancy), and `soft_delete`/`restore` reuse the audit path. | wrap `discard`/`paranoia` behind the same concern (L-902) |
 | **Settings** | `Loam::Configs` over a `Loam::Config` table (nullable `tenant_id` = global vs. per-tenant override, JSON value); resolves override → global → declared default, memoized per request in `Loam::Current`. | Rails.cache-backed shared layer behind the same API (L-906) |
 | **Feature flags** | `Loam::Features` — a thin boolean wrapper over `Loam::Configs` under the reserved `features.` key prefix; `on?`/`enable`/`disable`/`reset`, a `feature_defaults` registry, and `require_feature!` (404) / `feature_on?` guards. Gates a capability, orthogonal to policy. | percentage / gradual rollout (L-905) |
+| **Encryption at rest** | `Loam::Encryptable` — `encrypts :field` seals with AES-256-GCM under a per-tenant key (`Loam::Encryption`), decrypts on read, keyed by `Loam.tenant!` so a wrong-context read fails the auth tag. Keys derive via HKDF-SHA256 from one master key behind a `KeyProvider` seam. `searchable: true` adds an HMAC blind index for exact-match lookup; audit changesets redact encrypted fields to `[encrypted]`. | Vault/KMS `KeyProvider`, key-version rotation, encrypted custom_fields (L-901) |
 | **Notifications / API / webhooks** | `Loam::Notifications`, a token-auth JSON API per entity, `Loam::Webhooks` with HMAC-signed ActiveJob delivery. | — |
 | **Admin** | Generated Hotwire-free ERB console: CRUD, comments, attachments, global search, filtering, pagination, permission-aware. | evaluate Avo as an alternate backend (L-403) |
 | **Background** | ActiveJob (webhook delivery, digests); tenant context carried explicitly in jobs via `Loam.as_tenant`. | Solid Queue defaults |
@@ -111,3 +112,13 @@ The original open questions, now resolved (revisit if real usage argues otherwis
   left as an evaluated alternative (L-403).
 - **Agent pack** → a Loam-specific `AGENTS.md` contract, byte-budgeted, with a
   golden-tasks benchmark rather than a reused third-party convention set.
+- **Encryption at rest** → AES-256-GCM (authenticated) with a random 12-byte IV
+  per value, stored version-tagged (`v1:base64(iv‖tag‖ciphertext)`) so a rotated
+  key or new scheme can coexist with old rows. Keys are derived per tenant AND
+  per purpose (encryption vs. blind index) via HKDF-SHA256 from one master key,
+  behind a `Loam::Encryption::KeyProvider` seam — the HKDF provider ships, a
+  Vault/AWS-KMS provider drops in with no call-site change. Deterministic HKDF
+  means no key storage but also no per-key rotation yet; the version tag is the
+  hook for it. Searchable encrypted fields carry an HMAC-SHA256 blind index
+  (equality leaks within a tenant, never across — the accepted trade-off).
+  Out of scope for now: encrypting the `custom_fields` json.

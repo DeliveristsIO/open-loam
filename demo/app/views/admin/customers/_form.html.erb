@@ -1,0 +1,56 @@
+<% policy = Loam::Policy.for(@record) %>
+
+<%= form_with model: [:admin, @record] do |f| %>
+  <% if @record.errors.any? %>
+    <ul>
+      <% @record.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  <% end %>
+
+  <% if policy.writable?(:name) %>
+    <p>
+      <%= f.label :name %><br>
+      <%= f.text_field :name %>
+    </p>
+  <% else %>
+    <p>
+      <%= f.label :name %>: <%= @record.name %>
+      <em>(read-only for your role)</em>
+    </p>
+  <% end %>
+  <% if policy.writable?(:email) %>
+    <p>
+      <%= f.label :email %><br>
+      <%= f.text_field :email %>
+    </p>
+  <% else %>
+    <p>
+      <%= f.label :email %>: <%= @record.email %>
+      <em>(read-only for your role)</em>
+    </p>
+  <% end %>
+  <% if policy.writable?(:tax_id) %>
+    <p>
+      <%= f.label :tax_id %><br>
+      <%= f.text_field :tax_id %>
+    </p>
+  <% else %>
+    <p>
+      <%= f.label :tax_id %>: <%= @record.tax_id %>
+      <em>(read-only for your role)</em>
+    </p>
+  <% end %>
+
+  <%= render "loam/custom_fields/fields", record: @record, policy: policy, mode: :edit %>
+
+  <% if policy.update? %>
+    <p>
+      <%= f.label :files, "Attach files" %><br>
+      <%= f.file_field :files, multiple: true %>
+    </p>
+  <% end %>
+
+  <%= f.submit %>
+<% end %>

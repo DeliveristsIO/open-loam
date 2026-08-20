@@ -30,7 +30,22 @@ module Loam
       # because reading the schema at class-definition time would need a
       # database connection just to boot.
       def searchable_by(*columns)
-        self.loam_searchable_columns = columns.map(&:to_s).freeze
+        columns = columns.map(&:to_s)
+
+        # The mirror of Loam::Encryptable's check: an encrypted column is
+        # ciphertext at rest, which LIKE cannot match. Caught here when
+        # `searchable_by` is the later declaration (encrypts catches the reverse).
+        if respond_to?(:loam_encrypted_attributes)
+          conflict = columns & loam_encrypted_attributes
+          if conflict.any?
+            raise Loam::Error,
+                  "#{name}: cannot `searchable_by` encrypted field(s) #{conflict.join(', ')} — " \
+                  "ciphertext cannot be LIKE-searched. Use `encrypts :field, searchable: true` " \
+                  "for exact-match lookup instead."
+          end
+        end
+
+        self.loam_searchable_columns = columns.freeze
       end
 
       def loam_searchable?

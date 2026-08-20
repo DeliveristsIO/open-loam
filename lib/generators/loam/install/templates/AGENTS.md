@@ -17,6 +17,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Delete / recycle bin | soft-delete via `Loam::SoftDeletable` | `record.soft_delete` hides it (excluded by default, still tenant-scoped, audited); `Model.only_deleted` + `record.restore` bring it back; `destroy` still hard-erases |
 | Settings / config | `Loam::Configs` (a `key` + JSON value, global or per-tenant) | `Loam::Configs.get("billing.currency")`; `set(k, v)` overrides for the current tenant, `set(k, v, scope: :global)` sets the app-wide row, `reset(k)` drops the override; declare defaults in the initializer; admin at `/admin/configs` |
 | Feature flags | `Loam::Features` (a capability on/off per tenant, over `Loam::Configs`) | `Loam::Features.on?(:beta)`; `enable(:beta)`/`disable(:beta)` override for the current tenant, `enable(:beta, scope: :global)` app-wide, `reset(:beta)` drops it; declare in `Loam.feature_defaults`; guard via `require_feature!`/`feature_on?`; admin at `/admin/features` |
+| Encryption at rest | `Loam::Encryptable` (`encrypts :field`, per-tenant AES-256-GCM) | generate with `--encrypt ssn --encrypt-searchable email`, or add `encrypts :ssn` / `encrypts :email, searchable: true` to the model; read/write is transparent, `find_by_email` matches the blind index; set `LOAM_MASTER_KEY`; NEVER `searchable_by` an encrypted field |
 | Migration-free field | `custom_fields` jsonb column, read/written via `Loam::CustomFields` | a `Loam::FieldDefinition` row, created via the admin "Field definitions" screen (`/admin/field_definitions`) — never a migration |
 | States & approvals | a `workflow` block in the model (`Loam::Workflow`) | `include Loam::Workflow`; add a string column for the state |
 | Notifications | `Loam::Notification` rows, read at `/admin/notifications` | `Loam::Notifications.notify(user, title:)` / `notify_role(:manager, title:)`, normally from an event subscriber |
@@ -115,6 +116,29 @@ default → false. `enable`/`disable` set the current tenant's override (add
 Storage is shared with Settings under the reserved `features.` key prefix, but
 flags have their own screen.
 
+## Encrypting a field
+
+Sensitive columns (SSN, tax id, email) are encrypted at rest, per tenant, so a
+DB dump leaks nothing and one tenant's key never decrypts another's. Generate
+them — `bin/rails g loam:entity Patient name:string ssn:string email:string
+--encrypt ssn --encrypt-searchable email` — or declare on the model:
+
+```ruby
+include Loam::Encryptable
+encrypts :ssn                      # encrypted, not searchable
+encrypts :email, searchable: true  # + a blind index for exact-match lookup
+```
+
+Read/write is transparent (`patient.ssn` decrypts on read); a searchable field
+is found by `Patient.find_by_email(value)`, which matches the per-tenant blind
+index — never a LIKE. Rules: a field is NEVER both `encrypts` and `searchable_by`
+(ciphertext cannot be LIKE-searched — it raises at load); reading or writing an
+encrypted field with no tenant in context raises `MissingTenantError`; the audit
+trail records an encrypted change as `[encrypted]`, never the value. Set
+`LOAM_MASTER_KEY` (see the initializer) — encryption raises without it. GDPR
+export / key rotation: `bin/rails loam:encryption:decrypt_dump[Model,tenant_id]`
+/ `loam:encryption:rotate[Model,tenant_id]`.
+
 ## Seeding a new tenant
 
 Anything every tenant should start with — roles, default field definitions,
@@ -145,6 +169,9 @@ So the block MUST be idempotent — `find_or_create_by!`, never `create!`.
 - **Delete with `soft_delete`, not `destroy`.** A business record should be
   hidden and recoverable, not erased. `destroy` hard-deletes; keep it for a
   deliberate, permanent "forget me", never as the default delete path.
+- **Never LIKE-search, log, or hand-roll crypto for an encrypted field**, and
+  never commit `LOAM_MASTER_KEY`. Use `find_by_<field>` for lookup, let
+  `Loam::Encryptable` do the AES-256-GCM, and keep the master key in ENV/credentials.
 - **Attachment URLs are capabilities, not addresses.** ActiveStorage blobs live in
   global tables Loam does not tenant-scope: a signed blob URL is fetchable by
   whoever holds it, with no tenant check. Gate files at the record that owns

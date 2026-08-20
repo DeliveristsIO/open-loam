@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_20_100000) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_20_215602) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -37,6 +37,21 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_20_100000) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "customers", force: :cascade do |t|
+    t.integer "tenant_id", null: false
+    t.string "name"
+    t.text "email"
+    t.text "tax_id"
+    t.string "email_hash"
+    t.json "custom_fields", default: {}, null: false
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["deleted_at"], name: "index_customers_on_deleted_at"
+    t.index ["email_hash"], name: "index_customers_on_email_hash"
+    t.index ["tenant_id"], name: "index_customers_on_tenant_id"
   end
 
   create_table "damage_reports", force: :cascade do |t|
@@ -185,6 +200,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_20_100000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "customers", "loam_tenants", column: "tenant_id"
   add_foreign_key "damage_reports", "loam_tenants", column: "tenant_id"
   add_foreign_key "equipment", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_api_tokens", "loam_tenants", column: "tenant_id"

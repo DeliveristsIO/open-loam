@@ -1,5 +1,16 @@
 # Loam configuration, tenant lifecycle hooks, and domain event subscriptions.
 
+# Master key for field encryption at rest (Loam::Encryptable). Per-tenant keys
+# are derived from it via HKDF, so it must be STABLE and SECRET — never commit it.
+# Set LOAM_MASTER_KEY in the environment (or wire Rails.application.credentials)
+# to a high-entropy value, e.g. `SecureRandom.hex(32)`. Only apps that actually
+# `encrypts` a field need it; encryption raises a clear error if it is missing.
+#
+#   Loam::Encryption.master_key = ENV.fetch("LOAM_MASTER_KEY")
+#
+# Rotating the key without re-encrypting orphans existing ciphertext — see
+# `bin/rails loam:encryption:rotate[Model,tenant_id]`.
+
 # Roles every tenant of this app is expected to have. A registry read by your
 # own seeding/admin code — Loam does not create memberships for you, because
 # who gets which role is business logic.

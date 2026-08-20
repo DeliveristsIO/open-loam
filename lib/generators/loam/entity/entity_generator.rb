@@ -18,6 +18,10 @@ module Loam
       argument :attributes, type: :array, default: [], banner: "field:type field:type"
       class_option :domain, type: :string, default: "app",
                             desc: "Event domain prefix (-> domain.entity.created)"
+      class_option :encrypt, type: :array, default: [], banner: "field field",
+                             desc: "Encrypt these fields at rest, per tenant (Loam::Encryptable)"
+      class_option :encrypt_searchable, type: :array, default: [], banner: "field field",
+                                        desc: "Encrypt + add a blind index for exact-match lookup"
 
       def create_migration_file
         migration_template "migration.rb", "db/migrate/create_#{table_name}.rb"
@@ -95,9 +99,26 @@ module Loam
 
       # Only text-ish columns are worth a LIKE (see Loam::Searchable), so an
       # entity with none gets no `searchable_by` declaration and stays out of
-      # the global search.
+      # the global search. Encrypted columns are excluded: ciphertext is
+      # meaningless to LIKE, and declaring both would raise at class load.
       def searchable_attributes
-        attributes.select { |attribute| %i[string text].include?(attribute.type) }
+        attributes.select do |attribute|
+          %i[string text].include?(attribute.type) && !encrypted_field_names.include?(attribute.name)
+        end
+      end
+
+      # Fields to encrypt at rest. `--encrypt-searchable` also gets a blind index
+      # (a `<field>_hash` column) for exact-match lookup; plain `--encrypt` does not.
+      def encrypt_searchable_names
+        options[:encrypt_searchable]
+      end
+
+      def encrypted_field_names
+        options[:encrypt] + options[:encrypt_searchable]
+      end
+
+      def encrypted?(attribute)
+        encrypted_field_names.include?(attribute.name)
       end
 
       # A plausible literal per attribute type, used by the generated test.

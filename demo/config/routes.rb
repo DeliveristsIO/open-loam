@@ -1,5 +1,9 @@
 Rails.application.routes.draw do
   namespace :admin do
+    resources :customers do
+      get :deleted, on: :collection
+      patch :restore, on: :member
+    end
     resources :damage_reports do
       get :deleted, on: :collection
       patch :restore, on: :member
@@ -37,6 +41,7 @@ Rails.application.routes.draw do
   end
 
   namespace :api do
+    resources :customers, defaults: { format: :json }
     resources :damage_reports, defaults: { format: :json }
     resources :equipment, defaults: { format: :json }
   end

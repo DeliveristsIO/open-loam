@@ -1,0 +1,20 @@
+<% policy = Loam::Policy.for(@record) %>
+
+<h1>Customer #<%= @record.id %></h1>
+
+<p><strong>Name:</strong> <%= @record.name %></p>
+<p><strong>Email:</strong> <%= @record.email %></p>
+<p><strong>Tax:</strong> <%= @record.tax_id %></p>
+
+<%= render "loam/custom_fields/fields", record: @record, policy: policy, mode: :show %>
+
+<p>
+  <%= link_to "Edit", edit_polymorphic_path([:admin, @record]) %>
+  <%# Delete soft-deletes: the record moves to the recycle bin, not oblivion. %>
+  <%= button_to "Delete", [:admin, @record], method: :delete if policy.destroy? %>
+  <%= link_to "Back", [:admin, Customer] %>
+</p>
+
+<%= render "loam/attachments/attachments", record: @record %>
+
+<%= render "loam/comments/comments", record: @record %>

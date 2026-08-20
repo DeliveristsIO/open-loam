@@ -1,5 +1,14 @@
 # Loam configuration, tenant lifecycle hooks, and domain event subscriptions.
 
+# Master key for field encryption at rest (Loam::Encryptable). Per-tenant keys
+# are derived from this via HKDF, so it must be stable and secret.
+#
+# !!! DEV/TEST ONLY !!! This literal fallback is committed on purpose so the demo
+# runs out of the box. A REAL deployment MUST set LOAM_MASTER_KEY (or wire
+# Rails.application.credentials) to a high-entropy secret — `SecureRandom.hex(32)` —
+# and NEVER commit it. Rotating this key without re-encrypting orphans existing data.
+Loam::Encryption.master_key = ENV.fetch("LOAM_MASTER_KEY", "loam-demo-dev-master-key-not-for-production-use-2f8c1a")
+
 # Roles every branch of this rental company has. A registry read by seeding and
 # admin code — Loam does not create memberships for you, because who gets which
 # role is business logic.

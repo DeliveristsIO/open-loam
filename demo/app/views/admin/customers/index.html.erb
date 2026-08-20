@@ -1,0 +1,48 @@
+<h1>Customers</h1>
+
+<p>
+  <%= link_to "New customer", new_polymorphic_path([:admin, Customer]) %>
+  <%= link_to "Deleted customers", polymorphic_path([:deleted, :admin, Customer]) %>
+</p>
+
+<%= form_with url: [:admin, Customer], method: :get do |f| %>
+  <%= text_field_tag :q, params[:q], placeholder: "Filter customers" %>
+  <%= f.submit "Filter" %>
+<% end %>
+
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Tax</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @records.each do |record| %>
+      <tr>
+        <td><%= record.id %></td>
+        <td><%= record.name %></td>
+        <td><%= record.email %></td>
+        <td><%= record.tax_id %></td>
+        <td>
+          <%= link_to "Show", [:admin, record] %>
+          <%= link_to "Edit", edit_polymorphic_path([:admin, record]) %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<%# Page links carry the filter, or page 2 would quietly drop it. %>
+<p>
+  <% if @page > 1 %>
+    <%= link_to "← Previous", polymorphic_path([:admin, Customer], page: @page - 1, q: params[:q]) %>
+  <% end %>
+  Page <%= @page %>
+  <% if @has_next %>
+    <%= link_to "Next →", polymorphic_path([:admin, Customer], page: @page + 1, q: params[:q]) %>
+  <% end %>
+</p>

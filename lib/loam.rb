@@ -6,6 +6,7 @@ require "loam/policy"
 require "loam/lifecycle"
 require "loam/configs"
 require "loam/features"
+require "loam/encryption"
 require "loam/notifications"
 require "loam/webhooks"
 require "loam/engine" if defined?(Rails::Engine)
@@ -48,6 +49,7 @@ ActiveSupport.on_load(:active_record) do
   require "loam/custom_fields"
   require "loam/workflow"
   require "loam/searchable"
+  require "loam/encryptable"
   require "loam/commentable"
   require "loam/attachable"
 end

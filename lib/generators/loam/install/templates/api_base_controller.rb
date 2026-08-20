@@ -51,8 +51,21 @@ module Api
 
     # The JSON shape of an entity: its columns, custom fields included (they
     # live in the `custom_fields` column that every generated entity carries).
+    #
+    # Encrypted fields (Loam::Encryptable) are returned DECRYPTED — the caller is
+    # authenticated, tenant-scoped and policy-gated, exactly like the admin show
+    # screen — and their blind-index `<field>_hash` column is dropped, so the
+    # equality-leaking hash never goes over the wire. `record.attributes` alone
+    # would emit the raw ciphertext plus the hash.
     def entity_json(record)
-      record.attributes
+      json = record.attributes
+      return json unless record.class.respond_to?(:loam_encrypted_attributes)
+
+      record.class.loam_encrypted_attributes.each do |name|
+        json[name] = record.public_send(name)
+        json.delete("#{name}_hash")
+      end
+      json
     end
 
     # Same field-level enforcement as the admin screens: only a definition the

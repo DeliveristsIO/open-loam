@@ -1,0 +1,41 @@
+<h1>Deleted customers</h1>
+
+<p><%= link_to "← Back to customers", [:admin, Customer] %></p>
+
+<%# No Show/Edit here: these rows are hidden by the default scope, so a plain
+    find would 404. The one action a deleted record offers is Restore. %>
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Tax</th>
+      <th>Deleted at</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @records.each do |record| %>
+      <tr>
+        <td><%= record.id %></td>
+        <td><%= record.name %></td>
+        <td><%= record.email %></td>
+        <td><%= record.tax_id %></td>
+        <td><%= record.deleted_at %></td>
+        <td><%= button_to "Restore", [:restore, :admin, record], method: :patch %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<%# Page links carry nothing but the page: the recycle bin has no filter box. %>
+<p>
+  <% if @page > 1 %>
+    <%= link_to "← Previous", polymorphic_path([:deleted, :admin, Customer], page: @page - 1) %>
+  <% end %>
+  Page <%= @page %>
+  <% if @has_next %>
+    <%= link_to "Next →", polymorphic_path([:deleted, :admin, Customer], page: @page + 1) %>
+  <% end %>
+</p>

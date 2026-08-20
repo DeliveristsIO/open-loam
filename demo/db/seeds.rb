@@ -63,6 +63,13 @@ Loam.as_tenant(warsaw, actor: anna) do
   excavator.save!
 
   Equipment.find_or_create_by!(name: "Concrete mixer") { |e| e.daily_rate = 120.0; e.status = "rented" }
+
+  # A customer with encrypted PII at rest (Loam::Encryptable). email is
+  # searchable via its blind index, so find_by_email keeps this idempotent —
+  # a plain find_or_create_by on the encrypted column could never match, since
+  # each encryption uses a fresh IV. The tax_id is encrypted but not searchable.
+  Customer.find_by_email("orders@acme.example") ||
+    Customer.create!(name: "Acme Construction", email: "orders@acme.example", tax_id: "PL5260001246")
 end
 
 Loam.as_tenant(krakow, actor: anna) do
@@ -71,4 +78,4 @@ Loam.as_tenant(krakow, actor: anna) do
   Equipment.find_or_create_by!(name: "Scaffolding set") { |e| e.daily_rate = 80.0; e.status = "available" }
 end
 
-puts "Seeded: 2 tenants, 2 users, 3 equipment records, rental settings (global + Warsaw override), beta_dashboard on for Warsaw."
+puts "Seeded: 2 tenants, 2 users, 3 equipment records, rental settings (global + Warsaw override), beta_dashboard on for Warsaw, 1 customer with encrypted PII."
