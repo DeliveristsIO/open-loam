@@ -3,6 +3,12 @@ require_relative "../config/environment"
 require "loam/test_helpers"
 require "rails/test_help"
 
+# Minting 10 BCrypt-hashed recovery codes at the default cost adds seconds to
+# every MFA enrollment; MIN_COST keeps the suite fast (standard Rails practice —
+# never do this outside tests).
+require "bcrypt"
+BCrypt::Engine.cost = BCrypt::Engine::MIN_COST
+
 module ActiveSupport
   class TestCase
     include Loam::TestHelpers

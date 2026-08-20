@@ -24,6 +24,7 @@
         <%%= link_to "Dashboard", admin_root_path %>
         <%%= link_to "Notifications (#{unread_notification_count})", admin_notifications_path %>
         <%%= link_to "API tokens", admin_api_tokens_path %>
+        <%%= link_to "Security", admin_mfa_path %>
         <%%= link_to "Settings", admin_configs_path %>
         <%%= link_to "Features", admin_features_path %>
         <%%= form_with url: admin_search_path, method: :get, class: "search" do %>

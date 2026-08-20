@@ -1,0 +1,18 @@
+<%% if @error %>
+  <p style="color:#b00"><%%= @error %></p>
+<%% end %>
+
+<h1>Two-factor authentication</h1>
+
+<p>Signed in as <strong><%%= @user.name %></strong>. Enter the 6-digit code from
+your authenticator app, or one of your recovery codes.</p>
+
+<%%= form_with url: mfa_verify_admin_session_path, method: :post do |f| %>
+  <p>
+    <%%= label_tag :code, "Code" %><br>
+    <%%= text_field_tag :code, nil, autofocus: true, autocomplete: "one-time-code", inputmode: "numeric" %>
+  </p>
+  <%%= f.submit "Verify" %>
+<%% end %>
+
+<%%= button_to "Cancel and sign out", admin_session_path, method: :delete %>

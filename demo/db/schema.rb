@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_20_215602) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_21_000000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -154,6 +154,16 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_20_215602) do
     t.index ["user_id"], name: "index_loam_memberships_on_user_id"
   end
 
+  create_table "loam_mfa_credentials", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.text "totp_secret"
+    t.text "recovery_codes"
+    t.datetime "activated_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_loam_mfa_credentials_on_user_id", unique: true
+  end
+
   create_table "loam_notifications", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.integer "user_id", null: false
@@ -212,6 +222,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_20_215602) do
   add_foreign_key "loam_field_definitions", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_memberships", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_memberships", "users"
+  add_foreign_key "loam_mfa_credentials", "users"
   add_foreign_key "loam_notifications", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_notifications", "users"
   add_foreign_key "loam_webhook_endpoints", "loam_tenants", column: "tenant_id"

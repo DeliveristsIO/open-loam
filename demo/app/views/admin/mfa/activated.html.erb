@@ -1,0 +1,12 @@
+<h1>Two-factor authentication is on</h1>
+
+<p><strong>Save these recovery codes now.</strong> Each works once if you lose
+your authenticator. This is the only time they are shown.</p>
+
+<ul>
+  <% @recovery_codes.each do |code| %>
+    <li><code><%= code %></code></li>
+  <% end %>
+</ul>
+
+<p><%= link_to "Done", admin_mfa_path %></p>

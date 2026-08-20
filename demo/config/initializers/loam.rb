@@ -14,6 +14,13 @@ Loam::Encryption.master_key = ENV.fetch("LOAM_MASTER_KEY", "loam-demo-dev-master
 # role is business logic.
 Loam.default_roles = %w[manager employee]
 
+# Roles that MUST use two-factor auth (Loam::MfaCredential). At login, a user
+# whose role in the chosen branch is on this list and who has not enrolled is
+# sent to set MFA up first. Resolved via Loam::Configs, so it can be global or a
+# per-branch override; left empty here so the demo logs in without MFA.
+#
+#   Loam::Configs.set("security.mfa_required_roles", ["manager"], scope: :global)
+
 # App-wide setting defaults (Loam::Configs). A key resolves override → global
 # row → this declared default, so declaring one here needs no migration and no
 # row — a branch reads the default until someone overrides it in the Settings

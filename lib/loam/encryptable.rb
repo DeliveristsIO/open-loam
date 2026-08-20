@@ -29,8 +29,17 @@ module Loam
     end
 
     class_methods do
-      def encrypts(name, searchable: false)
+      # `scope:` chooses whose key seals the field. `:tenant` (default) keys off
+      # Loam.tenant! — right for entity data. A Proc `->(record) { "user/#{...}" }`
+      # keys off something else, for genuinely non-tenant data (an MFA secret
+      # belongs to the person and must decrypt in any tenant, and at login before
+      # a tenant is chosen). Non-tenant scopes cannot be `searchable`.
+      def encrypts(name, searchable: false, scope: :tenant)
         name = name.to_s
+
+        if searchable && scope != :tenant
+          raise Loam::Error, "#{self.name}: `#{name}` cannot be both `searchable` and non-tenant-scoped."
+        end
 
         # Encrypted ciphertext is meaningless to a LIKE scan, so the two are a
         # contradiction. Caught whichever declaration comes second (Searchable
@@ -45,27 +54,27 @@ module Loam
         self.loam_encrypted_attributes = (loam_encrypted_attributes + [name]).freeze
         self.loam_searchable_encrypted_attributes = (loam_searchable_encrypted_attributes + [name]).freeze if searchable
 
-        include loam_encryption_reader_writer(name, searchable)
+        include loam_encryption_reader_writer(name, searchable, scope)
         define_loam_blind_index_finder(name) if searchable
       end
 
       # Reader/writer live in their own module (the Loam::Workflow precedent) so
       # an app can override and still call `super`, and so they sit ABOVE Active
       # Record's generated attribute methods in the ancestor chain and win.
-      def loam_encryption_reader_writer(name, searchable)
+      def loam_encryption_reader_writer(name, searchable, scope)
         hash_column = "#{name}_hash"
 
         Module.new do
           define_method(name) do
-            Loam::Encryption.decrypt(read_attribute(name), Loam.tenant!.id)
+            Loam::Encryption.decrypt_scoped(read_attribute(name), loam_encryption_scope(scope))
           end
 
           define_method("#{name}=") do |value|
-            tenant_id = Loam.tenant!.id
-            write_attribute(name, Loam::Encryption.encrypt(value, tenant_id))
+            resolved = loam_encryption_scope(scope)
+            write_attribute(name, Loam::Encryption.encrypt_scoped(value, resolved))
             # The blind index tracks the ciphertext column: rewrite it in the
             # same breath, so an exact-match lookup can never go stale.
-            write_attribute(hash_column, Loam::Encryption.blind_index(value, tenant_id)) if searchable
+            write_attribute(hash_column, Loam::Encryption.blind_index_scoped(value, resolved)) if searchable
           end
         end
       end
@@ -86,6 +95,24 @@ module Loam
         end
       end
     end
+
+    private
+
+    # Resolve a declared `scope:` to the namespaced owner string the key is
+    # derived from. `:tenant` keys off the current tenant (raises with none, the
+    # same safety property as an entity write); a Proc computes it from the
+    # record. A blank or `.../`-terminated result (e.g. a nil user_id) raises
+    # rather than deriving a degenerate shared key.
+    def loam_encryption_scope(scope)
+      resolved = scope == :tenant ? "tenant/#{Loam.tenant!.id}" : scope.call(self).to_s
+
+      if resolved.strip.empty? || resolved.end_with?("/")
+        raise Loam::Encryption::Error, "#{self.class}: cannot derive an encryption key from a blank scope (#{resolved.inspect})"
+      end
+      resolved
+    end
+
+    public
 
     # Re-seal every encrypted field under the current key, with fresh IVs — the
     # per-record step of a key rotation (read old, write new). With HKDF-from-

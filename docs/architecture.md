@@ -53,6 +53,7 @@ AGENTS.md                agent conventions + guardrails (byte-budgeted)
 | **Settings** | `Loam::Configs` over a `Loam::Config` table (nullable `tenant_id` = global vs. per-tenant override, JSON value); resolves override → global → declared default, memoized per request in `Loam::Current`. | Rails.cache-backed shared layer behind the same API (L-906) |
 | **Feature flags** | `Loam::Features` — a thin boolean wrapper over `Loam::Configs` under the reserved `features.` key prefix; `on?`/`enable`/`disable`/`reset`, a `feature_defaults` registry, and `require_feature!` (404) / `feature_on?` guards. Gates a capability, orthogonal to policy. | percentage / gradual rollout (L-905) |
 | **Encryption at rest** | `Loam::Encryptable` — `encrypts :field` seals with AES-256-GCM under a per-tenant key (`Loam::Encryption`), decrypts on read, keyed by `Loam.tenant!` so a wrong-context read fails the auth tag. Keys derive via HKDF-SHA256 from one master key behind a `KeyProvider` seam. `searchable: true` adds an HMAC blind index for exact-match lookup; audit changesets redact encrypted fields to `[encrypted]`. | Vault/KMS `KeyProvider`, key-version rotation, encrypted custom_fields (L-901) |
+| **MFA & step-up** | `Loam::Totp` (RFC 6238, hand-rolled on OpenSSL) + `Loam::MfaCredential` — a per-user TOTP secret encrypted under a `user/<id>` key (so it verifies at login before any tenant is chosen) and BCrypt-hashed single-use recovery codes. Login gains a second-factor step; `require_sudo!` re-challenges sensitive actions within a 5-min window; `security.mfa_required_roles` (via `Loam::Configs`) forces enrollment. | WebAuthn/passkeys, QR rendering, per-tenant MFA policy UI (L-904) |
 | **Notifications / API / webhooks** | `Loam::Notifications`, a token-auth JSON API per entity, `Loam::Webhooks` with HMAC-signed ActiveJob delivery. | — |
 | **Admin** | Generated Hotwire-free ERB console: CRUD, comments, attachments, global search, filtering, pagination, permission-aware. | evaluate Avo as an alternate backend (L-403) |
 | **Background** | ActiveJob (webhook delivery, digests); tenant context carried explicitly in jobs via `Loam.as_tenant`. | Solid Queue defaults |
@@ -122,3 +123,10 @@ The original open questions, now resolved (revisit if real usage argues otherwis
   hook for it. Searchable encrypted fields carry an HMAC-SHA256 blind index
   (equality leaks within a tenant, never across — the accepted trade-off).
   Out of scope for now: encrypting the `custom_fields` json.
+- **MFA key scope** → the encryption key is scoped by a namespaced owner string
+  (`tenant/5` for entity fields, `user/12` for a user's MFA secret), not hard-wired
+  to the current tenant. MFA belongs to the person and is verified at login before
+  any tenant is chosen, so a per-tenant key would be a lockout bug; the `scope:`
+  option on `encrypts` keys it to the user instead. TOTP is hand-rolled on OpenSSL
+  (RFC 6238, verified against the RFC vectors) rather than adding a gem. Deferred:
+  WebAuthn/passkeys as a second factor and QR-image rendering (the otpauth URI ships).

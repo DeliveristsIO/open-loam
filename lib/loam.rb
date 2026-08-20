@@ -7,6 +7,8 @@ require "loam/lifecycle"
 require "loam/configs"
 require "loam/features"
 require "loam/encryption"
+require "loam/base32"
+require "loam/totp"
 require "loam/notifications"
 require "loam/webhooks"
 require "loam/engine" if defined?(Rails::Engine)

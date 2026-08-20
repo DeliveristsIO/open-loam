@@ -64,6 +64,7 @@ need to — never a blank page.
 | ⚙️ **Settings** | A key-value settings store with a global default and a per-tenant override — typed values, resolved override → global → default, cached per request, and never leaking between tenants. |
 | 🚩 **Feature flags** | Runtime on/off capabilities per tenant for rollout or kill-switch — a global default plus per-tenant override, a `Loam::Features.on?` guard, and an admin screen. Gates a **capability**, not a person — distinct from roles and policies. |
 | 🔒 **Encryption at rest** | Mark a field `encrypts` and it is transparently AES-256-GCM encrypted with a **per-tenant** key (HKDF, KMS-pluggable) and decrypted on read — a DB dump leaks nothing and tenant A's key never opens tenant B's data. A keyed blind index keeps an encrypted email/phone findable by exact match; the audit trail records the change, never the value. |
+| 🔑 **MFA & step-up auth** | TOTP second factor for admin login (RFC 6238, no dependency), with single-use recovery codes; the secret is encrypted per-user so it verifies in any tenant. `require_sudo!` re-challenges for sensitive actions within a short window — orthogonal to role. MFA can be required per role. |
 | 🖥️ **Admin surface** | An internal console generated from your models — comments, attachments, global search, filtering, pagination — not a second app to maintain. |
 | 🤖 **Agent conventions** | An `AGENTS.md` (byte-budgeted), generators as the one interface, and structural guardrails so an AI agent can add a domain feature **safely** — and a human can read what it did. |
 

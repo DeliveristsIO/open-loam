@@ -1,0 +1,23 @@
+<%% if @error %>
+  <p style="color:#b00"><%%= @error %></p>
+<%% end %>
+
+<h1>Set up two-factor authentication</h1>
+
+<p>Add this account to your authenticator app, then confirm a code to activate.
+Scan the QR (a later nicety) or enter the details by hand:</p>
+
+<ul>
+  <li>Secret: <code><%%= @secret %></code></li>
+  <li>otpauth URI: <code><%%= @provisioning_uri %></code></li>
+</ul>
+
+<%%= form_with url: admin_mfa_path, method: :post do |f| %>
+  <p>
+    <%%= label_tag :code, "Code from your app" %><br>
+    <%%= text_field_tag :code, nil, autofocus: true, autocomplete: "one-time-code", inputmode: "numeric" %>
+  </p>
+  <%%= f.submit "Activate" %>
+<%% end %>
+
+<p><%%= link_to "Cancel", admin_mfa_path %></p>

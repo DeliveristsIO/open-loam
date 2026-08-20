@@ -52,16 +52,15 @@ module Loam
         key
       end
 
-      # nil stays nil (an unset field is not "the empty string encrypted"); any
-      # other value is stringified and sealed with the tenant's key.
+      # Tenant-scoped operations — the default for entity fields via
+      # Loam::Encryptable. nil stays nil (an unset field is not "the empty
+      # string encrypted"); any other value is stringified and sealed.
       def encrypt(plaintext, tenant_id)
-        return nil if plaintext.nil?
-        Cipher.seal(plaintext.to_s, data_key(tenant_id, :encryption))
+        encrypt_scoped(plaintext, tenant_scope(tenant_id))
       end
 
       def decrypt(payload, tenant_id)
-        return nil if payload.nil?
-        Cipher.open(payload, data_key(tenant_id, :encryption))
+        decrypt_scoped(payload, tenant_scope(tenant_id))
       end
 
       # A deterministic, per-tenant keyed hash for exact-match lookup of an
@@ -70,14 +69,36 @@ module Loam
       # HMAC key means the same value hashes differently across tenants, so
       # equality never leaks between them. Only searchable fields get one.
       def blind_index(value, tenant_id)
+        blind_index_scoped(value, tenant_scope(tenant_id))
+      end
+
+      # Explicit-scope variants, for data owned by something OTHER than a tenant
+      # — an MFA secret, say, keyed "user/42" so it decrypts in whatever tenant
+      # the user is currently in, or at login when no tenant is chosen yet.
+      def encrypt_scoped(plaintext, scope)
+        return nil if plaintext.nil?
+        Cipher.seal(plaintext.to_s, data_key(scope, :encryption))
+      end
+
+      def decrypt_scoped(payload, scope)
+        return nil if payload.nil?
+        Cipher.open(payload, data_key(scope, :encryption))
+      end
+
+      def blind_index_scoped(value, scope)
         return nil if value.nil?
-        OpenSSL::HMAC.hexdigest("SHA256", data_key(tenant_id, :blind_index), value.to_s)
+        OpenSSL::HMAC.hexdigest("SHA256", data_key(scope, :blind_index), value.to_s)
       end
 
       private
 
-      def data_key(tenant_id, purpose)
-        key_provider.data_key(tenant_id, purpose: purpose)
+      # "tenant/5" reproduces the pre-scope HKDF info exactly (see HkdfKeyProvider).
+      def tenant_scope(tenant_id)
+        "tenant/#{tenant_id}"
+      end
+
+      def data_key(scope, purpose)
+        key_provider.data_key(scope: scope, purpose: purpose)
       end
     end
   end

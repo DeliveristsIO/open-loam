@@ -24,6 +24,7 @@ module Loam
         migration_template "migrations/create_loam_webhook_endpoints.rb", "db/migrate/create_loam_webhook_endpoints.rb"
         migration_template "migrations/create_loam_comments.rb", "db/migrate/create_loam_comments.rb"
         migration_template "migrations/create_loam_configs.rb", "db/migrate/create_loam_configs.rb"
+        migration_template "migrations/create_loam_mfa_credentials.rb", "db/migrate/create_loam_mfa_credentials.rb"
       end
 
       # Attachments (Loam::Attachable, included in every generated entity) are
@@ -57,6 +58,8 @@ module Loam
       def create_admin
         template "admin/base_controller.rb", "app/controllers/admin/base_controller.rb"
         template "admin/sessions_controller.rb", "app/controllers/admin/sessions_controller.rb"
+        template "admin/mfa_controller.rb", "app/controllers/admin/mfa_controller.rb"
+        template "admin/sudo_controller.rb", "app/controllers/admin/sudo_controller.rb"
         template "admin/dashboard_controller.rb", "app/controllers/admin/dashboard_controller.rb"
         template "admin/field_definitions_controller.rb", "app/controllers/admin/field_definitions_controller.rb"
         template "admin/notifications_controller.rb", "app/controllers/admin/notifications_controller.rb"
@@ -69,6 +72,11 @@ module Loam
         template "admin/pagination.rb", "app/controllers/admin/pagination.rb"
         template "admin/layout.html.erb", "app/views/layouts/admin.html.erb"
         template "admin/sessions_new.html.erb", "app/views/admin/sessions/new.html.erb"
+        template "admin/sessions_mfa_challenge.html.erb", "app/views/admin/sessions/mfa_challenge.html.erb"
+        template "admin/mfa_show.html.erb", "app/views/admin/mfa/show.html.erb"
+        template "admin/mfa_new.html.erb", "app/views/admin/mfa/new.html.erb"
+        template "admin/mfa_activated.html.erb", "app/views/admin/mfa/activated.html.erb"
+        template "admin/sudo_new.html.erb", "app/views/admin/sudo/new.html.erb"
         template "admin/dashboard_index.html.erb", "app/views/admin/dashboard/index.html.erb"
         template "admin/field_definitions_index.html.erb", "app/views/admin/field_definitions/index.html.erb"
         template "admin/field_definitions_new.html.erb", "app/views/admin/field_definitions/new.html.erb"
@@ -91,8 +99,12 @@ module Loam
           namespace :admin do
             root "dashboard#index"
             resource :session, only: %i[new create destroy] do
+              get :mfa_challenge
+              post :mfa_verify
               post :select_tenant
             end
+            resource :mfa, only: %i[show new create destroy], controller: "mfa"  # a user's own two-factor setup
+            resource :sudo, only: %i[new create], controller: "sudo"             # step-up re-challenge
             resources :field_definitions, only: %i[index new create destroy]
             resources :notifications, only: %i[index] do
               post :mark_read, on: :member

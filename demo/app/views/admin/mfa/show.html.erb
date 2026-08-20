@@ -1,0 +1,19 @@
+<h1>Two-factor authentication</h1>
+
+<% if @credential %>
+  <p>Status: <strong>enabled</strong> — activated <%= @credential.activated_at.to_date %>.</p>
+  <p>Unused recovery codes: <strong><%= @credential.unused_recovery_code_count %></strong>.</p>
+
+  <p>
+    <%= link_to "Re-enroll (new secret + codes)", new_admin_mfa_path %>
+  </p>
+  <%# Disabling MFA is sensitive, so it is step-up gated (require_sudo!). %>
+  <%= button_to "Disable two-factor", admin_mfa_path, method: :delete,
+        data: { turbo_confirm: "Disable two-factor authentication for your account?" } %>
+<% else %>
+  <p>Status: <strong>not enabled</strong>. Protect your account with an
+  authenticator app.</p>
+  <p><%= link_to "Set up two-factor authentication", new_admin_mfa_path %></p>
+<% end %>
+
+<p><%= link_to "Back to dashboard", admin_root_path %></p>

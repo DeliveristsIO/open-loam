@@ -14,8 +14,12 @@ Rails.application.routes.draw do
     end
     root "dashboard#index"
     resource :session, only: %i[new create destroy] do
+      get :mfa_challenge
+      post :mfa_verify
       post :select_tenant
     end
+    resource :mfa, only: %i[show new create destroy], controller: "mfa"  # a user's own two-factor setup
+    resource :sudo, only: %i[new create], controller: "sudo"             # step-up re-challenge
     resources :field_definitions, only: %i[index new create destroy]
     resources :notifications, only: %i[index] do
       post :mark_read, on: :member

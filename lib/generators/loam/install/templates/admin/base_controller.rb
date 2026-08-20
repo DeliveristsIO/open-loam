@@ -88,6 +88,26 @@ module Admin
       raise Loam::FeatureDisabledError unless Loam::Features.on?(name)
     end
 
+    # Step-up ("sudo") auth. Orthogonal to role: even a manager re-confirms for a
+    # sensitive action if their last authentication was more than SUDO_WINDOW ago.
+    # A fresh login or MFA verification stamps session[:sudo_at]; this re-checks
+    # it and, when stale, detours through the re-challenge and comes back.
+    SUDO_WINDOW = 5.minutes
+
+    def require_sudo!
+      return if sudo_fresh?
+
+      # A GET can be replayed after re-auth; a non-GET (a DELETE button) cannot,
+      # so we come back to the page it was on and the user repeats the action.
+      session[:sudo_return_to] = request.get? ? request.fullpath : request.referer
+      redirect_to new_admin_sudo_path
+    end
+
+    def sudo_fresh?
+      authenticated_at = session[:sudo_at]
+      authenticated_at.present? && Time.now.to_i - authenticated_at.to_i < SUDO_WINDOW.to_i
+    end
+
     # Attaching a file changes the record, so it is an update: a role that may
     # not update this record may not put files on it either.
     #

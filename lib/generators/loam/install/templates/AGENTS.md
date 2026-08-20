@@ -18,6 +18,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Settings / config | `Loam::Configs` (a `key` + JSON value, global or per-tenant) | `Loam::Configs.get("billing.currency")`; `set(k, v)` overrides for the current tenant, `set(k, v, scope: :global)` sets the app-wide row, `reset(k)` drops the override; declare defaults in the initializer; admin at `/admin/configs` |
 | Feature flags | `Loam::Features` (a capability on/off per tenant, over `Loam::Configs`) | `Loam::Features.on?(:beta)`; `enable(:beta)`/`disable(:beta)` override for the current tenant, `enable(:beta, scope: :global)` app-wide, `reset(:beta)` drops it; declare in `Loam.feature_defaults`; guard via `require_feature!`/`feature_on?`; admin at `/admin/features` |
 | Encryption at rest | `Loam::Encryptable` (`encrypts :field`, per-tenant AES-256-GCM) | generate with `--encrypt ssn --encrypt-searchable email`, or add `encrypts :ssn` / `encrypts :email, searchable: true` to the model; read/write is transparent, `find_by_email` matches the blind index; set `LOAM_MASTER_KEY`; NEVER `searchable_by` an encrypted field |
+| MFA & step-up | `Loam::MfaCredential` + `Loam::Totp` (per-user TOTP + recovery codes) | second factor at login, automatic once a user enrolls at `/admin/mfa`; gate a sensitive action with `require_sudo!` (re-auth within 5 min); require MFA per role via `security.mfa_required_roles` |
 | Migration-free field | `custom_fields` jsonb column, read/written via `Loam::CustomFields` | a `Loam::FieldDefinition` row, created via the admin "Field definitions" screen (`/admin/field_definitions`) — never a migration |
 | States & approvals | a `workflow` block in the model (`Loam::Workflow`) | `include Loam::Workflow`; add a string column for the state |
 | Notifications | `Loam::Notification` rows, read at `/admin/notifications` | `Loam::Notifications.notify(user, title:)` / `notify_role(:manager, title:)`, normally from an event subscriber |
@@ -138,6 +139,20 @@ trail records an encrypted change as `[encrypted]`, never the value. Set
 `LOAM_MASTER_KEY` (see the initializer) — encryption raises without it. GDPR
 export / key rotation: `bin/rails loam:encryption:decrypt_dump[Model,tenant_id]`
 / `loam:encryption:rotate[Model,tenant_id]`.
+
+## Second factor & step-up (sudo)
+
+Admin login gains a TOTP second factor the moment a user enrolls at `/admin/mfa`
+(the secret is encrypted per-user; recovery codes are single-use). You do NOT
+wire the login step — it is automatic once a credential is active. For a
+genuinely sensitive action (revoking access, a bulk change), call `require_sudo!`
+in the controller: it re-challenges when the user's last authentication is older
+than 5 minutes, then returns them to the action. Step-up gates by RECENCY of
+auth and is orthogonal to role — even a manager re-confirms. To force MFA for a
+role, set `security.mfa_required_roles` (a `Loam::Configs` array, global or
+per-tenant); an un-enrolled user with that role is sent to enrollment at login.
+Never store a TOTP secret or recovery code in the clear — `Loam::MfaCredential`
+already encrypts / hashes them.
 
 ## Seeding a new tenant
 

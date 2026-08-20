@@ -4,6 +4,10 @@ module Admin
   # acts as its user in this tenant, which is precisely why nobody else may
   # list, create or revoke one for you.
   class ApiTokensController < BaseController
+    # Revoking an API token cuts off a machine's access — sensitive enough to
+    # re-confirm, even for a manager (step-up is orthogonal to role).
+    before_action :require_sudo!, only: :destroy
+
     def index
       @records = api_tokens.order(created_at: :desc)
     end
