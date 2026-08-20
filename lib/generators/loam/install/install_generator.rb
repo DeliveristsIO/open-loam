@@ -23,6 +23,7 @@ module Loam
         migration_template "migrations/create_loam_api_tokens.rb", "db/migrate/create_loam_api_tokens.rb"
         migration_template "migrations/create_loam_webhook_endpoints.rb", "db/migrate/create_loam_webhook_endpoints.rb"
         migration_template "migrations/create_loam_comments.rb", "db/migrate/create_loam_comments.rb"
+        migration_template "migrations/create_loam_configs.rb", "db/migrate/create_loam_configs.rb"
       end
 
       # Attachments (Loam::Attachable, included in every generated entity) are
@@ -62,6 +63,7 @@ module Loam
         template "admin/webhook_endpoints_controller.rb", "app/controllers/admin/webhook_endpoints_controller.rb"
         template "admin/api_tokens_controller.rb", "app/controllers/admin/api_tokens_controller.rb"
         template "admin/comments_controller.rb", "app/controllers/admin/comments_controller.rb"
+        template "admin/configs_controller.rb", "app/controllers/admin/configs_controller.rb"
         template "admin/search_controller.rb", "app/controllers/admin/search_controller.rb"
         template "admin/pagination.rb", "app/controllers/admin/pagination.rb"
         template "admin/layout.html.erb", "app/views/layouts/admin.html.erb"
@@ -73,6 +75,8 @@ module Loam
         template "admin/webhook_endpoints_index.html.erb", "app/views/admin/webhook_endpoints/index.html.erb"
         template "admin/webhook_endpoints_new.html.erb", "app/views/admin/webhook_endpoints/new.html.erb"
         template "admin/api_tokens_index.html.erb", "app/views/admin/api_tokens/index.html.erb"
+        template "admin/configs_index.html.erb", "app/views/admin/configs/index.html.erb"
+        template "admin/configs_edit.html.erb", "app/views/admin/configs/edit.html.erb"
         template "admin/search_index.html.erb", "app/views/admin/search/index.html.erb"
       end
 
@@ -94,6 +98,12 @@ module Loam
             resources :webhook_endpoints, only: %i[index new create destroy]
             resources :api_tokens, only: %i[index create destroy]
             resources :comments, only: %i[create]
+            # Settings are keyed by a dotted string ("billing.currency"), which a
+            # resourceful :id would truncate at the dot, so the key travels as a param.
+            get    "configs",      to: "configs#index",  as: :configs
+            get    "configs/edit", to: "configs#edit",   as: :edit_config
+            patch  "configs",      to: "configs#update"
+            delete "configs",      to: "configs#reset"
             get "search", to: "search#index"
           end
 

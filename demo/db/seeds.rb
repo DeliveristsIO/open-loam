@@ -25,6 +25,12 @@ krakow = Loam::Tenant.find_or_create_by!(slug: "krakow") { |t| t.name = "Branch 
 # `bin/rails loam:sync` does after a deploy that adds a new default.
 Loam.sync_tenants!
 
+# Settings (Loam::Configs). The declared default for the late fee is 25 (see
+# config/initializers/loam.rb); this global row raises the company-wide baseline
+# to 30, and Warsaw overrides it again below — so the Settings screen shows all
+# three levels: declared default, global, per-tenant override.
+Loam::Configs.set("rental.late_fee_per_day", 30, scope: :global)
+
 # Sign in at /admin with either address and the password below.
 anna = seed_user("Anna (manager)", "anna@example.com")
 tomek = seed_user("Tomek (employee)", "tomek@example.com")
@@ -34,6 +40,9 @@ tomek = seed_user("Tomek (employee)", "tomek@example.com")
 Loam.as_tenant(warsaw, actor: anna) do
   Loam::Membership.find_or_create_by!(user: anna) { |m| m.role = "manager" }
   Loam::Membership.find_or_create_by!(user: tomek) { |m| m.role = "employee" }
+
+  # Warsaw charges a higher late fee than the company baseline.
+  Loam::Configs.set("rental.late_fee_per_day", 45)
 
   # Migration-free fields: added from the admin, not a generator.
   Loam::FieldDefinition.find_or_create_by!(entity_type: "Equipment", name: "serial_number") do |fd|
@@ -58,4 +67,4 @@ Loam.as_tenant(krakow, actor: anna) do
   Equipment.find_or_create_by!(name: "Scaffolding set") { |e| e.daily_rate = 80.0; e.status = "available" }
 end
 
-puts "Seeded: 2 tenants, 2 users, 3 equipment records."
+puts "Seeded: 2 tenants, 2 users, 3 equipment records, rental settings (global + Warsaw override)."

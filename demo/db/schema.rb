@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_20_000000) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_20_100000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -105,6 +105,17 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_20_000000) do
     t.index ["tenant_id"], name: "index_loam_comments_on_tenant_id"
   end
 
+  create_table "loam_configs", force: :cascade do |t|
+    t.string "key", null: false
+    t.integer "tenant_id"
+    t.json "value_json"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["key", "tenant_id"], name: "index_loam_configs_on_key_and_tenant", unique: true
+    t.index ["key"], name: "index_loam_configs_global_key", unique: true, where: "tenant_id IS NULL"
+    t.index ["tenant_id"], name: "index_loam_configs_on_tenant_id"
+  end
+
   create_table "loam_field_definitions", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "entity_type", null: false
@@ -181,6 +192,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_20_000000) do
   add_foreign_key "loam_audit_records", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_comments", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_comments", "users", column: "author_id"
+  add_foreign_key "loam_configs", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_field_definitions", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_memberships", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_memberships", "users"

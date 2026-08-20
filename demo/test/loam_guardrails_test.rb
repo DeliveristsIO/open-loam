@@ -4,8 +4,10 @@ require "test_helper"
 # invariants on the codebase itself. If one of these fails, an agent (or a
 # human) stepped outside the conventions.
 class LoamGuardrailsTest < ActiveSupport::TestCase
-  # Models that are legitimately not tenant-scoped.
-  TENANCY_ALLOWLIST = %w[ApplicationRecord User Loam::Tenant].freeze
+  # Models that are legitimately not tenant-scoped. Loam::Config holds both
+  # global (tenant_id NULL) and per-tenant override rows, so tenancy is a
+  # nullable column and resolution lives in vetted gem code (Loam::Configs).
+  TENANCY_ALLOWLIST = %w[ApplicationRecord User Loam::Tenant Loam::Config].freeze
 
   # Rails' own engine models (storage, rich text, jobs) are framework
   # plumbing, not business data — they are out of scope for tenant linting.

@@ -5,6 +5,15 @@
 # role is business logic.
 Loam.default_roles = %w[manager employee]
 
+# App-wide setting defaults (Loam::Configs). A key resolves override → global
+# row → this declared default, so declaring one here needs no migration and no
+# row — a branch reads the default until someone overrides it in the Settings
+# screen. The currency is the same everywhere; the late fee is just the baseline.
+Loam.config_defaults = {
+  "rental.currency" => "PLN",
+  "rental.late_fee_per_day" => 25
+}
+
 # What a brand-new branch (tenant) gets for free. Registered at file scope on
 # purpose: inside `to_prepare` this would re-register on every code reload.
 Loam.on_tenant_created do |tenant|

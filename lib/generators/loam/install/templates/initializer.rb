@@ -5,6 +5,17 @@
 # who gets which role is business logic.
 Loam.default_roles = %w[manager employee]
 
+# App-wide setting defaults (Loam::Configs). A key resolves override → global
+# row → this declared default, so declaring one here needs no migration and no
+# row — a tenant reads the default until someone overrides it in the admin
+# Settings screen (/admin/configs). Values keep their type (bool/number/string/
+# hash), and a per-tenant override never leaks to another tenant.
+#
+#   Loam.config_defaults = { "billing.currency" => "USD", "billing.net_terms" => 30 }
+#
+# To change the company-wide baseline at runtime (not per tenant), write a
+# global row: `Loam::Configs.set("billing.currency", "EUR", scope: :global)`.
+
 # What a brand-new tenant gets for free. Registered at file scope on purpose:
 # inside `to_prepare` this would re-register on every code reload.
 Loam.on_tenant_created do |tenant|

@@ -62,6 +62,18 @@ module Loam
     def self.default_roles=(roles)
       @default_roles = Array(roles).map(&:to_s)
     end
+
+    # App-wide setting defaults: `{ "billing.currency" => "USD" }`, declared in
+    # the initializer and read by Loam::Configs as the baseline a key resolves
+    # to when no global row and no tenant override exist. A registry, like
+    # default_roles — declaring a default here needs no migration and no row.
+    def self.config_defaults
+      @config_defaults ||= {}
+    end
+
+    def self.config_defaults=(defaults)
+      @config_defaults = defaults.to_h.transform_keys(&:to_s)
+    end
   end
 
   # The public surface is on Loam itself — apps and agents write
@@ -72,5 +84,9 @@ module Loam
   def self.default_roles = Lifecycle.default_roles
   def self.default_roles=(roles)
     Lifecycle.default_roles = roles
+  end
+  def self.config_defaults = Lifecycle.config_defaults
+  def self.config_defaults=(defaults)
+    Lifecycle.config_defaults = defaults
   end
 end

@@ -50,6 +50,7 @@ AGENTS.md                agent conventions + guardrails (byte-budgeted)
 | **Workflow** | `Loam::Workflow` DSL — states with inclusion validation, transitions with `from`/`to`/`roles`, generated bang methods, transition events. | undo/redo command layer (L-704) |
 | **Audit** | `Loam::Auditable` — `after_commit` writes a tenant- and actor-tagged `Loam::AuditRecord` with the changeset. | wrap `paper_trail` (L-203) |
 | **Soft-delete** | `Loam::SoftDeletable` — a `deleted_at` column and a second `default_scope` that composes with tenancy; deleted rows are excluded by default, `with_deleted` lifts only the `deleted_at` filter (never tenancy), and `soft_delete`/`restore` reuse the audit path. | wrap `discard`/`paranoia` behind the same concern (L-902) |
+| **Settings** | `Loam::Configs` over a `Loam::Config` table (nullable `tenant_id` = global vs. per-tenant override, JSON value); resolves override → global → declared default, memoized per request in `Loam::Current`. | Rails.cache-backed shared layer behind the same API (L-906) |
 | **Notifications / API / webhooks** | `Loam::Notifications`, a token-auth JSON API per entity, `Loam::Webhooks` with HMAC-signed ActiveJob delivery. | — |
 | **Admin** | Generated Hotwire-free ERB console: CRUD, comments, attachments, global search, filtering, pagination, permission-aware. | evaluate Avo as an alternate backend (L-403) |
 | **Background** | ActiveJob (webhook delivery, digests); tenant context carried explicitly in jobs via `Loam.as_tenant`. | Solid Queue defaults |

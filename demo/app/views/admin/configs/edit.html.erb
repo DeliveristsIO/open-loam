@@ -1,0 +1,22 @@
+<h1>Setting: <%= @key %></h1>
+
+<p>Overriding for <strong><%= current_tenant.name %></strong>.
+Current value: <code><%= @value.inspect %></code>
+(<%= @overridden ? "overridden here" : "inherited default" %>).</p>
+
+<%= form_with url: admin_configs_path, method: :patch do |f| %>
+  <%= hidden_field_tag :key, @key %>
+  <p>
+    <%= label_tag :value, "Value" %><br>
+    <%= text_field_tag :value, @value.is_a?(String) ? @value : @value.to_json %>
+  </p>
+  <p class="hint">Numbers, true/false and JSON objects keep their type; plain text is stored as a string.</p>
+  <%= f.submit "Save override" %>
+<% end %>
+
+<p>
+  <% if @overridden %>
+    <%= button_to "Reset to default", admin_configs_path(key: @key), method: :delete %>
+  <% end %>
+  <%= link_to "Back", admin_configs_path %>
+</p>

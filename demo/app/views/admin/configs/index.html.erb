@@ -1,0 +1,30 @@
+<h1>Settings</h1>
+
+<p>Values resolve override → global → declared default. Editing sets an override
+for <strong><%= current_tenant.name %></strong> only; Reset drops it.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Key</th>
+      <th>Value (this tenant)</th>
+      <th>Source</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @settings.each do |setting| %>
+      <tr>
+        <td><%= setting[:key] %></td>
+        <td><%= setting[:value].inspect %></td>
+        <td><%= setting[:overridden] ? "override" : "default" %></td>
+        <td>
+          <%= link_to "Edit", admin_edit_config_path(key: setting[:key]) %>
+          <% if setting[:overridden] %>
+            <%= button_to "Reset", admin_configs_path(key: setting[:key]), method: :delete, form: { style: "display:inline" } %>
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

@@ -19,6 +19,12 @@ Rails.application.routes.draw do
     resources :webhook_endpoints, only: %i[index new create destroy]
     resources :api_tokens, only: %i[index create destroy]
     resources :comments, only: %i[create]
+    # Settings are keyed by a dotted string ("rental.late_fee_per_day"), which a
+    # resourceful :id would truncate at the dot, so the key travels as a param.
+    get    "configs",      to: "configs#index",  as: :configs
+    get    "configs/edit", to: "configs#edit",   as: :edit_config
+    patch  "configs",      to: "configs#update"
+    delete "configs",      to: "configs#reset"
     get "search", to: "search#index"
   end
 

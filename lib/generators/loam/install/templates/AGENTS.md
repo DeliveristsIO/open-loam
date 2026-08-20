@@ -15,6 +15,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Domain events | published from models/services via `Loam::Events.publish` | subscriptions in `config/initializers/loam.rb` |
 | Audit trail | automatic (`Loam::Auditable`) | nothing — it is on by default |
 | Delete / recycle bin | soft-delete via `Loam::SoftDeletable` | `record.soft_delete` hides it (excluded by default, still tenant-scoped, audited); `Model.only_deleted` + `record.restore` bring it back; `destroy` still hard-erases |
+| Settings / config | `Loam::Configs` (a `key` + JSON value, global or per-tenant) | `Loam::Configs.get("billing.currency")`; `set(k, v)` overrides for the current tenant, `set(k, v, scope: :global)` sets the app-wide row, `reset(k)` drops the override; declare defaults in the initializer; admin at `/admin/configs` |
 | Migration-free field | `custom_fields` jsonb column, read/written via `Loam::CustomFields` | a `Loam::FieldDefinition` row, created via the admin "Field definitions" screen (`/admin/field_definitions`) — never a migration |
 | States & approvals | a `workflow` block in the model (`Loam::Workflow`) | `include Loam::Workflow`; add a string column for the state |
 | Notifications | `Loam::Notification` rows, read at `/admin/notifications` | `Loam::Notifications.notify(user, title:)` / `notify_role(:manager, title:)`, normally from an event subscriber |
@@ -86,6 +87,18 @@ filter you must remember. It stays tenant-scoped in the recycle bin
 and both are recorded in the audit trail as `soft_delete` / `restore`. Real
 `destroy` still hard-erases the row (also audited) — reach for it only for a
 genuine "forget me".
+
+## Settings
+
+Configurable values — a currency, a fee, a feature flag — go through
+`Loam::Configs`, never a hand-rolled constant or a column. `Loam::Configs.get(key)`
+resolves, most specific first: the current tenant's override → the global row →
+the default declared in `Loam.config_defaults` → `nil`. `set(key, value)` writes
+the current tenant's override, `set(key, value, scope: :global)` the app-wide
+row, and `reset(key)` drops the override so the key falls back. Values keep their
+JSON type (bool, number, string, hash) and an override never leaks to another
+tenant. Declare app-wide defaults in `config/initializers/loam.rb`; managers edit
+per-tenant values at `/admin/configs`.
 
 ## Seeding a new tenant
 
