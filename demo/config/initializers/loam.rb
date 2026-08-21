@@ -14,6 +14,11 @@ Loam::Encryption.master_key = ENV.fetch("LOAM_MASTER_KEY", "loam-demo-dev-master
 # role is business logic.
 Loam.default_roles = %w[manager employee]
 
+# Locales that content translations (Loam::Translatable) may be authored in —
+# the admin's language switcher and the per-record Translations screen offer
+# these. English is the base/default; German and Polish are overlay locales.
+Loam.locales = %w[en de pl]
+
 # Events pushed live to the browser over SSE (Loam::EventStream). Default off;
 # here the notification pattern is on, so the bell increments without a reload.
 # Add more patterns (e.g. "rental.") to stream domain events to live widgets.

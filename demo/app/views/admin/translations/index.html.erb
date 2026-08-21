@@ -1,0 +1,21 @@
+<h1>Translations — <%= @record.class.model_name.human %> #<%= @record.id %></h1>
+
+<p>Translate content per locale. The base (<%= Loam.default_locale.upcase %>) value
+stays on the record; other locales overlay onto it, falling back to the base when
+empty.</p>
+
+<%= form_with url: translate_path, method: :patch do %>
+  <% @fields.each do |field| %>
+    <h3><%= field.humanize %></h3>
+    <p><em>Base (<%= Loam.default_locale.upcase %>):</em> <%= @record.read_attribute(field) %></p>
+    <% (Loam.locales - [Loam.default_locale]).each do |locale| %>
+      <p>
+        <%= label_tag "translations[#{field}][#{locale}]", locale.upcase %><br>
+        <%= text_field_tag "translations[#{field}][#{locale}]", @record.translations_for(field)[locale] %>
+      </p>
+    <% end %>
+  <% end %>
+  <%= submit_tag "Save translations" %>
+<% end %>
+
+<p><%= link_to "Back", [:admin, @record] %></p>

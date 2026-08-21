@@ -5,6 +5,7 @@ module Admin
     layout "admin"
 
     before_action :set_loam_context
+    before_action :set_locale
 
     rescue_from Loam::NotAuthorizedError do
       render plain: "403 Forbidden — your role does not permit this action.", status: :forbidden
@@ -22,9 +23,19 @@ module Admin
       render plain: "422 — #{error.message}", status: :unprocessable_entity
     end
 
-    helper_method :current_tenant, :current_actor, :unread_notification_count, :feature_on?, :pending_approval_count, :current_role
+    helper_method :current_tenant, :current_actor, :unread_notification_count, :feature_on?, :pending_approval_count, :current_role, :current_locale
 
     private
+
+    # Locale is request state like the tenant: from the switcher (param),
+    # remembered in the session, defaulting to Loam.default_locale. Content
+    # translations (Loam::Translatable) overlay onto it.
+    def set_locale
+      session[:locale] = params[:locale] if params[:locale].present? && Loam.locales.include?(params[:locale])
+      Loam::Current.locale = session[:locale] || Loam.default_locale
+    end
+
+    def current_locale = Loam::Current.locale
 
     def current_tenant = Loam::Current.tenant
     def current_actor = Loam::Current.actor

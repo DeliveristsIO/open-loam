@@ -16,6 +16,12 @@
 # who gets which role is business logic.
 Loam.default_roles = %w[manager employee]
 
+# Locales that CONTENT translations (Loam::Translatable) may be authored in — the
+# admin's language switcher and the per-record Translations screen offer these.
+# The first is the base/default; the rest overlay onto it. This is for user data
+# (a product name), NOT developer UI strings — those stay Rails i18n.
+Loam.locales = %w[en]
+
 # Events pushed live to the browser over SSE (Loam::EventStream). Default off; the
 # notification pattern is enabled here so the admin bell increments without a
 # reload. Add patterns (e.g. "billing.") to stream domain events to live widgets —

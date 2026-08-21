@@ -33,6 +33,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Dictionaries | `Loam::Dictionary` + `Loam::Dictionaries` (managed lookup lists) | curate at `/admin/dictionaries`; a `FieldDefinition` of type "dictionary" makes a custom field a select of its entries; read via `Loam::Dictionaries.entries`/`default`/`label_for` |
 | Task progress | `Loam::Progress` + `Loam::ProgressJob` (live over SSE) | `start(name:, total:)` then `advance`/`complete!`/`fail!`/`cancel!`; percent/ETA push to the `/admin/progress_jobs` bar live; broadcast throttled per-percent; `cancelled?` for a cooperative stop |
 | Scheduler | `Loam::Scheduler` + `Loam::ScheduledJob` (recurring cron/interval jobs) | `register(key:, job_class:, schedule:, scope:)` a schedule (or add one at `/admin/scheduled_jobs`); `loam:scheduler:tick` (system cron) fires due ones with an atomic no-double-fire claim; job_class must be a real ActiveJob ([details](docs/agents/scheduler.md)) |
+| Content translations | `Loam::Translatable` + `Loam::Translation` | `translates :name` overlays `record.name` with the current locale's value (else the base column); `set_translation(field, locale, value)`; locale is request state (`Loam::Current.locale`, admin switcher over `Loam.locales`); NEVER `translates` an encrypted field (refused at load) — this is data, not Rails i18n |
 | Auto OpenAPI | `Loam::OpenApi` (introspected, no annotations) | `Loam::OpenApi.document`/`.markdown` describe the JSON API (bearer auth, per-entity schemas, writable-only request bodies, tenancy note); browse at `/admin/api_docs` (+`.json`), export with `loam:openapi:export`; it's automatic — add an entity and it appears |
 | Dashboard widgets | `Loam::Widgets` + `Loam::Dashboard` + `Loam::DashboardWidget` | `Loam::Widgets.register(key:, title:, roles:, &block)` a tile (block returns `{kind:"count"/"list", ...}`, tenant-scoped); managers arrange them at `/admin/dashboard_widgets`; role-filtered server-side, a raising widget is an isolated error tile |
 | Bulk import / export | `Loam::Import` + `Loam::Export` + `Loam::Bulk` | every entity index has (manager) Export CSV / Import CSV / a bulk-action bar; import maps columns → writable fields (dry-run, error file, update-by-key, background progress); export & bulk are policy + encryption + tenant aware ([details](docs/agents/bulk-import-export.md)) |
@@ -249,6 +250,17 @@ never tenant_id, encrypted fields typed as plain strings, a tenancy note). Brows
 it at `/admin/api_docs` (a plain server-rendered explorer, no external JS) or
 `/admin/api_docs.json`; `bin/rails loam:openapi:export` writes it to disk. Add an
 entity with the generator and it appears automatically.
+
+## Content translations
+
+Translate DATA in record fields per locale (a product name) — NOT Rails i18n
+(developer UI strings, which stay Rails-native). `include Loam::Translatable;
+translates :name` makes `record.name` return the current locale's translation
+(`Loam::Current.locale`, set by the admin switcher over `Loam.locales`) when one
+exists, else the base column — the base value is authoritative and never lost.
+`record.set_translation(:name, "de", "…")` writes; edit per-record at
+`/admin/translations`. NEVER `translates` an encrypted field — it would store
+plaintext, so it's refused at class load.
 
 ## Seeding a new tenant
 

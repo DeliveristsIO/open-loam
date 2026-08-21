@@ -95,6 +95,7 @@ ActiveSupport.on_load(:active_record) do
   require "loam/workflow"
   require "loam/searchable"
   require "loam/encryptable"
+  require "loam/translatable"
   require "loam/commentable"
   require "loam/attachable"
 end

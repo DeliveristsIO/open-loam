@@ -80,6 +80,8 @@ Rails.application.routes.draw do
     patch "dashboard_widgets", to: "dashboard_widgets#update"
     get "search", to: "search#index"
     get "api_docs", to: "api_docs#index", as: :api_docs  # OpenAPI explorer (+ .json)
+    get   "translations", to: "translations#index", as: :translations  # per-record content translations
+    patch "translations", to: "translations#update"
   end
 
   namespace :api do

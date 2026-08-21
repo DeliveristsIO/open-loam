@@ -37,6 +37,12 @@
         <%%= form_with url: admin_search_path, method: :get, class: "search" do %>
           <%%= text_field_tag :q, params[:q], placeholder: "Search" %>
         <%% end %>
+        <%%# Locale switcher (Loam::Translatable): overlays content onto the picked language. %>
+        <%% if Loam.locales.size > 1 %>
+          <span class="locale">
+            <%% Loam.locales.each do |loc| %><%%= link_to loc.upcase, "#{request.path}?locale=#{loc}", style: (loc == current_locale ? "font-weight:bold" : "") %> <%% end %>
+          </span>
+        <%% end %>
       </nav>
 
       <%%# Live updates over SSE (Loam::EventStream). Degrades gracefully: if

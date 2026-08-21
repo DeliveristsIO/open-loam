@@ -14,6 +14,8 @@ module Loam
     # it is per-request and resets automatically.
     # dictionary_cache memoizes resolved Loam::Dictionaries lookups for one
     # request/job, keyed by [kind, key, tenant_id] — same posture as config_cache.
-    attribute :tenant, :actor, :config_cache, :mutation_mode, :dictionary_cache
+    # locale is the current content-translation language (Loam::Translatable) —
+    # request state like tenant/actor, set in a before_action and reset here.
+    attribute :tenant, :actor, :config_cache, :mutation_mode, :dictionary_cache, :locale
   end
 end

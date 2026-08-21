@@ -22,6 +22,9 @@
 
 <p>
   <%%= link_to "Edit", edit_polymorphic_path([:admin, @record]) %>
+  <%% if @record.class.respond_to?(:loam_translatable_attributes) && @record.class.loam_translatable_attributes.any? && current_role == :manager %>
+    <%%= link_to "Translations", admin_translations_path(translatable_type: @record.class.name, translatable_id: @record.id) %>
+  <%% end %>
   <%%# Delete soft-deletes: the record moves to the recycle bin, not oblivion. %>
   <%%= button_to "Delete", [:admin, @record], method: :delete if policy.destroy? %>
   <%%= link_to "Back", [:admin, <%= class_name %>] %>

@@ -7,9 +7,11 @@ class Equipment < Loam::TenantRecord
   include Loam::Attachable
   include Loam::Searchable
   include Loam::SoftDeletable
+  include Loam::Translatable
 
   event_domain :rental
   searchable_by :name, :status
+  translates :name  # per-locale content overlay over the base name (Loam::Translatable)
 
   # Business logic goes here. Publish business events explicitly:
   #   Loam::Events.publish("rental.something.happened", id: id)

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_22_095000) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_22_100000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -392,6 +392,19 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_095000) do
     t.index ["slug"], name: "index_loam_tenants_on_slug", unique: true
   end
 
+  create_table "loam_translations", force: :cascade do |t|
+    t.integer "tenant_id", null: false
+    t.string "translatable_type", null: false
+    t.bigint "translatable_id", null: false
+    t.string "locale", null: false
+    t.string "field", null: false
+    t.text "value"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tenant_id"], name: "index_loam_translations_on_tenant_id"
+    t.index ["translatable_type", "translatable_id", "locale", "field"], name: "index_loam_translations_unique", unique: true
+  end
+
   create_table "loam_webhook_endpoints", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "url", null: false
@@ -447,5 +460,6 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_095000) do
   add_foreign_key "loam_sso_identities", "loam_sso_providers", column: "sso_provider_id"
   add_foreign_key "loam_sso_identities", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_sso_providers", "loam_tenants", column: "tenant_id"
+  add_foreign_key "loam_translations", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_webhook_endpoints", "loam_tenants", column: "tenant_id"
 end

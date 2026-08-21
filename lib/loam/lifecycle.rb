@@ -87,6 +87,32 @@ module Loam
       @broadcast_events = Array(patterns).map(&:to_s)
     end
 
+    # The locales content translations (Loam::Translatable) may be authored in —
+    # declared in the initializer (`Loam.locales = %w[en de pl]`), so the admin
+    # knows which languages to offer. A registry like the others; defaults to the
+    # single default locale.
+    def self.locales
+      @locales ||= [ default_locale ]
+    end
+
+    def self.locales=(codes)
+      @locales = Array(codes).map(&:to_s)
+    end
+
+    def self.default_locale
+      (defined?(I18n) ? I18n.default_locale : :en).to_s
+    end
+
+    # The current request/job locale — content reads overlay onto it. Request
+    # state like the tenant (set in a before_action, reset with Loam::Current).
+    def self.locale
+      (Loam::Current.locale || default_locale).to_s
+    end
+
+    def self.locale=(code)
+      Loam::Current.locale = code&.to_s
+    end
+
     # Known feature flags: `{ "beta_dashboard" => { default: false, description:
     # "..." } }`, declared in the initializer and read by Loam::Features. A
     # registry like the others — a flag with no row resolves to its declared
@@ -125,5 +151,14 @@ module Loam
   def self.broadcast_events = Lifecycle.broadcast_events
   def self.broadcast_events=(patterns)
     Lifecycle.broadcast_events = patterns
+  end
+  def self.locales = Lifecycle.locales
+  def self.locales=(codes)
+    Lifecycle.locales = codes
+  end
+  def self.default_locale = Lifecycle.default_locale
+  def self.locale = Lifecycle.locale
+  def self.locale=(code)
+    Lifecycle.locale = code
   end
 end
