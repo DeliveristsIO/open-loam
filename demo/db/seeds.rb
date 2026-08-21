@@ -102,6 +102,21 @@ Loam.as_tenant(warsaw, actor: anna) do
     changes: { daily_rate: 150 }
   )
 
+  # An SSO provider (Loam::SsoProvider): anyone with a warsaw-corp.example email
+  # is sent to the branch's identity provider (OIDC) and provisioned as an
+  # employee on first login. The demo injects an offline FakeProvider (see the
+  # initializer), so signing in with e.g. nowak@warsaw-corp.example JIT-creates
+  # the user in Warsaw — no network, no password. The client_secret is encrypted.
+  Loam::SsoProvider.find_or_create_by!(domain: "warsaw-corp.example") do |p|
+    p.name = "Warsaw Corp SSO"
+    p.protocol = "oidc"
+    p.issuer = "https://idp.warsaw-corp.example"
+    p.client_id = "loam-demo"
+    p.client_secret = "demo-secret-not-real"
+    p.jit_role = "employee"
+    p.active = true
+  end
+
   # The demo uses the TokenDriver (see config/initializers/loam.rb). New records
   # index themselves on save, but a RE-seed touches existing rows with
   # find_or_create_by! (no save, no tokens), so rebuild the index explicitly —
@@ -117,4 +132,4 @@ Loam.as_tenant(krakow, actor: anna) do
   Loam::Search.reindex(Equipment)
 end
 
-puts "Seeded: 2 tenants, 2 users, 3 equipment records, rental settings (global + Warsaw override), beta_dashboard on for Warsaw, 1 customer with encrypted PII, 1 pending approval, 2 saved views, 1 business rule, word-level search index (TokenDriver)."
+puts "Seeded: 2 tenants, 2 users, 3 equipment records, rental settings (global + Warsaw override), beta_dashboard on for Warsaw, 1 customer with encrypted PII, 1 pending approval, 2 saved views, 1 business rule, 1 SSO provider (Warsaw, OIDC), word-level search index (TokenDriver)."

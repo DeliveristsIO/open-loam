@@ -18,6 +18,8 @@ Rails.application.routes.draw do
       get :mfa_challenge
       post :mfa_verify
       post :select_tenant
+      post :sso_start     # home-realm discovery: email -> tenant IdP
+      get  :sso_callback  # the IdP redirect target
     end
     resource :mfa, only: %i[show new create destroy], controller: "mfa"  # a user's own two-factor setup
     resource :sudo, only: %i[new create], controller: "sudo"             # step-up re-challenge
@@ -34,6 +36,7 @@ Rails.application.routes.draw do
     delete "record_lock", to: "record_locks#destroy", as: :record_lock
     get "events/stream", to: "events#stream", as: :events_stream  # SSE push (Loam::EventStream)
     resources :business_rules, only: %i[index new create edit update destroy]  # when/then rules
+    resources :sso_providers, only: %i[index new create edit update destroy]   # per-tenant OIDC config
     resources :field_definitions, only: %i[index new create destroy]
     resources :notifications, only: %i[index] do
       post :mark_read, on: :member

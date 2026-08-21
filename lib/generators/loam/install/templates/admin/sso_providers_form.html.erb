@@ -1,0 +1,32 @@
+<%% if @error || flash[:alert] %>
+  <p style="color:#b00"><%%= @error || flash[:alert] %></p>
+<%% end %>
+
+<%# The model is namespaced (Loam::SsoProvider), so an inferred URL/param-scope
+    would be admin_loam_sso_provider_path / loam_sso_provider[...]. Pin both to
+    the un-namespaced route and the "sso_provider" key the controller permits. %>
+<%%= form_with model: @provider, scope: :sso_provider,
+      url: (@provider.persisted? ? admin_sso_provider_path(@provider) : admin_sso_providers_path) do |f| %>
+  <%% if @provider.errors.any? %>
+    <ul><%% @provider.errors.full_messages.each do |m| %><li><%%= m %></li><%% end %></ul>
+  <%% end %>
+
+  <p><%%= f.label :name %><br><%%= f.text_field :name %></p>
+  <p><%%= f.label :domain, "Email domain (for home-realm discovery, e.g. acme.example)" %><br><%%= f.text_field :domain %></p>
+  <p><%%= f.label :issuer, "OIDC issuer URL (its .well-known is discovered)" %><br><%%= f.text_field :issuer %></p>
+  <p><%%= f.label :client_id %><br><%%= f.text_field :client_id %></p>
+  <p>
+    <%%= f.label :client_secret, "Client secret (encrypted; leave blank to keep the current one)" %><br>
+    <%%= f.password_field :client_secret, value: "", autocomplete: "off" %>
+  </p>
+  <p><%%= f.label :jit_role, "Default role for new (JIT) users" %><br><%%= f.text_field :jit_role %></p>
+  <p>
+    <%%= f.label :group_role_map, "IdP group → role map (JSON, optional)" %><br>
+    <%%= f.text_area :group_role_map, value: JSON.pretty_generate(@provider.group_roles), rows: 4, cols: 40 %>
+  </p>
+  <p><%%= f.label :active %> <%%= f.check_box :active %></p>
+
+  <%%= f.submit %>
+<%% end %>
+
+<p><%%= link_to "Back", admin_sso_providers_path %></p>

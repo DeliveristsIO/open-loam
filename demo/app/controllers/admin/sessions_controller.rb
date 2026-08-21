@@ -63,6 +63,72 @@ module Admin
       end
     end
 
+    # SSO entry: the user types an email, home-realm discovery finds the tenant's
+    # IdP by domain, and we redirect to it. No provider for that domain? Fall
+    # back to password login. The `state` is our CSRF token for the round-trip.
+    def sso_start
+      email = params[:email].to_s
+      provider = Loam::Sso.provider_for(email: email)
+
+      if provider.nil?
+        return redirect_to new_admin_session_path(email: email),
+                           alert: "No SSO provider is configured for that email domain — sign in with your password."
+      end
+
+      state = SecureRandom.urlsafe_base64(24)
+      reset_session
+      session[:sso_state] = state
+      session[:sso_provider_id] = provider.id
+      session[:sso_tenant_id] = provider.tenant_id
+
+      url = Loam.as_tenant(provider.tenant) do
+        Loam::Sso.build(provider, redirect_uri: sso_callback_admin_session_url)
+                 .authorization_url(state: state, login_hint: email)
+      end
+      redirect_to url, allow_other_host: true
+    end
+
+    # The IdP redirects back here with a code + state. GET, so Rails' form CSRF
+    # does not apply — the `state` check IS the CSRF defense. Verify it first,
+    # then exchange the code and provision inside the provider's tenant.
+    def sso_callback
+      state = session.delete(:sso_state)
+      provider_id = session.delete(:sso_provider_id)
+      tenant_id = session.delete(:sso_tenant_id)
+
+      if state.blank? || !ActiveSupport::SecurityUtils.secure_compare(state, params[:state].to_s)
+        return redirect_to new_admin_session_path, alert: "SSO sign-in could not be verified. Please try again."
+      end
+
+      tenant = Loam::Tenant.find_by(id: tenant_id)
+      provider = tenant && Loam.as_tenant(tenant) { Loam::SsoProvider.find_by(id: provider_id) }
+      if provider.nil? || !provider.active?
+        return redirect_to new_admin_session_path, alert: "That SSO provider is no longer available."
+      end
+
+      user = Loam.as_tenant(tenant) do
+        claims = Loam::Sso.build(provider, redirect_uri: sso_callback_admin_session_url).exchange(code: params[:code])
+        Loam::Sso.provision(provider, claims)
+      end
+
+      reset_session
+      session[:user_id] = user.id
+      session[:sso_tenant_id] = tenant.id  # land in the IdP's tenant after any MFA
+
+      # SSO establishes primary auth; if the user also runs app-side MFA, still
+      # require the second factor (the safe choice — SSO does not waive it).
+      if Loam::MfaCredential.active_for(user)
+        session[:mfa_pending] = true
+        redirect_to mfa_challenge_admin_session_path
+      else
+        complete_authentication(user)
+      end
+    rescue Loam::Sso::UnverifiedEmailError
+      reset_session
+      redirect_to new_admin_session_path,
+                  alert: "Your identity provider has not verified this email, so we can't sign you in."
+    end
+
     # Step two (or three): the tenant picker posts here.
     def select_tenant
       return redirect_to mfa_challenge_admin_session_path if session[:mfa_pending]
@@ -105,6 +171,13 @@ module Admin
     # immediately re-challenge.
     def complete_authentication(user)
       session[:sudo_at] = Time.now.to_i
+
+      # SSO knows exactly which tenant to enter (the IdP's), so honor it even for
+      # a multi-tenant user rather than showing the picker.
+      if (sso_tenant_id = session.delete(:sso_tenant_id))
+        tenant = Loam::Membership.tenants_for(user).find_by(id: sso_tenant_id)
+        return enter(user, tenant) if tenant
+      end
 
       tenants = Loam::Membership.tenants_for(user)
 

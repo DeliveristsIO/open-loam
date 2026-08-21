@@ -37,6 +37,14 @@ end)
 # `bin/rails loam:search:reindex`); new/updated records index themselves on save.
 Loam::Search.driver = Loam::Search::TokenDriver
 
+# SSO (Loam::Sso). The demo has no real identity provider and MUST NOT hit the
+# network, so it injects the offline FakeProvider for every SSO round-trip: its
+# authorization_url loops straight back to our callback and it returns verified
+# claims for the email typed at the sign-in box. A real deployment deletes this
+# line and configures a genuine OIDC issuer + client_secret on the SSO screen.
+# (Demo/test only — the FakeProvider is never for production.)
+Loam::Sso.builder = ->(record, redirect_uri) { Loam::Sso::FakeProvider.new(record, redirect_uri: redirect_uri) }
+
 # Roles that MUST use two-factor auth (Loam::MfaCredential). At login, a user
 # whose role in the chosen branch is on this list and who has not enrolled is
 # sent to set MFA up first. Resolved via Loam::Configs, so it can be global or a

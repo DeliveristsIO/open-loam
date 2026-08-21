@@ -32,4 +32,14 @@
     </p>
     <%= f.submit "Sign in" %>
   <% end %>
+
+  <h2>Or sign in with SSO</h2>
+  <p>Enter your work email; if your organization has single sign-on, we'll send you to it.</p>
+  <%= form_with url: sso_start_admin_session_path, method: :post do |f| %>
+    <p>
+      <%= label_tag :sso_email, "Work email" %><br>
+      <%= email_field_tag :email, params[:email] %>
+    </p>
+    <%= f.submit "Continue with SSO" %>
+  <% end %>
 <% end %>

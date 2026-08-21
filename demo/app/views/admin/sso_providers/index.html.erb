@@ -1,0 +1,26 @@
+<h1>SSO providers</h1>
+
+<p>Single sign-on for this tenant. A user whose email domain matches a provider
+below is sent to that identity provider to sign in (OIDC), and provisioned on
+first login. <%= link_to "New provider", new_admin_sso_provider_path %></p>
+
+<table>
+  <thead>
+    <tr><th>Name</th><th>Protocol</th><th>Domain</th><th>JIT role</th><th>Active</th><th></th></tr>
+  </thead>
+  <tbody>
+    <% @providers.each do |provider| %>
+      <tr>
+        <td><%= provider.name %></td>
+        <td><%= provider.protocol %></td>
+        <td><code><%= provider.domain %></code></td>
+        <td><%= provider.jit_role %></td>
+        <td><%= provider.active? ? "yes" : "no" %></td>
+        <td>
+          <%= link_to "Edit", edit_admin_sso_provider_path(provider) %>
+          <%= button_to "Delete", admin_sso_provider_path(provider), method: :delete, form: { style: "display:inline" } %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

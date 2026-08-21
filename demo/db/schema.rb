@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_22_000000) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_22_090000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -275,6 +275,37 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_000000) do
     t.index ["tenant_id"], name: "index_loam_search_tokens_on_tenant_id"
   end
 
+  create_table "loam_sso_identities", force: :cascade do |t|
+    t.integer "tenant_id", null: false
+    t.integer "sso_provider_id", null: false
+    t.bigint "user_id", null: false
+    t.string "sub", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["sso_provider_id", "sub"], name: "index_loam_sso_identities_on_sso_provider_id_and_sub", unique: true
+    t.index ["sso_provider_id"], name: "index_loam_sso_identities_on_sso_provider_id"
+    t.index ["tenant_id"], name: "index_loam_sso_identities_on_tenant_id"
+    t.index ["user_id"], name: "index_loam_sso_identities_on_user_id"
+  end
+
+  create_table "loam_sso_providers", force: :cascade do |t|
+    t.integer "tenant_id", null: false
+    t.string "name", null: false
+    t.string "protocol", default: "oidc", null: false
+    t.string "issuer"
+    t.string "client_id"
+    t.text "client_secret"
+    t.string "domain", null: false
+    t.string "jit_role", default: "employee", null: false
+    t.json "group_role_map", default: {}, null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["domain"], name: "index_loam_sso_providers_on_domain", unique: true
+    t.index ["tenant_id", "active"], name: "index_loam_sso_providers_on_tenant_id_and_active"
+    t.index ["tenant_id"], name: "index_loam_sso_providers_on_tenant_id"
+  end
+
   create_table "loam_tenants", force: :cascade do |t|
     t.string "name", null: false
     t.string "slug", null: false
@@ -329,5 +360,8 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_000000) do
   add_foreign_key "loam_record_locks", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_record_locks", "users", column: "locked_by_id"
   add_foreign_key "loam_search_tokens", "loam_tenants", column: "tenant_id"
+  add_foreign_key "loam_sso_identities", "loam_sso_providers", column: "sso_provider_id"
+  add_foreign_key "loam_sso_identities", "loam_tenants", column: "tenant_id"
+  add_foreign_key "loam_sso_providers", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_webhook_endpoints", "loam_tenants", column: "tenant_id"
 end

@@ -19,6 +19,7 @@ require "loam/search/driver"
 require "loam/search/like_driver"
 require "loam/search/token_driver"
 require "loam/notifications"
+require "loam/sso"
 require "loam/business_rules"
 require "loam/webhooks"
 require "loam/engine" if defined?(Rails::Engine)

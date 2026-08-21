@@ -29,6 +29,7 @@
         <%= link_to "Settings", admin_configs_path %>
         <%= link_to "Features", admin_features_path %>
         <%= link_to "Rules", admin_business_rules_path %>
+        <%= link_to "SSO", admin_sso_providers_path %>
         <%# Gated by a flag: the link only appears for tenants with the capability on. %>
         <% if feature_on?(:beta_dashboard) %>
           <%= link_to "Beta", admin_beta_dashboard_path %>

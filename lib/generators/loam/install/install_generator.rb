@@ -30,6 +30,7 @@ module Loam
         migration_template "migrations/create_loam_record_locks.rb", "db/migrate/create_loam_record_locks.rb"
         migration_template "migrations/create_loam_business_rules.rb", "db/migrate/create_loam_business_rules.rb"
         migration_template "migrations/create_loam_search_tokens.rb", "db/migrate/create_loam_search_tokens.rb"
+        migration_template "migrations/create_loam_sso_providers.rb", "db/migrate/create_loam_sso_providers.rb"
       end
 
       # Attachments (Loam::Attachable, included in every generated entity) are
@@ -78,6 +79,7 @@ module Loam
         template "admin/configs_controller.rb", "app/controllers/admin/configs_controller.rb"
         template "admin/features_controller.rb", "app/controllers/admin/features_controller.rb"
         template "admin/business_rules_controller.rb", "app/controllers/admin/business_rules_controller.rb"
+        template "admin/sso_providers_controller.rb", "app/controllers/admin/sso_providers_controller.rb"
         template "admin/search_controller.rb", "app/controllers/admin/search_controller.rb"
         template "admin/pagination.rb", "app/controllers/admin/pagination.rb"
         template "admin/layout.html.erb", "app/views/layouts/admin.html.erb"
@@ -103,6 +105,10 @@ module Loam
         template "admin/business_rules_new.html.erb", "app/views/admin/business_rules/new.html.erb"
         template "admin/business_rules_edit.html.erb", "app/views/admin/business_rules/edit.html.erb"
         template "admin/business_rules_form.html.erb", "app/views/admin/business_rules/_form.html.erb"
+        template "admin/sso_providers_index.html.erb", "app/views/admin/sso_providers/index.html.erb"
+        template "admin/sso_providers_new.html.erb", "app/views/admin/sso_providers/new.html.erb"
+        template "admin/sso_providers_edit.html.erb", "app/views/admin/sso_providers/edit.html.erb"
+        template "admin/sso_providers_form.html.erb", "app/views/admin/sso_providers/_form.html.erb"
         template "admin/search_index.html.erb", "app/views/admin/search/index.html.erb"
       end
 
@@ -118,6 +124,8 @@ module Loam
               get :mfa_challenge
               post :mfa_verify
               post :select_tenant
+              post :sso_start     # home-realm discovery: email -> tenant IdP
+              get  :sso_callback  # the IdP redirect target
             end
             resource :mfa, only: %i[show new create destroy], controller: "mfa"  # a user's own two-factor setup
             resource :sudo, only: %i[new create], controller: "sudo"             # step-up re-challenge
@@ -133,6 +141,7 @@ module Loam
             delete "record_lock", to: "record_locks#destroy"  # manager take-over of an edit lock
             get "events/stream", to: "events#stream", as: :events_stream  # SSE push (Loam::EventStream)
             resources :business_rules, only: %i[index new create edit update destroy]  # when/then rules
+            resources :sso_providers, only: %i[index new create edit update destroy]  # per-tenant OIDC config
             resources :field_definitions, only: %i[index new create destroy]
             resources :notifications, only: %i[index] do
               post :mark_read, on: :member

@@ -43,6 +43,18 @@ Loam.broadcast_events = [ "loam.notification." ]
 #
 #   Loam::Search.driver = Loam::Search::TokenDriver
 
+# Single sign-on (Loam::Sso). OIDC is shipped end-to-end: configure a per-tenant
+# provider under /admin/sso_providers (issuer, client_id, client_secret, email
+# domain, default JIT role). Home-realm discovery routes a user to their tenant's
+# IdP by email domain; a verified identity is JIT-provisioned or linked to an
+# existing User. The client_secret is encrypted at rest, so LOAM_MASTER_KEY must
+# be set (same key as the rest of Loam::Encryptable). SAML and SCIM are documented
+# seams (see docs/architecture.md). Nothing to register here for real OIDC.
+#
+# In tests, inject the offline fake so the flow never hits the network:
+#
+#   Loam::Sso.builder = ->(record, redirect_uri) { Loam::Sso::FakeProvider.new(record, redirect_uri: redirect_uri) }
+
 # Roles that MUST use two-factor auth (Loam::MfaCredential). At login, a user
 # whose role in the chosen tenant is on this list and who has not enrolled is
 # sent to set MFA up before they can work. Resolved via Loam::Configs, so it can
