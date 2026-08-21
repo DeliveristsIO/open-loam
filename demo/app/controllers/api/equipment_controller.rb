@@ -8,7 +8,9 @@ module Api
     before_action :set_record, only: %i[show update destroy]
 
     def index
-      render json: Equipment.order(created_at: :desc).map { |record| entity_json(record) }
+      records = Equipment.order(created_at: :desc).to_a
+      enriched = Loam::Enrichers.enrich_many(records)
+      render json: records.map { |record| entity_json(record, enrichments: enriched[record.id]) }
     end
 
     def show

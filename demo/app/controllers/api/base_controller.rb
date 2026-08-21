@@ -57,14 +57,21 @@ module Api
     # screen — and their blind-index `<field>_hash` column is dropped, so the
     # equality-leaking hash never goes over the wire. `record.attributes` alone
     # would emit the raw ciphertext plus the hash.
-    def entity_json(record)
+    def entity_json(record, enrichments: nil)
       json = record.attributes
-      return json unless record.class.respond_to?(:loam_encrypted_attributes)
 
-      record.class.loam_encrypted_attributes.each do |name|
-        json[name] = record.public_send(name)
-        json.delete("#{name}_hash")
+      if record.class.respond_to?(:loam_encrypted_attributes)
+        record.class.loam_encrypted_attributes.each do |name|
+          json[name] = record.public_send(name)
+          json.delete("#{name}_hash")
+        end
       end
+
+      # Computed cross-module blocks (Loam::Enrichers), under a separate key so
+      # they're never confused with the record's own columns. An index passes the
+      # batched result (avoiding N+1); a single show computes it here.
+      enrichments = Loam::Enrichers.enrich(record) if enrichments.nil?
+      json["enrichments"] = enrichments if enrichments.present?
       json
     end
 

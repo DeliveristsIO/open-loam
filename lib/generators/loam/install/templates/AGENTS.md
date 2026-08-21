@@ -23,6 +23,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Saved views | `Loam::Perspectives` + `Loam::Perspective` (private / role / tenant) | a named index view (filters/sort/columns) saved from the entity index; `Loam::Perspectives.visible_to(entity, user:)` / `default_for` / `resolve`; managed at `/admin/perspectives?entity_type=Name`; `perspective.apply(scope)` filters/sorts only whitelisted columns |
 | Concurrent-edit safety | `lock_version` (optimistic) + `Loam::RecordLocks` (advisory) | every generated entity has `lock_version`; a stale update re-renders a conflict diff, never a clobber; `RecordLocks.acquire/holder/release/force_release` warns "who's editing" with a TTL and manager take-over |
 | Real-time updates | `Loam::EventStream` (SSE push, default off) | declare patterns in `Loam.broadcast_events` (e.g. `"loam.notification."`); matching events, filtered to the connection's tenant + audience, stream to the browser at `/admin/events/stream`; the bell updates live |
+| Response enrichers | `Loam::Enrichers` (computed cross-module blocks) | `register(entity_type, key:, batch:)` in the initializer to attach a computed value onto another entity's response; shown on the admin show screen and under `enrichments` in the API; use `batch:` to avoid N+1 |
 | Migration-free field | `custom_fields` jsonb column, read/written via `Loam::CustomFields` | a `Loam::FieldDefinition` row, created via the admin "Field definitions" screen (`/admin/field_definitions`) — never a migration |
 | States & approvals | a `workflow` block in the model (`Loam::Workflow`) | `include Loam::Workflow`; add a string column for the state |
 | Notifications | `Loam::Notification` rows, read at `/admin/notifications` | `Loam::Notifications.notify(user, title:)` / `notify_role(:manager, title:)`, normally from an event subscriber |
@@ -218,6 +219,16 @@ audience (a payload `user_id` is the sole recipient) before it leaves the server
 The bell already streams `loam.notification.created`; add a pattern to stream
 your own events to a live widget. Fan-out is single-process in the prototype
 (Redis/SolidCable is the seam — see docs/architecture.md).
+
+## Response enrichers
+
+`Loam::Enrichers.register(entity_type, key:, batch:)` (in the initializer)
+attaches a computed block onto ANOTHER module's entity — shown on its admin show
+screen and under an `enrichments` key in the API, never mixed into the record's
+own attributes. A `batch:` resolver (array → `{ id => value }`) keeps an index one
+query, not N. A resolver runs in the current tenant scope and a raising one is
+isolated (its key omitted). Caution: don't surface ANOTHER record's encrypted
+plaintext through an enricher.
 
 ## Seeding a new tenant
 

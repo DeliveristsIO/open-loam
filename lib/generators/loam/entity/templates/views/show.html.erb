@@ -8,6 +8,18 @@
 
 <%%= render "loam/custom_fields/fields", record: @record, policy: policy, mode: :show %>
 
+<%%# Computed cross-module blocks (Loam::Enrichers) — no section when none registered. %>
+<%% enrichments = Loam::Enrichers.enrich(@record) %>
+<%% if enrichments.any? %>
+  <h2>Enrichments</h2>
+  <dl>
+    <%% enrichments.each do |key, value| %>
+      <dt><strong><%%= key.humanize %></strong></dt>
+      <dd><%%= value %></dd>
+    <%% end %>
+  </dl>
+<%% end %>
+
 <p>
   <%%= link_to "Edit", edit_polymorphic_path([:admin, @record]) %>
   <%%# Delete soft-deletes: the record moves to the recycle bin, not oblivion. %>

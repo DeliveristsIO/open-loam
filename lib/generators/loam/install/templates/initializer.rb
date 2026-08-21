@@ -22,6 +22,16 @@ Loam.default_roles = %w[manager employee]
 # nothing reaches the browser unless it matches a pattern here (security posture).
 Loam.broadcast_events = [ "loam.notification." ]
 
+# Response enrichers (Loam::Enrichers): attach a computed block onto ANOTHER
+# module's entity in admin/API responses, with no foreign-key coupling — billing
+# can annotate an Equipment without Equipment knowing billing exists. Pass a
+# `batch:` resolver (array -> { id => value }) so an index stays one query, not N.
+#
+#   Loam::Enrichers.register("Equipment", key: "outstanding_balance", batch: ->(equipments) do
+#     totals = Invoice.where(equipment_id: equipments.map(&:id)).group(:equipment_id).sum(:balance)
+#     equipments.map(&:id).index_with { |id| totals.fetch(id, 0) }
+#   end)
+
 # Roles that MUST use two-factor auth (Loam::MfaCredential). At login, a user
 # whose role in the chosen tenant is on this list and who has not enrolled is
 # sent to set MFA up before they can work. Resolved via Loam::Configs, so it can

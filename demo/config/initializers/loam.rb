@@ -19,6 +19,16 @@ Loam.default_roles = %w[manager employee]
 # Add more patterns (e.g. "rental.") to stream domain events to live widgets.
 Loam.broadcast_events = [ "loam.notification." ]
 
+# Response enricher (Loam::Enrichers): billing/rental cross-cutting concerns can
+# attach a computed block onto another entity's response WITHOUT that entity
+# knowing about them. Here: how many damage reports are awaiting approval for a
+# piece of equipment — Equipment knows nothing about DamageReport; the enricher
+# joins them at read time. Uses the BATCH path so an index is one query, not N.
+Loam::Enrichers.register("Equipment", key: "open_damage_reports", batch: ->(equipments) do
+  counts = DamageReport.where(equipment_id: equipments.map(&:id), state: "pending_approval").group(:equipment_id).count
+  equipments.map(&:id).index_with { |id| counts.fetch(id, 0) }
+end)
+
 # Roles that MUST use two-factor auth (Loam::MfaCredential). At login, a user
 # whose role in the chosen branch is on this list and who has not enrolled is
 # sent to set MFA up first. Resolved via Loam::Configs, so it can be global or a
