@@ -27,6 +27,7 @@ module Loam
         migration_template "migrations/create_loam_mfa_credentials.rb", "db/migrate/create_loam_mfa_credentials.rb"
         migration_template "migrations/create_loam_pending_actions.rb", "db/migrate/create_loam_pending_actions.rb"
         migration_template "migrations/create_loam_perspectives.rb", "db/migrate/create_loam_perspectives.rb"
+        migration_template "migrations/create_loam_record_locks.rb", "db/migrate/create_loam_record_locks.rb"
       end
 
       # Attachments (Loam::Attachable, included in every generated entity) are
@@ -64,6 +65,7 @@ module Loam
         template "admin/sudo_controller.rb", "app/controllers/admin/sudo_controller.rb"
         template "admin/pending_actions_controller.rb", "app/controllers/admin/pending_actions_controller.rb"
         template "admin/perspectives_controller.rb", "app/controllers/admin/perspectives_controller.rb"
+        template "admin/record_locks_controller.rb", "app/controllers/admin/record_locks_controller.rb"
         template "admin/dashboard_controller.rb", "app/controllers/admin/dashboard_controller.rb"
         template "admin/field_definitions_controller.rb", "app/controllers/admin/field_definitions_controller.rb"
         template "admin/notifications_controller.rb", "app/controllers/admin/notifications_controller.rb"
@@ -120,6 +122,7 @@ module Loam
             resources :perspectives, only: %i[index create update destroy] do    # saved table views
               post :set_default, on: :member
             end
+            delete "record_lock", to: "record_locks#destroy"  # manager take-over of an edit lock
             resources :field_definitions, only: %i[index new create destroy]
             resources :notifications, only: %i[index] do
               post :mark_read, on: :member

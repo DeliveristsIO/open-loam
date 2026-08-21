@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_21_210000) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_21_221000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -49,6 +49,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_21_210000) do
     t.datetime "deleted_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "lock_version", default: 0, null: false
     t.index ["deleted_at"], name: "index_customers_on_deleted_at"
     t.index ["email_hash"], name: "index_customers_on_email_hash"
     t.index ["tenant_id"], name: "index_customers_on_tenant_id"
@@ -64,6 +65,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_21_210000) do
     t.json "custom_fields", default: {}, null: false
     t.string "state"
     t.datetime "deleted_at"
+    t.integer "lock_version", default: 0, null: false
     t.index ["deleted_at"], name: "index_damage_reports_on_deleted_at"
     t.index ["tenant_id"], name: "index_damage_reports_on_tenant_id"
   end
@@ -77,6 +79,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_21_210000) do
     t.datetime "updated_at", null: false
     t.json "custom_fields", default: {}, null: false
     t.datetime "deleted_at"
+    t.integer "lock_version", default: 0, null: false
     t.index ["deleted_at"], name: "index_equipment_on_deleted_at"
     t.index ["tenant_id"], name: "index_equipment_on_tenant_id"
   end
@@ -217,6 +220,20 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_21_210000) do
     t.index ["tenant_id"], name: "index_loam_perspectives_on_tenant_id"
   end
 
+  create_table "loam_record_locks", force: :cascade do |t|
+    t.integer "tenant_id", null: false
+    t.string "lockable_type", null: false
+    t.bigint "lockable_id", null: false
+    t.integer "locked_by_id", null: false
+    t.string "token", null: false
+    t.datetime "expires_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["locked_by_id"], name: "index_loam_record_locks_on_locked_by_id"
+    t.index ["tenant_id", "lockable_type", "lockable_id"], name: "index_loam_record_locks_on_lockable", unique: true
+    t.index ["tenant_id"], name: "index_loam_record_locks_on_tenant_id"
+  end
+
   create_table "loam_tenants", force: :cascade do |t|
     t.string "name", null: false
     t.string "slug", null: false
@@ -265,5 +282,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_21_210000) do
   add_foreign_key "loam_notifications", "users"
   add_foreign_key "loam_pending_actions", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_perspectives", "loam_tenants", column: "tenant_id"
+  add_foreign_key "loam_record_locks", "loam_tenants", column: "tenant_id"
+  add_foreign_key "loam_record_locks", "users", column: "locked_by_id"
   add_foreign_key "loam_webhook_endpoints", "loam_tenants", column: "tenant_id"
 end

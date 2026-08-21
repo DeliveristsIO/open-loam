@@ -30,6 +30,8 @@ Rails.application.routes.draw do
     resources :perspectives, only: %i[index create update destroy] do    # saved table views
       post :set_default, on: :member
     end
+    # Manager take-over of an advisory edit lock (lockable_type + lockable_id params).
+    delete "record_lock", to: "record_locks#destroy", as: :record_lock
     resources :field_definitions, only: %i[index new create destroy]
     resources :notifications, only: %i[index] do
       post :mark_read, on: :member

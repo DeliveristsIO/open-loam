@@ -16,7 +16,7 @@ module Admin
       render plain: "404 Not Found — this feature is not enabled for your tenant.", status: :not_found
     end
 
-    helper_method :current_tenant, :current_actor, :unread_notification_count, :feature_on?, :pending_approval_count
+    helper_method :current_tenant, :current_actor, :unread_notification_count, :feature_on?, :pending_approval_count, :current_role
 
     private
 
@@ -93,6 +93,34 @@ module Admin
 
     def require_feature!(name)
       raise Loam::FeatureDisabledError unless Loam::Features.on?(name)
+    end
+
+    # Optimistic-locking conflict handling: someone saved this record between the
+    # user opening the edit form and submitting it (lock_version mismatch →
+    # StaleObjectError). Build a field-level diff of what the user tried to write
+    # vs the current saved values, then RELOAD to fresh data so the retry carries
+    # the new lock_version — never a 500, never a silent clobber. lock_version is
+    # the guarantee; the advisory Loam::RecordLock is only a courtesy warning.
+    #
+    # Encrypted fields are compared and shown via the reader (decrypted); the raw
+    # column is ciphertext that never matches (random IV), so a byte compare would
+    # be a false conflict every time.
+    def stale_conflict!(record, fields)
+      encrypted = record.class.respond_to?(:loam_encrypted_attributes) ? record.class.loam_encrypted_attributes.map(&:to_s) : []
+      attempted = fields.map(&:to_s).index_with { |field| conflict_value(record, field, encrypted) }
+
+      record.reload
+
+      @conflict = fields.map(&:to_s).each_with_object({}) do |field, diff|
+        theirs = conflict_value(record, field, encrypted)
+        yours = attempted[field]
+        diff[field] = { "yours" => yours, "theirs" => theirs } unless yours.to_s == theirs.to_s
+      end
+      flash.now[:alert] = "This #{record.model_name.human.downcase} changed since you opened it — review the differences and save again."
+    end
+
+    def conflict_value(record, field, encrypted)
+      encrypted.include?(field) ? record.public_send(field) : record[field]
     end
 
     # Step-up ("sudo") auth. Orthogonal to role: even a manager re-confirms for a

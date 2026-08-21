@@ -21,6 +21,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | MFA & step-up | `Loam::MfaCredential` + `Loam::Totp` (per-user TOTP + recovery codes) | second factor at login, automatic once a user enrolls at `/admin/mfa`; gate a sensitive action with `require_sudo!` (re-auth within 5 min); require MFA per role via `security.mfa_required_roles` |
 | AI approval gate | `Loam::PendingActions` + `Loam::PendingAction` (stage → manager approves → executes) | under confirm-mode, `Loam::PendingActions.stage(summary:, on:, action:, changes:)` records a write for review instead of committing; a manager approves at `/admin/pending_actions`; nothing mutates until then |
 | Saved views | `Loam::Perspectives` + `Loam::Perspective` (private / role / tenant) | a named index view (filters/sort/columns) saved from the entity index; `Loam::Perspectives.visible_to(entity, user:)` / `default_for` / `resolve`; managed at `/admin/perspectives?entity_type=Name`; `perspective.apply(scope)` filters/sorts only whitelisted columns |
+| Concurrent-edit safety | `lock_version` (optimistic) + `Loam::RecordLocks` (advisory) | every generated entity has `lock_version`; a stale update re-renders a conflict diff, never a clobber; `RecordLocks.acquire/holder/release/force_release` warns "who's editing" with a TTL and manager take-over |
 | Migration-free field | `custom_fields` jsonb column, read/written via `Loam::CustomFields` | a `Loam::FieldDefinition` row, created via the admin "Field definitions" screen (`/admin/field_definitions`) — never a migration |
 | States & approvals | a `workflow` block in the model (`Loam::Workflow`) | `include Loam::Workflow`; add a string column for the state |
 | Notifications | `Loam::Notification` rows, read at `/admin/notifications` | `Loam::Notifications.notify(user, title:)` / `notify_role(:manager, title:)`, normally from an event subscriber |
@@ -196,6 +197,16 @@ lists what a user may see, `default_for` resolves the applicable default
 a real, non-plumbing column — a crafted key (arbitrary SQL, or `tenant_id`) is
 skipped, never run. Only the owner (or a manager, for shared views) may edit or
 delete one, and rows are optimistic-locked against concurrent edits.
+
+## Concurrent-edit safety
+
+`lock_version` (on every generated entity) is the GUARANTEE: a stale update
+raises `ActiveRecord::StaleObjectError`, which the generated controller turns into
+a "changed since you opened it" conflict — a diff and a retry, never a 500 or a
+clobber. Keep the hidden `lock_version` field in the edit form and permit it.
+`Loam::RecordLocks.acquire(record, by:)` is the COURTESY: an advisory, TTL'd
+"someone is editing this" banner (heartbeat on re-acquire, auto-frees on
+soft-delete, manager `force_release`). It warns; it does not block.
 
 ## Seeding a new tenant
 

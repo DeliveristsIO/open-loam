@@ -14,6 +14,7 @@ class Create<%= table_name.camelize %> < ActiveRecord::Migration[<%= ActiveRecor
 <% end -%>
       t.json :custom_fields, null: false, default: {}
       t.datetime :deleted_at
+      t.integer :lock_version, null: false, default: 0   # optimistic locking (Loam::RecordLock)
       t.timestamps
     end
     # Loam::SoftDeletable filters `deleted_at IS NULL` on every query.

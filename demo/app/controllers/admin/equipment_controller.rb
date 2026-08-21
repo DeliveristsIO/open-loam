@@ -52,6 +52,8 @@ module Admin
 
     def edit
       authorize!(policy_for(@record), :update?)
+      # Take the advisory lock (courtesy) or learn who holds it, for the banner.
+      @lock = Loam::RecordLocks.acquire(@record, by: current_actor) || Loam::RecordLocks.active_lock(@record)
     end
 
     def update
@@ -61,10 +63,15 @@ module Admin
       attach_files!(@record, policy)
 
       if @record.update(permitted_params(policy))
+        Loam::RecordLocks.release(@record, by: current_actor)
         redirect_to [:admin, @record]
       else
         render :edit, status: :unprocessable_entity
       end
+    rescue ActiveRecord::StaleObjectError
+      stale_conflict!(@record, FIELDS)
+      @lock = Loam::RecordLocks.acquire(@record, by: current_actor) || Loam::RecordLocks.active_lock(@record)
+      render :edit, status: :conflict
     end
 
     # Delete hides, it does not erase — the button is undoable. Reach for the
@@ -72,6 +79,7 @@ module Admin
     def destroy
       authorize!(policy_for(@record), :destroy?)
       @record.soft_delete!
+      Loam::RecordLocks.release(@record, by: current_actor)
       redirect_to [:admin, Equipment], notice: "Equipment deleted. Restore it from the recycle bin."
     end
 
@@ -106,8 +114,12 @@ module Admin
 
     # Field-level enforcement: the permit list comes from the policy, so a
     # role without write access to a field cannot smuggle it in via params.
+    # lock_version rides outside the policy filter — it is optimistic-locking
+    # plumbing, not a business field. A forged value just produces a conflict
+    # (UPDATE WHERE lock_version = garbage → 0 rows → StaleObjectError), so
+    # permitting it is safe.
     def permitted_params(policy)
-      params.require(:equipment).permit(*policy.permitted_fields(FIELDS))
+      params.require(:equipment).permit(*policy.permitted_fields(FIELDS), :lock_version)
     end
   end
 end
