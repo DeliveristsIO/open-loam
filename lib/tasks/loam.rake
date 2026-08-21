@@ -5,6 +5,22 @@ namespace :loam do
     puts "loam:sync — ran #{Loam.tenant_created_callbacks.size} tenant callback(s) across #{synced} tenant(s)."
   end
 
+  namespace :openapi do
+    # Write the OpenAPI 3.1 document + a Markdown rendering to disk, for CI or
+    # publishing. Introspection only — no server, no network.
+    #
+    #   bin/rails loam:openapi:export
+    desc "Export the API's OpenAPI JSON + Markdown to doc/"
+    task export: :environment do
+      require "json"
+      dir = ENV["DIR"].presence || "doc"
+      FileUtils.mkdir_p(dir)
+      File.write(File.join(dir, "openapi.json"), JSON.pretty_generate(Loam::OpenApi.document))
+      File.write(File.join(dir, "openapi.md"), Loam::OpenApi.markdown)
+      puts "loam:openapi:export — wrote #{dir}/openapi.json and #{dir}/openapi.md."
+    end
+  end
+
   namespace :scheduler do
     # Fire every due recurring job once. Wire to system cron, every minute:
     #   * * * * * cd /app && bin/rails loam:scheduler:tick

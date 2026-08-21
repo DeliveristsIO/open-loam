@@ -1,0 +1,34 @@
+<h1><%= @doc["info"]["title"] %></h1>
+
+<p><%= @doc["info"]["description"] %></p>
+<p><strong>Auth:</strong> bearer token (<code>Authorization: Bearer &lt;token&gt;</code>) — a <code>Loam::ApiToken</code>.
+<strong>Tenancy:</strong> <%= @doc["x-tenancy"] %></p>
+<p><%= link_to "Download OpenAPI JSON", admin_api_docs_path(format: :json) %></p>
+
+<h2>Endpoints</h2>
+<% @doc["paths"].sort.each do |path, ops| %>
+  <% ops.each do |method, op| %>
+    <% next unless op.is_a?(Hash) && op["summary"] %>
+    <div style="border:1px solid #ccc; padding:0.5rem; margin-bottom:0.5rem">
+      <code><strong><%= method.upcase %></strong> /api<%= path %></code> — <%= op["summary"] %>
+      <span style="color:#555">· 🔒 bearer · responses: <%= op["responses"].keys.join(", ") %></span>
+    </div>
+  <% end %>
+<% end %>
+
+<h2>Schemas</h2>
+<% @doc["components"]["schemas"].sort.each do |name, schema| %>
+  <h3><%= name %></h3>
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th></th></tr></thead>
+    <tbody>
+      <% schema["properties"].each do |field, spec| %>
+        <tr>
+          <td><code><%= field %></code></td>
+          <td><%= spec["type"] %><%= " (#{spec["format"]})" if spec["format"] %></td>
+          <td><%= "read-only" if spec["readOnly"] %><%= spec["description"] %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>

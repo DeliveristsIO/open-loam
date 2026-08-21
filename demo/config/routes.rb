@@ -79,6 +79,7 @@ Rails.application.routes.draw do
     get   "dashboard_widgets", to: "dashboard_widgets#index", as: :dashboard_widgets  # dashboard settings
     patch "dashboard_widgets", to: "dashboard_widgets#update"
     get "search", to: "search#index"
+    get "api_docs", to: "api_docs#index", as: :api_docs  # OpenAPI explorer (+ .json)
   end
 
   namespace :api do

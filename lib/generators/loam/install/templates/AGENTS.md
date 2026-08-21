@@ -33,6 +33,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Dictionaries | `Loam::Dictionary` + `Loam::Dictionaries` (managed lookup lists) | curate at `/admin/dictionaries`; a `FieldDefinition` of type "dictionary" makes a custom field a select of its entries; read via `Loam::Dictionaries.entries`/`default`/`label_for` |
 | Task progress | `Loam::Progress` + `Loam::ProgressJob` (live over SSE) | `start(name:, total:)` then `advance`/`complete!`/`fail!`/`cancel!`; percent/ETA push to the `/admin/progress_jobs` bar live; broadcast throttled per-percent; `cancelled?` for a cooperative stop |
 | Scheduler | `Loam::Scheduler` + `Loam::ScheduledJob` (recurring cron/interval jobs) | `register(key:, job_class:, schedule:, scope:)` a schedule (or add one at `/admin/scheduled_jobs`); `loam:scheduler:tick` (system cron) fires due ones with an atomic no-double-fire claim; job_class must be a real ActiveJob ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/agents/scheduler.md)) |
+| Auto OpenAPI | `Loam::OpenApi` (introspected, no annotations) | `Loam::OpenApi.document`/`.markdown` describe the JSON API (bearer auth, per-entity schemas, writable-only request bodies, tenancy note); browse at `/admin/api_docs` (+`.json`), export with `loam:openapi:export`; it's automatic — add an entity and it appears |
 | Dashboard widgets | `Loam::Widgets` + `Loam::Dashboard` + `Loam::DashboardWidget` | `Loam::Widgets.register(key:, title:, roles:, &block)` a tile (block returns `{kind:"count"/"list", ...}`, tenant-scoped); managers arrange them at `/admin/dashboard_widgets`; role-filtered server-side, a raising widget is an isolated error tile |
 | Bulk import / export | `Loam::Import` + `Loam::Export` + `Loam::Bulk` | every entity index has (manager) Export CSV / Import CSV / a bulk-action bar; import maps columns → writable fields (dry-run, error file, update-by-key, background progress); export & bulk are policy + encryption + tenant aware ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/agents/bulk-import-export.md)) |
 | Long lists | `paginate(scope)` from `Admin::Pagination` in `BaseController` | already wired into generated index screens — 25 a page, with a filter box |
@@ -238,6 +239,16 @@ run tenant-scoped, never arbitrary view code. `roles:` hides it server-side (its
 data isn't computed for a role that can't see it); a raising widget becomes an
 isolated error tile. Managers pick/reorder widgets per tenant at
 `/admin/dashboard_widgets`; unconfigured tenants get the full registered set.
+
+## Auto OpenAPI
+
+The JSON API self-documents — no annotations. `Loam::OpenApi.document` (OpenAPI
+3.1) and `.markdown` are introspected from the generated `Api::<Plural>Controller`s
+(bearer-token auth, a schema per entity, request bodies of WRITABLE fields only —
+never tenant_id, encrypted fields typed as plain strings, a tenancy note). Browse
+it at `/admin/api_docs` (a plain server-rendered explorer, no external JS) or
+`/admin/api_docs.json`; `bin/rails loam:openapi:export` writes it to disk. Add an
+entity with the generator and it appears automatically.
 
 ## Seeding a new tenant
 
