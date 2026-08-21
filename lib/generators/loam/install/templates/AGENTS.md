@@ -20,6 +20,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Encryption at rest | `Loam::Encryptable` (`encrypts :field`, per-tenant AES-256-GCM) | generate with `--encrypt ssn --encrypt-searchable email`, or add `encrypts :ssn` / `encrypts :email, searchable: true` to the model; read/write is transparent, `find_by_email` matches the blind index; set `LOAM_MASTER_KEY`; NEVER `searchable_by` an encrypted field |
 | MFA & step-up | `Loam::MfaCredential` + `Loam::Totp` (per-user TOTP + recovery codes) | second factor at login, automatic once a user enrolls at `/admin/mfa`; gate a sensitive action with `require_sudo!` (re-auth within 5 min); require MFA per role via `security.mfa_required_roles` |
 | AI approval gate | `Loam::PendingActions` + `Loam::PendingAction` (stage → manager approves → executes) | under confirm-mode, `Loam::PendingActions.stage(summary:, on:, action:, changes:)` records a write for review instead of committing; a manager approves at `/admin/pending_actions`; nothing mutates until then |
+| Saved views | `Loam::Perspectives` + `Loam::Perspective` (private / role / tenant) | a named index view (filters/sort/columns) saved from the entity index; `Loam::Perspectives.visible_to(entity, user:)` / `default_for` / `resolve`; managed at `/admin/perspectives?entity_type=Name`; `perspective.apply(scope)` filters/sorts only whitelisted columns |
 | Migration-free field | `custom_fields` jsonb column, read/written via `Loam::CustomFields` | a `Loam::FieldDefinition` row, created via the admin "Field definitions" screen (`/admin/field_definitions`) — never a migration |
 | States & approvals | a `workflow` block in the model (`Loam::Workflow`) | `include Loam::Workflow`; add a string column for the state |
 | Notifications | `Loam::Notification` rows, read at `/admin/notifications` | `Loam::Notifications.notify(user, title:)` / `notify_role(:manager, title:)`, normally from an event subscriber |
@@ -182,6 +183,19 @@ stage the transition as a custom `action:` instead. Segregation of duties: the
 proposer may not approve their own change unless the tenant sets
 `approvals.allow_self_approve` — normally the proposer is the agent and the
 approver a human.
+
+## Saved views (perspectives)
+
+A user saves a named view of an entity's admin index — its filters, sort, and
+columns — from the index itself ("Save current view"), and manages them at
+`/admin/perspectives?entity_type=Name`. Three visibility tiers: `private` (owner
+only), `role` (a membership role), `tenant` (everyone). `Loam::Perspectives.visible_to(entity, user:)`
+lists what a user may see, `default_for` resolves the applicable default
+(private > role > tenant), and the entity index applies the picked/default one.
+`perspective.apply(scope)` is SAFE: a filter or sort is honored only if it names
+a real, non-plumbing column — a crafted key (arbitrary SQL, or `tenant_id`) is
+skipped, never run. Only the owner (or a manager, for shared views) may edit or
+delete one, and rows are optimistic-locked against concurrent edits.
 
 ## Seeding a new tenant
 

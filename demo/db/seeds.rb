@@ -71,6 +71,16 @@ Loam.as_tenant(warsaw, actor: anna) do
   Customer.find_by_email("orders@acme.example") ||
     Customer.create!(name: "Acme Construction", email: "orders@acme.example", tax_id: "PL5260001246")
 
+  # Saved views of the Equipment list (Loam::Perspectives): a tenant-wide default
+  # that shows only available gear, and a private view Anna sorts by price.
+  Loam::Perspective.find_or_create_by!(entity_type: "Equipment", name: "Available only", visibility: "tenant") do |p|
+    p.is_default = true
+    p.config = { "filters" => { "status" => "available" }, "sort" => { "field" => "name", "dir" => "asc" } }
+  end
+  Loam::Perspective.find_or_create_by!(entity_type: "Equipment", name: "Anna's priciest", owner_id: anna.id, visibility: "private") do |p|
+    p.config = { "sort" => { "field" => "daily_rate", "dir" => "desc" } }
+  end
+
   # An AI-proposed price change waiting in the approval queue (Loam::PendingActions):
   # staged, not applied, until a manager approves it under Approvals. Idempotent —
   # the idempotency key collapses a re-seed to the same row.
@@ -88,4 +98,4 @@ Loam.as_tenant(krakow, actor: anna) do
   Equipment.find_or_create_by!(name: "Scaffolding set") { |e| e.daily_rate = 80.0; e.status = "available" }
 end
 
-puts "Seeded: 2 tenants, 2 users, 3 equipment records, rental settings (global + Warsaw override), beta_dashboard on for Warsaw, 1 customer with encrypted PII, 1 pending approval."
+puts "Seeded: 2 tenants, 2 users, 3 equipment records, rental settings (global + Warsaw override), beta_dashboard on for Warsaw, 1 customer with encrypted PII, 1 pending approval, 2 saved views."

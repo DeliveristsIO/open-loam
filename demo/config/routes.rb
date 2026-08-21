@@ -27,6 +27,9 @@ Rails.application.routes.draw do
         post :reject
       end
     end
+    resources :perspectives, only: %i[index create update destroy] do    # saved table views
+      post :set_default, on: :member
+    end
     resources :field_definitions, only: %i[index new create destroy]
     resources :notifications, only: %i[index] do
       post :mark_read, on: :member

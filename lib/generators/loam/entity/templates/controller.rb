@@ -7,10 +7,15 @@ module Admin
     def index
       # id breaks ties on created_at, so a record can never slip between pages.
       scope = <%= class_name %>.order(created_at: :desc, id: :desc)
+
+      # Apply the picked (or default) saved view first; a live filter composes on top.
+      @perspective = Loam::Perspectives.resolve("<%= class_name %>", user: current_actor, id: params[:perspective_id])
+      scope = @perspective.apply(scope) if @perspective
 <% if searchable_attributes.any? -%>
       scope = scope.search(params[:q])
 <% end -%>
 
+      @perspectives = Loam::Perspectives.visible_to("<%= class_name %>", user: current_actor)
       @records, @page, @has_next = paginate(scope)
     end
 

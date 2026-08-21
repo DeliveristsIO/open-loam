@@ -10,6 +10,7 @@ require "loam/encryption"
 require "loam/base32"
 require "loam/totp"
 require "loam/pending_actions"
+require "loam/perspectives"
 require "loam/notifications"
 require "loam/webhooks"
 require "loam/engine" if defined?(Rails::Engine)

@@ -26,6 +26,7 @@ module Loam
         migration_template "migrations/create_loam_configs.rb", "db/migrate/create_loam_configs.rb"
         migration_template "migrations/create_loam_mfa_credentials.rb", "db/migrate/create_loam_mfa_credentials.rb"
         migration_template "migrations/create_loam_pending_actions.rb", "db/migrate/create_loam_pending_actions.rb"
+        migration_template "migrations/create_loam_perspectives.rb", "db/migrate/create_loam_perspectives.rb"
       end
 
       # Attachments (Loam::Attachable, included in every generated entity) are
@@ -62,6 +63,7 @@ module Loam
         template "admin/mfa_controller.rb", "app/controllers/admin/mfa_controller.rb"
         template "admin/sudo_controller.rb", "app/controllers/admin/sudo_controller.rb"
         template "admin/pending_actions_controller.rb", "app/controllers/admin/pending_actions_controller.rb"
+        template "admin/perspectives_controller.rb", "app/controllers/admin/perspectives_controller.rb"
         template "admin/dashboard_controller.rb", "app/controllers/admin/dashboard_controller.rb"
         template "admin/field_definitions_controller.rb", "app/controllers/admin/field_definitions_controller.rb"
         template "admin/notifications_controller.rb", "app/controllers/admin/notifications_controller.rb"
@@ -80,6 +82,7 @@ module Loam
         template "admin/mfa_activated.html.erb", "app/views/admin/mfa/activated.html.erb"
         template "admin/sudo_new.html.erb", "app/views/admin/sudo/new.html.erb"
         template "admin/pending_actions_index.html.erb", "app/views/admin/pending_actions/index.html.erb"
+        template "admin/perspectives_index.html.erb", "app/views/admin/perspectives/index.html.erb"
         template "admin/dashboard_index.html.erb", "app/views/admin/dashboard/index.html.erb"
         template "admin/field_definitions_index.html.erb", "app/views/admin/field_definitions/index.html.erb"
         template "admin/field_definitions_new.html.erb", "app/views/admin/field_definitions/new.html.erb"
@@ -113,6 +116,9 @@ module Loam
                 post :approve
                 post :reject
               end
+            end
+            resources :perspectives, only: %i[index create update destroy] do    # saved table views
+              post :set_default, on: :member
             end
             resources :field_definitions, only: %i[index new create destroy]
             resources :notifications, only: %i[index] do

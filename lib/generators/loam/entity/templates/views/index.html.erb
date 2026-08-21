@@ -4,6 +4,25 @@
   <%%= link_to "New <%= human_name.downcase %>", new_polymorphic_path([:admin, <%= class_name %>]) %>
   <%%= link_to "Deleted <%= plural_name.humanize.downcase %>", polymorphic_path([:deleted, :admin, <%= class_name %>]) %>
 </p>
+
+<%%# Saved views (Loam::Perspectives): pick one to apply, or save the current one. %>
+<%% if @perspectives.any? %>
+  <%%= form_with url: [:admin, <%= class_name %>], method: :get do %>
+    <%%= select_tag :perspective_id,
+          options_for_select([["All <%= plural_name.humanize.downcase %> (no saved view)", "none"]] + @perspectives.map { |p| [p.name, p.id] }, @perspective&.id),
+          onchange: "this.form.submit()" %>
+    <%%= link_to "Manage views", admin_perspectives_path(entity_type: "<%= class_name %>") %>
+  <%% end %>
+<%% else %>
+  <p><%%= link_to "Manage saved views", admin_perspectives_path(entity_type: "<%= class_name %>") %></p>
+<%% end %>
+
+<%%= form_with url: admin_perspectives_path, method: :post do %>
+  <%%= hidden_field_tag :entity_type, "<%= class_name %>" %>
+  <%%= hidden_field_tag :q, params[:q] %>
+  <%%= text_field_tag :name, nil, placeholder: "Name this view" %>
+  <%%= submit_tag "Save current view" %>
+<%% end %>
 <% if searchable_attributes.any? -%>
 
 <%%= form_with url: [:admin, <%= class_name %>], method: :get do |f| %>

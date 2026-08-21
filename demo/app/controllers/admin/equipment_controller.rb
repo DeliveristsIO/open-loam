@@ -7,8 +7,14 @@ module Admin
     def index
       # id breaks ties on created_at, so a record can never slip between pages.
       scope = Equipment.order(created_at: :desc, id: :desc)
+
+      # Apply the picked (or default) saved view first; a filter typed live into
+      # the box then composes on top of it.
+      @perspective = Loam::Perspectives.resolve("Equipment", user: current_actor, id: params[:perspective_id])
+      scope = @perspective.apply(scope) if @perspective
       scope = scope.search(params[:q])
 
+      @perspectives = Loam::Perspectives.visible_to("Equipment", user: current_actor)
       @records, @page, @has_next = paginate(scope)
     end
 

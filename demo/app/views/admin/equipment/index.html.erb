@@ -5,9 +5,29 @@
   <%= link_to "Deleted equipment", polymorphic_path([:deleted, :admin, Equipment]) %>
 </p>
 
+<%# Saved views (Loam::Perspectives): pick one to apply, or save the current one. %>
+<% if @perspectives.any? %>
+  <%= form_with url: [:admin, Equipment], method: :get, class: "perspective-picker" do %>
+    <%= select_tag :perspective_id,
+          options_for_select([["All equipment (no saved view)", "none"]] + @perspectives.map { |p| [p.name, p.id] }, @perspective&.id),
+          onchange: "this.form.submit()" %>
+    <%= link_to "Manage views", admin_perspectives_path(entity_type: "Equipment") %>
+  <% end %>
+<% else %>
+  <p><%= link_to "Manage saved views", admin_perspectives_path(entity_type: "Equipment") %></p>
+<% end %>
+
 <%= form_with url: [:admin, Equipment], method: :get do |f| %>
   <%= text_field_tag :q, params[:q], placeholder: "Filter equipment" %>
   <%= f.submit "Filter" %>
+<% end %>
+
+<%# Save the current filter/sort as a new private view. %>
+<%= form_with url: admin_perspectives_path, method: :post, class: "save-view" do %>
+  <%= hidden_field_tag :entity_type, "Equipment" %>
+  <%= hidden_field_tag :q, params[:q] %>
+  <%= text_field_tag :name, nil, placeholder: "Name this view" %>
+  <%= submit_tag "Save current view" %>
 <% end %>
 
 <table>

@@ -1,0 +1,38 @@
+<h1>Saved views — <%%= @entity_type %></h1>
+
+<p>Named views of the <%%= @entity_type %> list. Save one from the <%%= @entity_type %>
+index; here you rename it, share it (widen its audience), make it the default,
+or delete it.</p>
+
+<%% if @perspectives.empty? %>
+  <p>No saved views yet.</p>
+<%% end %>
+
+<table>
+  <thead>
+    <tr><th>Name</th><th>Visibility</th><th>Default</th><th>Owner</th><th></th></tr>
+  </thead>
+  <tbody>
+    <%% @perspectives.each do |perspective| %>
+      <tr>
+        <td><%%= perspective.name %></td>
+        <td><%%= perspective.visibility %><%%= " (#{perspective.role})" if perspective.role.present? %></td>
+        <td><%%= "default" if perspective.is_default? %></td>
+        <td><%%= User.find_by(id: perspective.owner_id)&.name || "—" %></td>
+        <td>
+          <%%# Only manageable views (yours, or shared ones if you're a manager) get controls. %>
+          <%% if perspective.owner_id == current_actor.id || (perspective.visibility != "private" && current_role == :manager) %>
+            <%%= form_with url: admin_perspective_path(perspective, entity_type: @entity_type), method: :patch, class: "inline" do %>
+              <%%= text_field_tag :"perspective[name]", perspective.name, size: 16 %>
+              <%%= select_tag :"perspective[visibility]", options_for_select(Loam::Perspective::VISIBILITIES, perspective.visibility) %>
+              <%%= text_field_tag :"perspective[role]", perspective.role, placeholder: "role", size: 8 %>
+              <%%= submit_tag "Save" %>
+            <%% end %>
+            <%%= button_to "Make default", set_default_admin_perspective_path(perspective, entity_type: @entity_type), form: { style: "display:inline" } %>
+            <%%= button_to "Delete", admin_perspective_path(perspective, entity_type: @entity_type), method: :delete, form: { style: "display:inline" } %>
+          <%% end %>
+        </td>
+      </tr>
+    <%% end %>
+  </tbody>
+</table>
