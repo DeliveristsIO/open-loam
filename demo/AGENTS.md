@@ -22,6 +22,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | AI approval gate | `Loam::PendingActions` + `Loam::PendingAction` (stage → manager approves → executes) | under confirm-mode, `Loam::PendingActions.stage(summary:, on:, action:, changes:)` records a write for review instead of committing; a manager approves at `/admin/pending_actions`; nothing mutates until then |
 | Saved views | `Loam::Perspectives` + `Loam::Perspective` (private / role / tenant) | a named index view (filters/sort/columns) saved from the entity index; `Loam::Perspectives.visible_to(entity, user:)` / `default_for` / `resolve`; managed at `/admin/perspectives?entity_type=Name`; `perspective.apply(scope)` filters/sorts only whitelisted columns |
 | Concurrent-edit safety | `lock_version` (optimistic) + `Loam::RecordLocks` (advisory) | every generated entity has `lock_version`; a stale update re-renders a conflict diff, never a clobber; `RecordLocks.acquire/holder/release/force_release` warns "who's editing" with a TTL and manager take-over |
+| Real-time updates | `Loam::EventStream` (SSE push, default off) | declare patterns in `Loam.broadcast_events` (e.g. `"loam.notification."`); matching events, filtered to the connection's tenant + audience, stream to the browser at `/admin/events/stream`; the bell updates live |
 | Migration-free field | `custom_fields` jsonb column, read/written via `Loam::CustomFields` | a `Loam::FieldDefinition` row, created via the admin "Field definitions" screen (`/admin/field_definitions`) — never a migration |
 | States & approvals | a `workflow` block in the model (`Loam::Workflow`) | `include Loam::Workflow`; add a string column for the state |
 | Notifications | `Loam::Notification` rows, read at `/admin/notifications` | `Loam::Notifications.notify(user, title:)` / `notify_role(:manager, title:)`, normally from an event subscriber |
@@ -207,6 +208,16 @@ clobber. Keep the hidden `lock_version` field in the edit form and permit it.
 `Loam::RecordLocks.acquire(record, by:)` is the COURTESY: an advisory, TTL'd
 "someone is editing this" banner (heartbeat on re-acquire, auto-frees on
 soft-delete, manager `force_release`). It warns; it does not block.
+
+## Real-time updates (SSE)
+
+Push events to the browser instead of polling. OPT-IN and default-off: only an
+event whose name matches a `Loam.broadcast_events` pattern (set in the
+initializer) is eligible, and each is filtered to the connected tenant AND
+audience (a payload `user_id` is the sole recipient) before it leaves the server.
+The bell already streams `loam.notification.created`; add a pattern to stream
+your own events to a live widget. Fan-out is single-process in the prototype
+(Redis/SolidCable is the seam — see docs/architecture.md).
 
 ## Seeding a new tenant
 

@@ -14,6 +14,11 @@ Loam::Encryption.master_key = ENV.fetch("LOAM_MASTER_KEY", "loam-demo-dev-master
 # role is business logic.
 Loam.default_roles = %w[manager employee]
 
+# Events pushed live to the browser over SSE (Loam::EventStream). Default off;
+# here the notification pattern is on, so the bell increments without a reload.
+# Add more patterns (e.g. "rental.") to stream domain events to live widgets.
+Loam.broadcast_events = [ "loam.notification." ]
+
 # Roles that MUST use two-factor auth (Loam::MfaCredential). At login, a user
 # whose role in the chosen branch is on this list and who has not enrolled is
 # sent to set MFA up first. Resolved via Loam::Configs, so it can be global or a

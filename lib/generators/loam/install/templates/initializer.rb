@@ -16,6 +16,12 @@
 # who gets which role is business logic.
 Loam.default_roles = %w[manager employee]
 
+# Events pushed live to the browser over SSE (Loam::EventStream). Default off; the
+# notification pattern is enabled here so the admin bell increments without a
+# reload. Add patterns (e.g. "billing.") to stream domain events to live widgets —
+# nothing reaches the browser unless it matches a pattern here (security posture).
+Loam.broadcast_events = [ "loam.notification." ]
+
 # Roles that MUST use two-factor auth (Loam::MfaCredential). At login, a user
 # whose role in the chosen tenant is on this list and who has not enrolled is
 # sent to set MFA up before they can work. Resolved via Loam::Configs, so it can

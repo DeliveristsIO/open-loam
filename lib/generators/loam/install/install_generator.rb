@@ -66,6 +66,7 @@ module Loam
         template "admin/pending_actions_controller.rb", "app/controllers/admin/pending_actions_controller.rb"
         template "admin/perspectives_controller.rb", "app/controllers/admin/perspectives_controller.rb"
         template "admin/record_locks_controller.rb", "app/controllers/admin/record_locks_controller.rb"
+        template "admin/events_controller.rb", "app/controllers/admin/events_controller.rb"
         template "admin/dashboard_controller.rb", "app/controllers/admin/dashboard_controller.rb"
         template "admin/field_definitions_controller.rb", "app/controllers/admin/field_definitions_controller.rb"
         template "admin/notifications_controller.rb", "app/controllers/admin/notifications_controller.rb"
@@ -123,6 +124,7 @@ module Loam
               post :set_default, on: :member
             end
             delete "record_lock", to: "record_locks#destroy"  # manager take-over of an edit lock
+            get "events/stream", to: "events#stream", as: :events_stream  # SSE push (Loam::EventStream)
             resources :field_definitions, only: %i[index new create destroy]
             resources :notifications, only: %i[index] do
               post :mark_read, on: :member

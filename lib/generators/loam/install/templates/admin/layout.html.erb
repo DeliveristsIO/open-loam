@@ -22,7 +22,7 @@
       </div>
       <nav>
         <%%= link_to "Dashboard", admin_root_path %>
-        <%%= link_to "Notifications (#{unread_notification_count})", admin_notifications_path %>
+        <%%= link_to admin_notifications_path do %>Notifications (<span id="loam-notification-count"><%%= unread_notification_count %></span>)<%% end %>
         <%%= link_to "API tokens", admin_api_tokens_path %>
         <%%= link_to "Security", admin_mfa_path %>
         <%%= link_to "Approvals (#{pending_approval_count})", admin_pending_actions_path %>
@@ -32,6 +32,23 @@
           <%%= text_field_tag :q, params[:q], placeholder: "Search" %>
         <%% end %>
       </nav>
+
+      <%%# Live updates over SSE (Loam::EventStream). Degrades gracefully: if
+          EventSource is unavailable or the stream drops, the per-page-load bell
+          count above still works. %>
+      <script>
+        (function () {
+          if (typeof EventSource === "undefined") return;
+          var source = new EventSource("<%%= admin_events_stream_path %>");
+          source.addEventListener("loam.notification.created", function () {
+            var badge = document.getElementById("loam-notification-count");
+            if (badge) badge.textContent = (parseInt(badge.textContent, 10) || 0) + 1;
+          });
+          source.onerror = function () {
+            if (source.readyState === EventSource.CLOSED) source.close();
+          };
+        })();
+      </script>
     <%% end %>
     <%%= yield %>
   </body>

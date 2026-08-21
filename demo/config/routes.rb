@@ -32,6 +32,7 @@ Rails.application.routes.draw do
     end
     # Manager take-over of an advisory edit lock (lockable_type + lockable_id params).
     delete "record_lock", to: "record_locks#destroy", as: :record_lock
+    get "events/stream", to: "events#stream", as: :events_stream  # SSE push (Loam::EventStream)
     resources :field_definitions, only: %i[index new create destroy]
     resources :notifications, only: %i[index] do
       post :mark_read, on: :member

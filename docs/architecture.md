@@ -57,6 +57,7 @@ AGENTS.md                agent conventions + guardrails (byte-budgeted)
 | **AI approval gate** | `Loam::PendingActions` + `Loam::PendingAction` — a `TenantRecord` composing Workflow (approval IS a role-gated `pending → approved → executed` machine), Auditable, and Encryptable (the proposed `changeset` is encrypted at rest so it can't leak through the audit). `stage` records intent without touching the target; `approve!(by:)` executes in a transaction as the approver. Loam does NOT intercept Active Record — this is the primitive a confirm-mode caller invokes. | the human-in-the-loop consumer is the MCP server (L-302) |
 | **Saved views** | `Loam::Perspectives` + `Loam::Perspective` — a tenant-scoped, audited saved index view (filters/sort/columns/page_size in a json `config`) with private / role / tenant visibility resolved by an `.or` chain; `default_for` picks the most specific default (private > role > tenant). `apply` filters/sorts only whitelisted columns (never `tenant_id`/plumbing), and rows are optimistic-locked. | column-level RBAC on view sharing; a richer in-index column/filter builder |
 | **Concurrent-edit safety** | Optimistic: `lock_version` on every generated entity; a stale update raises `StaleObjectError`, which the admin controller turns into a diff-and-retry conflict page (`stale_conflict!`, encrypted fields compared decrypted). Advisory: `Loam::RecordLock` + `Loam::RecordLocks` — a TTL'd per-record "who's editing" lock (heartbeat on re-acquire, auto-free on soft-delete, manager `force_release`). The version check is the guarantee; the lock is the courtesy. | presence/websocket live-lock UI; server-side field-merge on conflict |
+| **Real-time updates** | `Loam::EventStream` — a `text/event-stream` endpoint (`ActionController::Live`) that pushes events matching `Loam.broadcast_events` (default OFF) to the browser, tenant- and audience-filtered; a vanilla `EventSource` in the layout updates the bell live. Fan-out is behind a swappable broadcaster seam. | Redis/SolidCable broadcaster for multi-process (see the single-process note below) |
 | **Notifications / API / webhooks** | `Loam::Notifications`, a token-auth JSON API per entity, `Loam::Webhooks` with HMAC-signed ActiveJob delivery. | — |
 | **Admin** | Generated Hotwire-free ERB console: CRUD, comments, attachments, global search, filtering, pagination, permission-aware. | evaluate Avo as an alternate backend (L-403) |
 | **Background** | ActiveJob (webhook delivery, digests); tenant context carried explicitly in jobs via `Loam.as_tenant`. | Solid Queue defaults |
@@ -141,3 +142,13 @@ The original open questions, now resolved (revisit if real usage argues otherwis
   path (a proposed price change) explicitly. Approval reuses `Loam::Workflow` as a
   role-gated state machine, and the proposed changeset is encrypted at rest so a
   staged change to an encrypted field never leaks through the row or its audit.
+- **Real-time push is SINGLE-PROCESS in the prototype.** The default
+  `Loam::EventStream::InProcessBroadcaster` subscribes to `ActiveSupport::Notifications`
+  in ONE process, so it only sees events instrumented in that same process — fine
+  for the SQLite/single-`puma`-worker prototype, wrong for a multi-process deploy
+  where a browser connected to worker A would miss an event published on worker B.
+  The fix is a pub/sub backend (Redis, or ActionCable/SolidCable); it drops in as
+  a `Loam::EventStream.broadcaster` replacement with no controller change — the
+  seam is deliberate, the distribution is not faked. Broadcasting is opt-in per
+  `Loam.broadcast_events` pattern (default empty), and every event is filtered to
+  the connection's tenant and audience before it leaves the server.

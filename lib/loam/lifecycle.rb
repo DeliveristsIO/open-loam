@@ -75,6 +75,18 @@ module Loam
       @config_defaults = defaults.to_h.transform_keys(&:to_s)
     end
 
+    # Event-name patterns (Loam::Events.pattern_matches?) whose events may be
+    # pushed to the browser over SSE (Loam::EventStream). DEFAULT OFF — an empty
+    # list means nothing reaches a browser; an app opts in explicitly, so a stray
+    # event never leaks by default.
+    def self.broadcast_events
+      @broadcast_events ||= []
+    end
+
+    def self.broadcast_events=(patterns)
+      @broadcast_events = Array(patterns).map(&:to_s)
+    end
+
     # Known feature flags: `{ "beta_dashboard" => { default: false, description:
     # "..." } }`, declared in the initializer and read by Loam::Features. A
     # registry like the others — a flag with no row resolves to its declared
@@ -109,5 +121,9 @@ module Loam
   def self.feature_defaults = Lifecycle.feature_defaults
   def self.feature_defaults=(defaults)
     Lifecycle.feature_defaults = defaults
+  end
+  def self.broadcast_events = Lifecycle.broadcast_events
+  def self.broadcast_events=(patterns)
+    Lifecycle.broadcast_events = patterns
   end
 end
