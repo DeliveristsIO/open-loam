@@ -3,33 +3,36 @@
 The merge of two plans: the 90-day product & business plan
 ([LOAM_PLAN.md](LOAM_PLAN.md), the source of truth for scope and KPIs) and the
 execution backlog in the [Loam GitHub project](https://github.com/orgs/DeliveristsIO/projects/7)
-(L-numbered tasks). Statuses below reflect the repository as of 2026-08-18.
+(L-numbered tasks). Statuses below reflect the repository as of 2026-08-21.
 
 ## Where we are
 
-**Days 1–14 (Loam Core)** — the foundation from LOAM_PLAN.md, mapped to reality:
+**The technical foundation is far ahead of the plan.** LOAM_PLAN.md's Days 1–14
+core is long done; on top of it, four batches of features shipped — some two
+dozen `Loam::` modules in all — each added behind a convention, tested, and
+run through an independent adversarial security review.
 
-| Plan capability | Status | Where |
+| Batch | Modules | Status |
 |---|---|---|
-| Multi-tenancy (Organization → `Loam::Tenant`) | ✅ done | `Loam::TenantRecord`, structural isolation, raises without context |
-| Membership + roles | ✅ done | `Loam::Membership` (role per tenant) |
-| Permissions + policies | ✅ done | `Loam::Policy`, field-level `writable:` rules |
-| Audit log | ✅ done | `Loam::Auditable`, on by default |
-| Events | ✅ done | `Loam::Events` (`domain.thing.happened`) |
-| Custom fields | ✅ done | `Loam::CustomFields` + `Loam::FieldDefinition`, migration-free |
-| Tenant lifecycle | ✅ done | `Loam.on_tenant_created` + `bin/rails loam:sync` (L-701) |
-| Generators as the interface | ✅ done | `loam:install`, `loam:entity` (plan calls it `loam:resource` — same thing) |
-| Demo app, README, tests, CI | ✅ done | `demo/`, generator harness (`rake test`), `.github/workflows/ci.yml` (L-101..L-104) |
-| Workflow (states, transitions, approvals) | ✅ done | `Loam::Workflow` DSL, role-gated transitions, transition events (L-801) |
-| Notifications | ✅ done | `Loam::Notification` + `Loam::Notifications.notify/notify_role`, admin screen (L-802) |
-| API + webhooks | ✅ done | `Loam::ApiToken` bearer auth, generated JSON controllers, signed webhooks (L-803, L-804) |
-| Authentication | ✅ done | password login, membership-limited tenant picker, admin API tokens (L-805) |
-| Comments + attachments | ✅ done | `Loam::Commentable`/`Loam::Attachable`, shared admin comments controller (L-806) |
-| Search + UI primitives (filters, pagination) | ✅ done | `Loam::Searchable`, global admin search, index filter + pagination (L-807) |
+| **Days 1–14 core** | tenancy, membership/roles, policies, audit, events, custom fields, lifecycle, workflow, notifications, API + webhooks, auth, comments/attachments, search, generators, demo, CI | ✅ done (L-101…L-807, L-701/702) |
+| **NOW** (regulated + agent-native) | soft-delete, per-tenant configs, feature flags, **per-tenant field encryption (AES-256-GCM + AAD)**, MFA + step-up, AI mutation approval gate | ✅ done (L-901–906) |
+| **NEXT** (platform) | saved views, record locks, real-time SSE, response enrichers, business-rules engine, pluggable search, **SSO (OIDC + JIT)** | ✅ done (L-907–913) |
+| **LATER** | dictionaries, task progress, scheduler, bulk import/export, dashboards + widgets, auto-OpenAPI, content translations, override registry | ✅ done (L-914–922) |
+| **Deferred security** | auth rate-limiting/lockout, ciphertext AAD binding | ✅ done (L-923–924) |
 
-Naming decision (2026-08-18): the isolation axis stays **`Loam::Tenant`** — the
-precise technical term. A business-facing `Organization` layer can sit on top
-later (the Frappe/Mercato pattern) without renaming the core.
+Three adversarial security reviews (one per batch) plus two deferred-item passes
+found and closed **4 CRITICAL + 3 HIGH** cross-tenant account-takeover chains,
+privilege escalations, and PII-leak vectors — each fix shipped with a regression
+test that reproduces the exploit. The demo suite carries ~1,300 assertions; CI
+is green.
+
+Naming decision: the isolation axis stays **`Loam::Tenant`** — the precise
+technical term. A business-facing `Organization` layer can sit on top later
+(the Frappe/Mercato pattern) without renaming the core.
+
+**The honest gap is not features — it's validation.** None of this has been used
+on a real project yet. The single highest-value next step is one measured
+dogfood build (LOAM_PLAN.md Days 61–75), not another module.
 
 ## Next phases (from LOAM_PLAN.md, unchanged)
 

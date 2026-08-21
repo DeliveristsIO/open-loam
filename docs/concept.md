@@ -73,14 +73,3 @@ Mirrors the foundations Loam stands on (Bullet Train, Rails itself):
 
 The moat isn't code — it's the **conventions + the agent legibility + the domain
 packs** compounding on top of them.
-
-## Relationship to DevOrch
-
-Loam and [DevOrch](https://github.com/yourusername/devorch) are complementary and
-mutually reinforcing:
-
-- Loam makes a codebase **safe for agents to extend**.
-- DevOrch **runs the agents** that extend it (implement → test → review → PR).
-
-Sold together they're a story: *the substrate and the machine that builds on it.*
-Dogfooding is natural — DevOrch develops Loam and Loam-based apps.
