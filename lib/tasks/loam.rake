@@ -53,6 +53,30 @@ namespace :loam do
       end
       puts "loam:index:reindex — rebuilt #{models.size} model(s) across #{tenants} tenant(s)."
     end
+
+    # Report custom-field index coverage (indexed vs expected) per model/field
+    # per tenant — the trust signal for whether the index is complete or drifting.
+    #
+    #   bin/rails loam:index:coverage
+    desc "Report custom-field index coverage per model/field per tenant"
+    task coverage: :environment do
+      Rails.application.eager_load!
+      models = Loam::TenantRecord.descendants.select do |model|
+        model.name.present? && model.respond_to?(:custom_field_definitions)
+      end
+
+      Loam::Tenant.find_each do |tenant|
+        Loam.as_tenant(tenant) do
+          models.each do |model|
+            model.custom_field_definitions.find_each do |definition|
+              c = Loam::CustomFieldIndex.coverage(model, definition.name)
+              flag = c[:complete] ? "ok" : "GAP"
+              puts "  [#{flag}] #{tenant.slug} #{model.name}.#{definition.name}: #{c[:indexed]}/#{c[:expected]} indexed"
+            end
+          end
+        end
+      end
+    end
   end
 
   namespace :search do

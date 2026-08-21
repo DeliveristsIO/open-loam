@@ -1,5 +1,9 @@
 <h1><%= plural_name.humanize %></h1>
 
+<%% if @index_partial %>
+  <p style="color:#b00">Results may be incomplete — the custom-field index is rebuilding in the background.</p>
+<%% end %>
+
 <p>
   <%%= link_to "New <%= human_name.downcase %>", new_polymorphic_path([:admin, <%= class_name %>]) %>
   <%%= link_to "Deleted <%= plural_name.humanize.downcase %>", polymorphic_path([:deleted, :admin, <%= class_name %>]) %>

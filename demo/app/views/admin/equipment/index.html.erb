@@ -1,5 +1,9 @@
 <h1>Equipment</h1>
 
+<% if @index_partial %>
+  <p style="color:#b00">Results may be incomplete — the custom-field index is rebuilding in the background.</p>
+<% end %>
+
 <p>
   <%= link_to "New equipment", new_polymorphic_path([:admin, Equipment]) %>
   <%= link_to "Deleted equipment", polymorphic_path([:deleted, :admin, Equipment]) %>

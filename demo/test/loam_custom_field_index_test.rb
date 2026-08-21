@@ -104,9 +104,12 @@ class LoamCustomFieldIndexTest < ActiveSupport::TestCase
     e = make(@warsaw, "Rig", grade: "A")
     with_tenant(@warsaw) do
       Loam::CustomFieldValue.delete_all
-      assert_empty Loam::CustomFieldIndex.filter(Equipment, "grade", "eq", "A")
+      # L-919: a gappy filter still returns the correct record (JSON fallback),
+      # never a silently-empty set.
+      assert_equal [ e.id ], Loam::CustomFieldIndex.filter(Equipment, "grade", "eq", "A").pluck(:id)
 
       Loam::CustomFieldIndex.reindex(Equipment)
+      assert Loam::CustomFieldValue.exists?(indexable_id: e.id, field_key: "grade"), "reindex rebuilt the row"
       assert_equal [ e.id ], Loam::CustomFieldIndex.filter(Equipment, "grade", "eq", "A").pluck(:id)
     end
   end

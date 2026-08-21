@@ -8,6 +8,7 @@ module Admin
       @perspective = Loam::Perspectives.resolve("Equipment", user: current_actor, id: params[:perspective_id])
       @perspectives = Loam::Perspectives.visible_to("Equipment", user: current_actor)
       @records, @page, @has_next = paginate(index_scope)
+      @index_partial = params[:cf_field].present? && Loam::CustomFieldIndex.partial?  # incomplete-index warning (L-919)
     end
 
     # CSV of the CURRENT filtered/perspective view — manager-only, policy- and
