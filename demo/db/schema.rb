@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_22_100000) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_22_110000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -108,6 +108,15 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_100000) do
     t.datetime "updated_at", null: false
     t.index ["tenant_id", "auditable_type", "auditable_id"], name: "idx_on_tenant_id_auditable_type_auditable_id_3d28ce6bd5"
     t.index ["tenant_id"], name: "index_loam_audit_records_on_tenant_id"
+  end
+
+  create_table "loam_auth_attempts", force: :cascade do |t|
+    t.string "identifier", null: false
+    t.string "kind", null: false
+    t.string "ip"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["identifier", "created_at"], name: "index_loam_auth_attempts_on_identifier_and_created_at"
   end
 
   create_table "loam_business_rule_runs", force: :cascade do |t|

@@ -9,7 +9,7 @@ class LoamGuardrailsTest < ActiveSupport::TestCase
   # nullable column and resolution lives in vetted gem code (Loam::Configs).
   # Loam::MfaCredential belongs to the person, who spans tenants — MFA is
   # verified at login before any tenant is chosen.
-  TENANCY_ALLOWLIST = %w[ApplicationRecord User Loam::Tenant Loam::Config Loam::MfaCredential].freeze
+  TENANCY_ALLOWLIST = %w[ApplicationRecord User Loam::Tenant Loam::Config Loam::MfaCredential Loam::AuthAttempt].freeze
 
   # Rails' own engine models (storage, rich text, jobs) are framework
   # plumbing, not business data — they are out of scope for tenant linting.

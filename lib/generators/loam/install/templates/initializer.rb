@@ -80,6 +80,16 @@ Loam.broadcast_events = [ "loam.notification.", "loam.progress." ]
 # be a global default or a per-tenant override; empty means MFA is optional.
 #
 #   Loam::Configs.set("security.mfa_required_roles", ["manager"], scope: :global)
+#
+# Auth rate-limiting / lockout (Loam::AuthThrottle) guards failed password/TOTP/
+# sudo attempts. Defaults: lock after 10 failures within a 15-minute window.
+# Tune via Loam::Configs (global or per-tenant):
+#
+#   Loam::Configs.set("security.max_auth_attempts",   5,  scope: :global)
+#   Loam::Configs.set("security.auth_window_minutes", 10, scope: :global)
+#
+# Rack::Attack (with a cache store) is the production-scale path across multiple
+# processes; the built-in DB counter is the portable single-process default.
 
 # App-wide setting defaults (Loam::Configs). A key resolves override → global
 # row → this declared default, so declaring one here needs no migration and no

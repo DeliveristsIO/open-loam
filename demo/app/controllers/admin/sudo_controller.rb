@@ -8,11 +8,20 @@ module Admin
     end
 
     def create
+      identifier = "#{current_actor.email}:sudo"  # a distinct throttle bucket from login
+
+      if Loam::AuthThrottle.locked?(identifier)
+        @error = "Too many attempts. Try again later."
+        return render :new, status: :too_many_requests
+      end
+
       if reauthenticated?
+        Loam::AuthThrottle.clear(identifier)
         session[:sudo_at] = Time.now.to_i
         redirect_to(session.delete(:sudo_return_to).presence || admin_root_path,
                     notice: "Re-authenticated — you can complete the action now.")
       else
+        Loam::AuthThrottle.record_failure(identifier, kind: "sudo", ip: request.remote_ip)
         @error = "That did not verify. Try again."
         render :new, status: :unauthorized
       end

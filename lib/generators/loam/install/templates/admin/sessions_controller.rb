@@ -18,15 +18,28 @@ module Admin
     end
 
     def create
-      user = User.authenticate_by(email: params[:email], password: params[:password])
+      email = params[:email]
+
+      # Rate-limit BEFORE touching the password (Loam::AuthThrottle). Throttle by
+      # the submitted identifier whether or not the account exists, and give the
+      # SAME generic locked response either way — so a lockout can't become an
+      # account-existence oracle.
+      if Loam::AuthThrottle.locked?(email)
+        @error = throttle_message(email)
+        return render :new, status: :too_many_requests
+      end
+
+      user = User.authenticate_by(email: email, password: params[:password])
 
       if user.nil?
+        Loam::AuthThrottle.record_failure(email, kind: "password", ip: request.remote_ip)
         # One message for both cases on purpose: saying which half was wrong
         # tells an attacker which emails exist.
         @error = "Wrong email or password."
         return render :new, status: :unauthorized
       end
 
+      Loam::AuthThrottle.clear(email) # a successful login resets the counter
       reset_session # a fresh session id at login: no fixation
       session[:user_id] = user.id
 
@@ -49,12 +62,23 @@ module Admin
     # throttling infra) — a 6-digit TOTP is brute-forceable without it.
     def mfa_verify
       user = mfa_challenge_user or return redirect_to new_admin_session_path
+
+      # A 6-digit TOTP (with drift, several codes valid) is the prime brute-force
+      # target — lock it out on the user's identifier.
+      if Loam::AuthThrottle.locked?(user.email)
+        @user = user
+        @error = throttle_message(user.email)
+        return render :mfa_challenge, status: :too_many_requests
+      end
+
       credential = Loam::MfaCredential.active_for(user)
 
       if credential.verify_totp(params[:code]) || credential.consume_recovery_code(params[:code])
+        Loam::AuthThrottle.clear(user.email)
         session.delete(:mfa_pending)
         complete_authentication(user)
       else
+        Loam::AuthThrottle.record_failure(user.email, kind: "totp", ip: request.remote_ip)
         # One generic error — never reveal whether a code was close or a
         # recovery code was already spent.
         @user = user
@@ -157,6 +181,11 @@ module Admin
 
     def authenticated_user
       User.find_by(id: session[:user_id])
+    end
+
+    def throttle_message(identifier)
+      minutes = (Loam::AuthThrottle.remaining_lockout(identifier) / 60.0).ceil
+      "Too many attempts. Try again in about #{[ minutes, 1 ].max} minute(s)."
     end
 
     # The signed-in user mid-MFA, or nil. Both the pending flag AND the user id
