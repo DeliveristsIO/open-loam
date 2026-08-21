@@ -29,6 +29,14 @@ Loam::Enrichers.register("Equipment", key: "open_damage_reports", batch: ->(equi
   equipments.map(&:id).index_with { |id| counts.fetch(id, 0) }
 end)
 
+# Search backend (Loam::Search). The default is a substring LIKE; the demo opts
+# into the portable word-level TokenDriver so search is order-independent
+# ("excavator cat" finds "CAT 320 Excavator"). `searchable_by` and every
+# `Model.search(q)` call site are unchanged — only this line differs. Existing
+# records need `Loam::Search.reindex(Model)` once (seeds do it; in production run
+# `bin/rails loam:search:reindex`); new/updated records index themselves on save.
+Loam::Search.driver = Loam::Search::TokenDriver
+
 # Roles that MUST use two-factor auth (Loam::MfaCredential). At login, a user
 # whose role in the chosen branch is on this list and who has not enrolled is
 # sent to set MFA up first. Resolved via Loam::Configs, so it can be global or a

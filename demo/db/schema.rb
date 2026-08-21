@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_21_230000) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_22_000000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -265,6 +265,16 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_21_230000) do
     t.index ["tenant_id"], name: "index_loam_record_locks_on_tenant_id"
   end
 
+  create_table "loam_search_tokens", force: :cascade do |t|
+    t.integer "tenant_id", null: false
+    t.string "searchable_type", null: false
+    t.bigint "searchable_id", null: false
+    t.string "token", null: false
+    t.index ["tenant_id", "searchable_type", "searchable_id"], name: "idx_on_tenant_id_searchable_type_searchable_id_24c57da776"
+    t.index ["tenant_id", "searchable_type", "token"], name: "idx_on_tenant_id_searchable_type_token_4625d2d4d0"
+    t.index ["tenant_id"], name: "index_loam_search_tokens_on_tenant_id"
+  end
+
   create_table "loam_tenants", force: :cascade do |t|
     t.string "name", null: false
     t.string "slug", null: false
@@ -318,5 +328,6 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_21_230000) do
   add_foreign_key "loam_perspectives", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_record_locks", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_record_locks", "users", column: "locked_by_id"
+  add_foreign_key "loam_search_tokens", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_webhook_endpoints", "loam_tenants", column: "tenant_id"
 end

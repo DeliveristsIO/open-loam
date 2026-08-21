@@ -12,17 +12,30 @@ module Loam
   # to remember: the default scope is already on it, and the result composes
   # with ordering, pagination and anything else.
   #
-  # Matching is a plain substring LIKE. What that means per adapter, because it
-  # is not the same everywhere: on SQLite, LIKE ignores case for ASCII; on
-  # PostgreSQL, Arel's `matches` emits ILIKE, which ignores case properly. What
-  # neither does is ignore accents, stem words or rank results — when the app
-  # needs that, this is the seam to replace (pg_trgm, tsvector, Elasticsearch)
-  # and every caller keeps working.
+  # HOW a query matches is a swappable driver (Loam::Search.driver): the default
+  # LikeDriver is a substring LIKE; the TokenDriver is a portable word-level
+  # index; an external engine is a third. This concern is only the DECLARATION
+  # (`searchable_by`) and the untouched call site (`Model.search(q)`) — swapping
+  # the driver changes neither. See Loam::Search.
   module Searchable
     extend ActiveSupport::Concern
 
     included do
       class_attribute :loam_searchable_columns, default: [].freeze, instance_writer: false
+
+      # Keep the active driver's index current. A no-op under the default
+      # LikeDriver; the TokenDriver maintains loam_search_tokens here. Guarded so
+      # non-searchable models pay nothing, and skipped when no searchable column
+      # actually changed — so a soft-delete (which touches only deleted_at)
+      # leaves the tokens in place, and the base scope hides the row anyway.
+      #
+      # `respond_to?` guard: Searchable is includable in a plain class purely to
+      # exercise the `searchable_by` DSL (its encrypted-field check), with no
+      # ActiveRecord underneath — only a real model gets the callbacks.
+      if respond_to?(:after_save)
+        after_save    :loam_update_search_index,     if: :loam_search_index_stale?
+        after_destroy :loam_remove_from_search_index, if: -> { self.class.loam_searchable? }
+      end
     end
 
     class_methods do
@@ -52,21 +65,26 @@ module Loam
         loam_searchable_columns.any?
       end
 
-      # A blank query matches everything rather than nothing: an empty search
-      # box means "no filter", which is what a user expects from one.
+      # Delegates to the active driver, handing it the current relation as the
+      # base scope — so `Model.search(q)` and `some_scope.search(q)` both work
+      # (a class method called on a relation runs with `all` == that relation).
+      # A blank query returns everything: an empty search box means "no filter".
       def search(query)
-        query = query.to_s.strip
-        return all if query.blank? || !loam_searchable?
-
-        # sanitize_sql_like escapes the LIKE wildcards so a literal % or _ in
-        # the query stays literal; the second argument to `matches` is what
-        # declares that escape character to the database (SQLite has none by
-        # default, so without it the escaping would be worse than useless).
-        pattern = "%#{sanitize_sql_like(query)}%"
-        conditions = loam_searchable_columns.map { |column| arel_table[column].matches(pattern, "\\") }
-
-        where(conditions.inject(:or))
+        Loam::Search.search(self, query, scope: all)
       end
+    end
+
+    private
+
+    def loam_update_search_index     = Loam::Search.index(self)
+    def loam_remove_from_search_index = Loam::Search.remove(self)
+
+    # On create every column counts as changed, so a new record is always
+    # indexed; on update, reindex only when a searchable column actually moved.
+    def loam_search_index_stale?
+      return false unless self.class.loam_searchable?
+
+      saved_changes.keys.intersect?(self.class.loam_searchable_columns)
     end
   end
 end

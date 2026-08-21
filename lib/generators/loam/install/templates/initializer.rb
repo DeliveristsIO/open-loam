@@ -32,6 +32,17 @@ Loam.broadcast_events = [ "loam.notification." ]
 #     equipments.map(&:id).index_with { |id| totals.fetch(id, 0) }
 #   end)
 
+# Search backend (Loam::Search). The default is a substring LIKE — portable and
+# zero-setup. Opt into the word-level TokenDriver (also portable, no external
+# service: it keeps a normalized-token index in loam_search_tokens) for
+# order-independent, whole-word matching. `searchable_by` and every
+# `Model.search(q)` call site are UNCHANGED — only this line differs; an external
+# engine (Meilisearch/Elasticsearch) is a third driver behind the same seam.
+# After switching, backfill existing rows once with `bin/rails loam:search:reindex`
+# (new and updated records index themselves on save).
+#
+#   Loam::Search.driver = Loam::Search::TokenDriver
+
 # Roles that MUST use two-factor auth (Loam::MfaCredential). At login, a user
 # whose role in the chosen tenant is on this list and who has not enrolled is
 # sent to set MFA up before they can work. Resolved via Loam::Configs, so it can

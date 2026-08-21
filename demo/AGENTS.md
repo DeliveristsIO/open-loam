@@ -28,7 +28,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Migration-free field | `custom_fields` jsonb column, read/written via `Loam::CustomFields` | a `Loam::FieldDefinition` row, created via the admin "Field definitions" screen (`/admin/field_definitions`) — never a migration |
 | States & approvals | a `workflow` block in the model (`Loam::Workflow`) | `include Loam::Workflow`; add a string column for the state |
 | Notifications | `Loam::Notification` rows, read at `/admin/notifications` | `Loam::Notifications.notify(user, title:)` / `notify_role(:manager, title:)`, normally from an event subscriber |
-| Search | `searchable_by :col, :col` in the model (`Loam::Searchable`) | declared with the entity for its string/text columns; `Model.search(q)` and the admin's global box at `/admin/search` |
+| Search | `searchable_by :col, :col` in the model (`Loam::Searchable`) | declared with the entity for its string/text columns; `Model.search(q)` and the admin's global box at `/admin/search`. HOW it matches is a swappable driver (`Loam::Search.driver`): substring LIKE (default) or the portable word-level TokenDriver — call sites never change |
 | Long lists | `paginate(scope)` from `Admin::Pagination` in `BaseController` | already wired into generated index screens — 25 a page, with a filter box |
 | Comments | `Loam::Comment` rows via `Loam::Commentable` | `record.comment!("...")`, or the form on the entity's show screen; publishes `loam.comment.created` |
 | Attachments | ActiveStorage `files` via `Loam::Attachable` | `record.files.attach(...)`, or the file field on the entity's form — uploading counts as an update, so the entity's policy decides |
@@ -243,6 +243,18 @@ which would skip the transition gate), `block_transition`. Rules run tenant-scop
 in priority order, each isolated (a raising rule is logged, not fatal); the run log
 shows why each fired. Add a verb by extending `BusinessRules::Actions`/`Condition`,
 never by evaluating a rule string.
+
+## Search backends
+
+`searchable_by :col, :col` declares the columns; `Model.search(q)` returns a
+tenant-scoped relation. HOW a query matches is a swappable driver
+(`Loam::Search.driver`): the default `LikeDriver` is a substring LIKE; the
+`TokenDriver` keeps a portable word-level index (`loam_search_tokens`) for
+order-independent, whole-word matching; an external engine is a third — all
+behind one seam, so NO `searchable_by`/`Model.search` call site changes. Switch it
+in the initializer, then `bin/rails loam:search:reindex` once to backfill
+(new/updated records self-index). Never `searchable_by` an encrypted field — and
+the TokenDriver never tokenizes one either (no plaintext leak into the index).
 
 ## Seeding a new tenant
 

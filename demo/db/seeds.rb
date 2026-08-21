@@ -101,12 +101,20 @@ Loam.as_tenant(warsaw, actor: anna) do
     action: :update,
     changes: { daily_rate: 150 }
   )
+
+  # The demo uses the TokenDriver (see config/initializers/loam.rb). New records
+  # index themselves on save, but a RE-seed touches existing rows with
+  # find_or_create_by! (no save, no tokens), so rebuild the index explicitly —
+  # the same thing `bin/rails loam:search:reindex` does after a deploy.
+  [ Equipment, Customer, DamageReport ].each { |model| Loam::Search.reindex(model) }
 end
 
 Loam.as_tenant(krakow, actor: anna) do
   Loam::Membership.find_or_create_by!(user: anna) { |m| m.role = "manager" }
 
   Equipment.find_or_create_by!(name: "Scaffolding set") { |e| e.daily_rate = 80.0; e.status = "available" }
+
+  Loam::Search.reindex(Equipment)
 end
 
-puts "Seeded: 2 tenants, 2 users, 3 equipment records, rental settings (global + Warsaw override), beta_dashboard on for Warsaw, 1 customer with encrypted PII, 1 pending approval, 2 saved views, 1 business rule."
+puts "Seeded: 2 tenants, 2 users, 3 equipment records, rental settings (global + Warsaw override), beta_dashboard on for Warsaw, 1 customer with encrypted PII, 1 pending approval, 2 saved views, 1 business rule, word-level search index (TokenDriver)."

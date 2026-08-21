@@ -5,6 +5,30 @@ namespace :loam do
     puts "loam:sync — ran #{Loam.tenant_created_callbacks.size} tenant callback(s) across #{synced} tenant(s)."
   end
 
+  namespace :search do
+    # Rebuild the active driver's search index for every searchable model in
+    # every tenant. Needed once after switching to a driver that keeps an index
+    # (Loam::Search::TokenDriver): existing rows have no tokens until reindexed,
+    # while new and updated records index themselves on save. A no-op under the
+    # default LikeDriver (its reindex does nothing), so it is always safe to run.
+    #
+    #   bin/rails loam:search:reindex
+    desc "Rebuild the search index for every searchable model in every tenant"
+    task reindex: :environment do
+      Rails.application.eager_load!
+      models = Loam::TenantRecord.descendants.select do |model|
+        model.respond_to?(:loam_searchable?) && model.loam_searchable?
+      end
+
+      tenants = 0
+      Loam::Tenant.find_each do |tenant|
+        Loam.as_tenant(tenant) { models.each { |model| Loam::Search.reindex(model) } }
+        tenants += 1
+      end
+      puts "loam:search:reindex — rebuilt #{models.size} model(s) across #{tenants} tenant(s) using #{Loam::Search.driver}."
+    end
+  end
+
   namespace :encryption do
     # Rotate a tenant's encrypted data under the current key: read each record's
     # encrypted fields (old key) and re-seal them (new key), one record at a

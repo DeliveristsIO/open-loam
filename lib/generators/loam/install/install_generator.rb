@@ -29,6 +29,7 @@ module Loam
         migration_template "migrations/create_loam_perspectives.rb", "db/migrate/create_loam_perspectives.rb"
         migration_template "migrations/create_loam_record_locks.rb", "db/migrate/create_loam_record_locks.rb"
         migration_template "migrations/create_loam_business_rules.rb", "db/migrate/create_loam_business_rules.rb"
+        migration_template "migrations/create_loam_search_tokens.rb", "db/migrate/create_loam_search_tokens.rb"
       end
 
       # Attachments (Loam::Attachable, included in every generated entity) are
