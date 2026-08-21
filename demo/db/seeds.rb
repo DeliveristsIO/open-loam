@@ -81,6 +81,17 @@ Loam.as_tenant(warsaw, actor: anna) do
     p.config = { "sort" => { "field" => "daily_rate", "dir" => "desc" } }
   end
 
+  # A business rule (Loam::BusinessRules): WHEN a damage report is submitted AND
+  # its description mentions "urgent", notify the branch managers. Declared as
+  # DATA (trigger + safe condition + typed action), fired by the event engine.
+  Loam::BusinessRule.find_or_create_by!(name: "Flag urgent damage reports") do |rule|
+    rule.entity_type = "DamageReport"
+    rule.trigger = "rental.damage_report.submit"
+    rule.condition = { "field" => "description", "op" => "contains", "value" => "urgent" }
+    rule.actions = [ { "type" => "notify", "role" => "manager", "title" => "Urgent damage report submitted" } ]
+    rule.active = true
+  end
+
   # An AI-proposed price change waiting in the approval queue (Loam::PendingActions):
   # staged, not applied, until a manager approves it under Approvals. Idempotent —
   # the idempotency key collapses a re-seed to the same row.
@@ -98,4 +109,4 @@ Loam.as_tenant(krakow, actor: anna) do
   Equipment.find_or_create_by!(name: "Scaffolding set") { |e| e.daily_rate = 80.0; e.status = "available" }
 end
 
-puts "Seeded: 2 tenants, 2 users, 3 equipment records, rental settings (global + Warsaw override), beta_dashboard on for Warsaw, 1 customer with encrypted PII, 1 pending approval, 2 saved views."
+puts "Seeded: 2 tenants, 2 users, 3 equipment records, rental settings (global + Warsaw override), beta_dashboard on for Warsaw, 1 customer with encrypted PII, 1 pending approval, 2 saved views, 1 business rule."

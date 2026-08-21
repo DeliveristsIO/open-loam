@@ -8,6 +8,7 @@ module Loam
     # twice (see Loam::Webhooks.subscribe!).
     config.after_initialize do
       Loam::Webhooks.subscribe!
+      Loam::BusinessRules.subscribe!
     end
 
     # lib/tasks/loam.rake (bin/rails loam:sync) is picked up by Rails::Engine's

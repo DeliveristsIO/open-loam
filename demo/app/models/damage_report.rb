@@ -39,4 +39,17 @@ class DamageReport < Loam::TenantRecord
   def publish_penalty_due
     Loam::Events.publish("billing.penalty.due", id: id)
   end
+
+  # A business rule with a `block_transition` action can veto a workflow move
+  # (Loam::BusinessRules.veto?) — checked BEFORE the transition runs. This wiring
+  # is an example; other entities can adopt it the same way. The class def wins
+  # over Loam::Workflow's method and reaches it via super.
+  def loam_perform_transition!(transition)
+    trigger = "#{loam_workflow_event_domain}.#{model_name.param_key}.#{transition.name}"
+    if Loam::BusinessRules.veto?(self, trigger)
+      raise Loam::TransitionVetoedError, "#{model_name.human} #{transition.name} was vetoed by a business rule"
+    end
+
+    super
+  end
 end

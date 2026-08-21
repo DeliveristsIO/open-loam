@@ -1,0 +1,45 @@
+<h1>Business rules</h1>
+
+<p><%= link_to "New rule", new_admin_business_rule_path %></p>
+
+<table>
+  <thead>
+    <tr><th>Name</th><th>Trigger</th><th>Entity</th><th>Priority</th><th>Active</th><th></th></tr>
+  </thead>
+  <tbody>
+    <% @rules.each do |rule| %>
+      <tr>
+        <td><%= rule.name %></td>
+        <td><code><%= rule.trigger %></code></td>
+        <td><%= rule.entity_type %></td>
+        <td><%= rule.priority %></td>
+        <td><%= rule.active? ? "yes" : "no" %></td>
+        <td>
+          <%= link_to "Edit", edit_admin_business_rule_path(rule) %>
+          <%= button_to "Delete", admin_business_rule_path(rule), method: :delete, form: { style: "display:inline" } %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<h2>Recent runs</h2>
+<p>Why rules did (or didn't) act — the last 20.</p>
+<table>
+  <thead>
+    <tr><th>When</th><th>Rule</th><th>Subject</th><th>Event</th><th>Matched</th><th>Actions</th><th>Error</th></tr>
+  </thead>
+  <tbody>
+    <% @recent_runs.each do |run| %>
+      <tr>
+        <td><%= run.created_at.strftime("%H:%M:%S") %></td>
+        <td><%= run.business_rule.name %></td>
+        <td><%= [run.subject_type, run.subject_id].compact.join(" #") %></td>
+        <td><code><%= run.event_name %></code></td>
+        <td><%= run.matched ? "yes" : "no" %></td>
+        <td><%= Array(run.actions_taken).join(", ") %></td>
+        <td><%= run.error %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

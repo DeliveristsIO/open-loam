@@ -24,6 +24,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Concurrent-edit safety | `lock_version` (optimistic) + `Loam::RecordLocks` (advisory) | every generated entity has `lock_version`; a stale update re-renders a conflict diff, never a clobber; `RecordLocks.acquire/holder/release/force_release` warns "who's editing" with a TTL and manager take-over |
 | Real-time updates | `Loam::EventStream` (SSE push, default off) | declare patterns in `Loam.broadcast_events` (e.g. `"loam.notification."`); matching events, filtered to the connection's tenant + audience, stream to the browser at `/admin/events/stream`; the bell updates live |
 | Response enrichers | `Loam::Enrichers` (computed cross-module blocks) | `register(entity_type, key:, batch:)` in the initializer to attach a computed value onto another entity's response; shown on the admin show screen and under `enrichments` in the API; use `batch:` to avoid N+1 |
+| Business rules | `Loam::BusinessRules` + `Loam::BusinessRule` (admin-editable WHEN/THEN) | declare at `/admin/business_rules`: a `trigger` event pattern + a safe `{field, op, value}` condition + typed actions (notify / emit_event / set_field / block_transition); fires tenant-scoped in priority order on matching events; the run log shows why it acted |
 | Migration-free field | `custom_fields` jsonb column, read/written via `Loam::CustomFields` | a `Loam::FieldDefinition` row, created via the admin "Field definitions" screen (`/admin/field_definitions`) — never a migration |
 | States & approvals | a `workflow` block in the model (`Loam::Workflow`) | `include Loam::Workflow`; add a string column for the state |
 | Notifications | `Loam::Notification` rows, read at `/admin/notifications` | `Loam::Notifications.notify(user, title:)` / `notify_role(:manager, title:)`, normally from an event subscriber |
@@ -229,6 +230,19 @@ own attributes. A `batch:` resolver (array → `{ id => value }`) keeps an index
 query, not N. A resolver runs in the current tenant scope and a raising one is
 isolated (its key omitted). Caution: don't surface ANOTHER record's encrypted
 plaintext through an enricher.
+
+## Business rules
+
+A manager wires automation without a deploy: WHEN an event fires and a condition
+holds on the triggering record, THEN run actions — at `/admin/business_rules`.
+The condition is DATA, never code: a `{field, op, value}` tree (`and`/`or`/`not`)
+over a WHITELIST of real columns + custom fields — no `eval`/`send`, `tenant_id`
+and encrypted columns refused, values literal. Actions are a fixed set: `notify`,
+`emit_event`, `set_field` (a whitelisted field — NEVER the workflow status column,
+which would skip the transition gate), `block_transition`. Rules run tenant-scoped
+in priority order, each isolated (a raising rule is logged, not fatal); the run log
+shows why each fired. Add a verb by extending `BusinessRules::Actions`/`Condition`,
+never by evaluating a rule string.
 
 ## Seeding a new tenant
 

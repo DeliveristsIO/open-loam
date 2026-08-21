@@ -28,6 +28,7 @@ module Loam
         migration_template "migrations/create_loam_pending_actions.rb", "db/migrate/create_loam_pending_actions.rb"
         migration_template "migrations/create_loam_perspectives.rb", "db/migrate/create_loam_perspectives.rb"
         migration_template "migrations/create_loam_record_locks.rb", "db/migrate/create_loam_record_locks.rb"
+        migration_template "migrations/create_loam_business_rules.rb", "db/migrate/create_loam_business_rules.rb"
       end
 
       # Attachments (Loam::Attachable, included in every generated entity) are
@@ -75,6 +76,7 @@ module Loam
         template "admin/comments_controller.rb", "app/controllers/admin/comments_controller.rb"
         template "admin/configs_controller.rb", "app/controllers/admin/configs_controller.rb"
         template "admin/features_controller.rb", "app/controllers/admin/features_controller.rb"
+        template "admin/business_rules_controller.rb", "app/controllers/admin/business_rules_controller.rb"
         template "admin/search_controller.rb", "app/controllers/admin/search_controller.rb"
         template "admin/pagination.rb", "app/controllers/admin/pagination.rb"
         template "admin/layout.html.erb", "app/views/layouts/admin.html.erb"
@@ -96,6 +98,10 @@ module Loam
         template "admin/configs_index.html.erb", "app/views/admin/configs/index.html.erb"
         template "admin/configs_edit.html.erb", "app/views/admin/configs/edit.html.erb"
         template "admin/features_index.html.erb", "app/views/admin/features/index.html.erb"
+        template "admin/business_rules_index.html.erb", "app/views/admin/business_rules/index.html.erb"
+        template "admin/business_rules_new.html.erb", "app/views/admin/business_rules/new.html.erb"
+        template "admin/business_rules_edit.html.erb", "app/views/admin/business_rules/edit.html.erb"
+        template "admin/business_rules_form.html.erb", "app/views/admin/business_rules/_form.html.erb"
         template "admin/search_index.html.erb", "app/views/admin/search/index.html.erb"
       end
 
@@ -125,6 +131,7 @@ module Loam
             end
             delete "record_lock", to: "record_locks#destroy"  # manager take-over of an edit lock
             get "events/stream", to: "events#stream", as: :events_stream  # SSE push (Loam::EventStream)
+            resources :business_rules, only: %i[index new create edit update destroy]  # when/then rules
             resources :field_definitions, only: %i[index new create destroy]
             resources :notifications, only: %i[index] do
               post :mark_read, on: :member

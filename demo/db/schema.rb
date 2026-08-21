@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_21_221000) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_21_230000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -108,6 +108,37 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_21_221000) do
     t.datetime "updated_at", null: false
     t.index ["tenant_id", "auditable_type", "auditable_id"], name: "idx_on_tenant_id_auditable_type_auditable_id_3d28ce6bd5"
     t.index ["tenant_id"], name: "index_loam_audit_records_on_tenant_id"
+  end
+
+  create_table "loam_business_rule_runs", force: :cascade do |t|
+    t.integer "tenant_id", null: false
+    t.integer "business_rule_id", null: false
+    t.string "subject_type"
+    t.bigint "subject_id"
+    t.string "event_name"
+    t.boolean "matched", default: false, null: false
+    t.json "actions_taken", default: [], null: false
+    t.text "error"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["business_rule_id"], name: "index_loam_business_rule_runs_on_business_rule_id"
+    t.index ["tenant_id", "business_rule_id", "created_at"], name: "idx_on_tenant_id_business_rule_id_created_at_01f0c22da1"
+    t.index ["tenant_id"], name: "index_loam_business_rule_runs_on_tenant_id"
+  end
+
+  create_table "loam_business_rules", force: :cascade do |t|
+    t.integer "tenant_id", null: false
+    t.string "name", null: false
+    t.string "entity_type"
+    t.string "trigger", null: false
+    t.json "condition", default: {}, null: false
+    t.json "actions", default: [], null: false
+    t.boolean "active", default: true, null: false
+    t.integer "priority", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tenant_id", "active"], name: "index_loam_business_rules_on_tenant_id_and_active"
+    t.index ["tenant_id"], name: "index_loam_business_rules_on_tenant_id"
   end
 
   create_table "loam_comments", force: :cascade do |t|
@@ -271,6 +302,9 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_21_221000) do
   add_foreign_key "loam_api_tokens", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_api_tokens", "users"
   add_foreign_key "loam_audit_records", "loam_tenants", column: "tenant_id"
+  add_foreign_key "loam_business_rule_runs", "loam_business_rules", column: "business_rule_id"
+  add_foreign_key "loam_business_rule_runs", "loam_tenants", column: "tenant_id"
+  add_foreign_key "loam_business_rules", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_comments", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_comments", "users", column: "author_id"
   add_foreign_key "loam_configs", "loam_tenants", column: "tenant_id"

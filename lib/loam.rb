@@ -15,6 +15,7 @@ require "loam/record_locks"
 require "loam/event_stream"
 require "loam/enrichers"
 require "loam/notifications"
+require "loam/business_rules"
 require "loam/webhooks"
 require "loam/engine" if defined?(Rails::Engine)
 

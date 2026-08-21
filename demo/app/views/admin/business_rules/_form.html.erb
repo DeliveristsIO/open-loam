@@ -1,0 +1,32 @@
+<% if @error || flash[:alert] %>
+  <p style="color:#b00"><%= @error || flash[:alert] %></p>
+<% end %>
+
+<%# The model is namespaced (Loam::BusinessRule), so an inferred URL/param-scope
+    would be admin_loam_business_rule_path / loam_business_rule[...]. Pin both to
+    the un-namespaced route and the "business_rule" key the controller permits. %>
+<%= form_with model: @rule, scope: :business_rule,
+      url: (@rule.persisted? ? admin_business_rule_path(@rule) : admin_business_rules_path) do |f| %>
+  <% if @rule.errors.any? %>
+    <ul><% @rule.errors.full_messages.each do |m| %><li><%= m %></li><% end %></ul>
+  <% end %>
+
+  <p><%= f.label :name %><br><%= f.text_field :name %></p>
+  <p><%= f.label :trigger, "Trigger (event pattern, e.g. rental.damage_report.submit)" %><br><%= f.text_field :trigger %></p>
+  <p><%= f.label :entity_type, "Entity type (e.g. DamageReport; blank for event-only)" %><br><%= f.text_field :entity_type %></p>
+  <p><%= f.label :priority %><br><%= f.number_field :priority %></p>
+  <p><%= f.label :active %> <%= f.check_box :active %></p>
+
+  <p>
+    <%= f.label :condition, "Condition (JSON)" %><br>
+    <%= f.text_area :condition, value: JSON.pretty_generate(@rule.condition_tree), rows: 6, cols: 60 %>
+  </p>
+  <p>
+    <%= f.label :actions, "Actions (JSON list)" %><br>
+    <%= f.text_area :actions, value: JSON.pretty_generate(@rule.action_list), rows: 6, cols: 60 %>
+  </p>
+
+  <%= f.submit %>
+<% end %>
+
+<p><%= link_to "Back", admin_business_rules_path %></p>

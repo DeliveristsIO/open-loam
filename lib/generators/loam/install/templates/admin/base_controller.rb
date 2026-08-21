@@ -16,6 +16,12 @@ module Admin
       render plain: "404 Not Found — this feature is not enabled for your tenant.", status: :not_found
     end
 
+    # A business rule (or any code) can veto a workflow transition from
+    # `loam_perform_transition!`. Surface it as a clean 422, never a 500.
+    rescue_from Loam::TransitionVetoedError do |error|
+      render plain: "422 — #{error.message}", status: :unprocessable_entity
+    end
+
     helper_method :current_tenant, :current_actor, :unread_notification_count, :feature_on?, :pending_approval_count, :current_role
 
     private

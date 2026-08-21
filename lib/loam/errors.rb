@@ -34,4 +34,10 @@ module Loam
   # "not here" (the capability does not exist for this tenant), not "you may
   # not" — so admin controllers render it as 404, not 403.
   class FeatureDisabledError < Error; end
+
+  # Raised when a Loam::BusinessRule with a `block_transition` action vetoes a
+  # workflow transition. Distinct from NotAuthorizedError (a role gate) and
+  # InvalidTransitionError (an illegal move): the move is legal and permitted,
+  # but a rule says "not under these conditions".
+  class TransitionVetoedError < Error; end
 end

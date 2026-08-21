@@ -93,3 +93,12 @@ end
 #   Loam::Events.subscribe("rental.damage_report.approve") do |_name, payload|
 #     Loam::Notifications.notify_role(:manager, title: "Damage report approved")
 #   end
+
+# Business rules (Loam::BusinessRule) are the admin-editable cousin of the
+# subscriptions above: a manager declares, per tenant, WHEN a condition holds on
+# a triggering record THEN run a fixed vocabulary of safe actions (notify,
+# emit_event, set_field, block_transition). The condition is DATA — a
+# whitelisted {field, op, value} tree, never evaluated as code — so a tenant
+# admin can wire up automation without a deploy and without a code-injection
+# surface. The engine subscribes itself at boot; nothing to register here.
+# Manage rules under /admin/business_rules and see why they fired in the run log.
