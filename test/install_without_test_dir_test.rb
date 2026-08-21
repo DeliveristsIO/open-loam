@@ -47,8 +47,8 @@ class InstallWithoutTestDirTest < HarnessCase
            "loam:install fabricated a test_helper.rb in an app that opted out of tests#{install.failure_report}"
 
     migrations = Dir[File.join(app, "db/migrate/*.rb")]
-    assert_equal 22, migrations.size,
-                 "expected the twenty-two install migrations, got #{migrations.map { |f| File.basename(f) }.join(', ')}" \
+    assert_equal 23, migrations.size,
+                 "expected the twenty-three install migrations, got #{migrations.map { |f| File.basename(f) }.join(', ')}" \
                  "#{install.failure_report}"
 
     # The real proof that the app is not half-dead: it still migrates and boots.

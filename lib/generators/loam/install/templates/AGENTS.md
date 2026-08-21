@@ -17,9 +17,9 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Delete / recycle bin | soft-delete via `Loam::SoftDeletable` | `record.soft_delete` hides it (excluded by default, still tenant-scoped, audited); `Model.only_deleted` + `record.restore` bring it back; `destroy` still hard-erases |
 | Settings / config | `Loam::Configs` (a `key` + JSON value, global or per-tenant) | `Loam::Configs.get("billing.currency")`; `set(k, v)` overrides for the current tenant, `set(k, v, scope: :global)` sets the app-wide row, `reset(k)` drops the override; declare defaults in the initializer; admin at `/admin/configs` |
 | Feature flags | `Loam::Features` (a capability on/off per tenant, over `Loam::Configs`) | `Loam::Features.on?(:beta)`; `enable(:beta)`/`disable(:beta)` override for the current tenant, `enable(:beta, scope: :global)` app-wide, `reset(:beta)` drops it; declare in `Loam.feature_defaults`; guard via `require_feature!`/`feature_on?`; admin at `/admin/features` |
-| Encryption at rest | `Loam::Encryptable` (`encrypts :field`, per-tenant AES-256-GCM) | generate with `--encrypt ssn --encrypt-searchable email`, or add `encrypts :ssn` / `encrypts :email, searchable: true` to the model; read/write is transparent, `find_by_email` matches the blind index; set `LOAM_MASTER_KEY`; NEVER `searchable_by` an encrypted field |
+| Encryption at rest | `Loam::Encryptable` (`encrypts :field`, per-tenant AES-256-GCM) | generate with `--encrypt ssn --encrypt-searchable email`, or add `encrypts :ssn` / `encrypts :email, searchable: true` to the model; read/write is transparent, `find_by_email` matches the blind index; set `LOAM_MASTER_KEY`; NEVER `searchable_by` an encrypted field ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/agents/encryption.md)) |
 | MFA & step-up | `Loam::MfaCredential` + `Loam::Totp` (per-user TOTP + recovery codes) | second factor at login, automatic once a user enrolls at `/admin/mfa`; gate a sensitive action with `require_sudo!` (re-auth within 5 min); require MFA per role via `security.mfa_required_roles` |
-| AI approval gate | `Loam::PendingActions` + `Loam::PendingAction` (stage → manager approves → executes) | under confirm-mode, `Loam::PendingActions.stage(summary:, on:, action:, changes:)` records a write for review instead of committing; a manager approves at `/admin/pending_actions`; nothing mutates until then |
+| AI approval gate | `Loam::PendingActions` + `Loam::PendingAction` (stage → manager approves → executes) | under confirm-mode, `Loam::PendingActions.stage(summary:, on:, action:, changes:)` records a write for review instead of committing; a manager approves at `/admin/pending_actions`; nothing mutates until then ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/agents/confirm-mode.md)) |
 | Saved views | `Loam::Perspectives` + `Loam::Perspective` (private / role / tenant) | a named index view (filters/sort/columns) saved from the entity index; `Loam::Perspectives.visible_to(entity, user:)` / `default_for` / `resolve`; managed at `/admin/perspectives?entity_type=Name`; `perspective.apply(scope)` filters/sorts only whitelisted columns |
 | Concurrent-edit safety | `lock_version` (optimistic) + `Loam::RecordLocks` (advisory) | every generated entity has `lock_version`; a stale update re-renders a conflict diff, never a clobber; `RecordLocks.acquire/holder/release/force_release` warns "who's editing" with a TTL and manager take-over |
 | Real-time updates | `Loam::EventStream` (SSE push, default off) | declare patterns in `Loam.broadcast_events` (e.g. `"loam.notification."`); matching events, filtered to the connection's tenant + audience, stream to the browser at `/admin/events/stream`; the bell updates live |
@@ -29,11 +29,12 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | States & approvals | a `workflow` block in the model (`Loam::Workflow`) | `include Loam::Workflow`; add a string column for the state |
 | Notifications | `Loam::Notification` rows, read at `/admin/notifications` | `Loam::Notifications.notify(user, title:)` / `notify_role(:manager, title:)`, normally from an event subscriber |
 | Search | `searchable_by :col, :col` in the model (`Loam::Searchable`) | declared with the entity for its string/text columns; `Model.search(q)` and the admin's global box at `/admin/search`. HOW it matches is a swappable driver (`Loam::Search.driver`): substring LIKE (default) or the portable word-level TokenDriver — call sites never change |
-| SSO (OIDC) | `Loam::Sso` + `Loam::SsoProvider` (per-tenant, admin-configured) | configure at `/admin/sso_providers` (issuer, client_id, client_secret, email domain, JIT role); a matching-domain email is routed to the IdP, verified, and JIT-provisioned/linked; the client_secret is encrypted (needs `LOAM_MASTER_KEY`); SAML/SCIM are seams |
+| SSO (OIDC) | `Loam::Sso` + `Loam::SsoProvider` (per-tenant, admin-configured) | configure at `/admin/sso_providers` (issuer, client_id, client_secret, email domain, JIT role); a matching-domain email is routed to the IdP, verified, and JIT-provisioned/linked; the client_secret is encrypted (needs `LOAM_MASTER_KEY`); SAML/SCIM are seams ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/agents/sso.md)) |
 | Dictionaries | `Loam::Dictionary` + `Loam::Dictionaries` (managed lookup lists) | curate at `/admin/dictionaries`; a `FieldDefinition` of type "dictionary" makes a custom field a select of its entries; read via `Loam::Dictionaries.entries`/`default`/`label_for` |
 | Task progress | `Loam::Progress` + `Loam::ProgressJob` (live over SSE) | `start(name:, total:)` then `advance`/`complete!`/`fail!`/`cancel!`; percent/ETA push to the `/admin/progress_jobs` bar live; broadcast throttled per-percent; `cancelled?` for a cooperative stop |
-| Scheduler | `Loam::Scheduler` + `Loam::ScheduledJob` (recurring cron/interval jobs) | `register(key:, job_class:, schedule:, scope:)` a schedule (or add one at `/admin/scheduled_jobs`); `loam:scheduler:tick` (system cron) fires due ones with an atomic no-double-fire claim; job_class must be a real ActiveJob |
-| Bulk import / export | `Loam::Import` + `Loam::Export` + `Loam::Bulk` | every entity index has (manager) Export CSV / Import CSV / a bulk-action bar; import maps columns → writable fields (dry-run, error file, update-by-key, background progress); export & bulk are policy + encryption + tenant aware |
+| Scheduler | `Loam::Scheduler` + `Loam::ScheduledJob` (recurring cron/interval jobs) | `register(key:, job_class:, schedule:, scope:)` a schedule (or add one at `/admin/scheduled_jobs`); `loam:scheduler:tick` (system cron) fires due ones with an atomic no-double-fire claim; job_class must be a real ActiveJob ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/agents/scheduler.md)) |
+| Dashboard widgets | `Loam::Widgets` + `Loam::Dashboard` + `Loam::DashboardWidget` | `Loam::Widgets.register(key:, title:, roles:, &block)` a tile (block returns `{kind:"count"/"list", ...}`, tenant-scoped); managers arrange them at `/admin/dashboard_widgets`; role-filtered server-side, a raising widget is an isolated error tile |
+| Bulk import / export | `Loam::Import` + `Loam::Export` + `Loam::Bulk` | every entity index has (manager) Export CSV / Import CSV / a bulk-action bar; import maps columns → writable fields (dry-run, error file, update-by-key, background progress); export & bulk are policy + encryption + tenant aware ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/agents/bulk-import-export.md)) |
 | Long lists | `paginate(scope)` from `Admin::Pagination` in `BaseController` | already wired into generated index screens — 25 a page, with a filter box |
 | Comments | `Loam::Comment` rows via `Loam::Commentable` | `record.comment!("...")`, or the form on the entity's show screen; publishes `loam.comment.created` |
 | Attachments | ActiveStorage `files` via `Loam::Attachable` | `record.files.attach(...)`, or the file field on the entity's form — uploading counts as an update, so the entity's policy decides |
@@ -128,29 +129,6 @@ default → false. `enable`/`disable` set the current tenant's override (add
 Storage is shared with Settings under the reserved `features.` key prefix, but
 flags have their own screen.
 
-## Encrypting a field
-
-Sensitive columns (SSN, tax id, email) are encrypted at rest, per tenant, so a
-DB dump leaks nothing and one tenant's key never decrypts another's. Generate
-them — `bin/rails g loam:entity Patient name:string ssn:string email:string
---encrypt ssn --encrypt-searchable email` — or declare on the model:
-
-```ruby
-include Loam::Encryptable
-encrypts :ssn                      # encrypted, not searchable
-encrypts :email, searchable: true  # + a blind index for exact-match lookup
-```
-
-Read/write is transparent (`patient.ssn` decrypts on read); a searchable field
-is found by `Patient.find_by_email(value)`, which matches the per-tenant blind
-index — never a LIKE. Rules: a field is NEVER both `encrypts` and `searchable_by`
-(ciphertext cannot be LIKE-searched — it raises at load); reading or writing an
-encrypted field with no tenant in context raises `MissingTenantError`; the audit
-trail records an encrypted change as `[encrypted]`, never the value. Set
-`LOAM_MASTER_KEY` (see the initializer) — encryption raises without it. GDPR
-export / key rotation: `bin/rails loam:encryption:decrypt_dump[Model,tenant_id]`
-/ `loam:encryption:rotate[Model,tenant_id]`.
-
 ## Second factor & step-up (sudo)
 
 Admin login gains a TOTP second factor the moment a user enrolls at `/admin/mfa`
@@ -165,33 +143,6 @@ per-tenant); an un-enrolled user with that role is sent to enrollment at login.
 Never store a TOTP secret or recovery code in the clear — `Loam::MfaCredential`
 already encrypts / hashes them. Recovery codes are for LOGIN only — step-up
 (`require_sudo!`) takes a TOTP code, never a single-use recovery code.
-
-## Staging a write for approval (confirm-mode)
-
-If you are an AI agent running under confirm-mode (`Loam.require_confirmation?`
-is true — the MCP tool that runs you sets it), a WRITE must be STAGED for a
-human, not committed. Instead of `record.update!(...)`, call:
-
-```ruby
-Loam::PendingActions.stage(
-  summary: "Raise the excavator's daily rate to 1100",
-  on: equipment, action: :update, changes: { daily_rate: 1100 }
-)
-```
-
-This records a `Loam::PendingAction` with a before/after preview and touches
-NOTHING on the target. A manager reviews the queue at `/admin/pending_actions`
-and approves — a role-gated workflow transition — and ONLY then does the change
-execute, audited to the approver. Identical proposals collapse (idempotency
-key); encrypted fields show `[encrypted]` in the preview, never their value.
-Loam does not auto-gate Active Record, so a direct `update!` still writes
-immediately when you are NOT under confirm-mode — staging is a call you make.
-One caveat: a staged update applies raw attribute writes, so do not stage a
-workflow-status column directly (that bypasses the transition's role gate) —
-stage the transition as a custom `action:` instead. Segregation of duties: the
-proposer may not approve their own change unless the tenant sets
-`approvals.allow_self_approve` — normally the proposer is the agent and the
-approver a human.
 
 ## Saved views (perspectives)
 
@@ -261,18 +212,6 @@ in the initializer, then `bin/rails loam:search:reindex` once to backfill
 (new/updated records self-index). Never `searchable_by` an encrypted field — and
 the TokenDriver never tokenizes one either (no plaintext leak into the index).
 
-## Single sign-on (SSO)
-
-A tenant connects its own OIDC provider at `/admin/sso_providers` (issuer,
-client_id, client_secret, email `domain`, JIT role). Home-realm discovery routes
-a user to their IdP by email domain; on callback a VERIFIED identity is
-provisioned just-in-time (or linked to an existing User by verified email — an
-UNVERIFIED email is refused, never linked, so there is no account takeover) with
-a tenant membership at the mapped role. The client_secret is encrypted at rest,
-so `LOAM_MASTER_KEY` must be set. OIDC is shipped end-to-end; SAML and SCIM are
-seams behind the protocol interface. In tests, inject `Loam::Sso::FakeProvider`
-via `Loam::Sso.builder` so nothing touches the network.
-
 ## Dictionaries
 
 Per-tenant managed lookup lists (`Loam::Dictionary`), curated at
@@ -290,26 +229,15 @@ stop early. Pushes id/percent/status to the `/admin/progress_jobs` bar, throttle
 per-percent. In a background job wrap the work in `Loam.as_tenant(tenant, actor:)`
 (tenant-scoped, not audited; `stale?` flags a dead job).
 
-## Scheduler
+## Dashboard widgets
 
-Recurring jobs, per tenant. `Loam::Scheduler.register(key:, job_class:, schedule:,
-scope:)` at file scope (materialized by `sync_tenant` in `on_tenant_created`), or
-add one at `/admin/scheduled_jobs`. `schedule` is cron (`0 7 * * *`) or
-`interval:N`; `scope` "tenant" (enqueues `tenant_id:`) or "system" (once);
-`job_class` MUST be a real ActiveJob (validated). `bin/rails loam:scheduler:tick`
-(system cron) fires due ones with an atomic no-double-fire claim.
-
-## Bulk import / export
-
-Every entity index carries (manager-only) Export CSV, Import CSV, and a
-bulk-action bar. Export (`Loam::Export.csv`) is policy- and encryption-aware —
-readable columns only, encrypted fields redacted. Import (`Loam::Import`) maps CSV
-columns to WRITABLE fields only (a mapping to `tenant_id`/a non-permitted field is
-refused; the entity_type is whitelisted to a TenantRecord), with a dry-run,
-update-by-key, a per-row skipped-row error file, and background progress. Bulk
-actions (`Loam::Bulk`: soft-delete / set-field / export-selected) are
-policy-checked per record and tenant-scoped. New entities get all of this from
-the generator.
+The admin home is a grid of registered widgets. Add one with
+`Loam::Widgets.register(key:, title:, roles: nil) { |actor| { kind: "count",
+value: ... } }` (or `kind: "list", items: [...]`) — the block is a DATA PROVIDER
+run tenant-scoped, never arbitrary view code. `roles:` hides it server-side (its
+data isn't computed for a role that can't see it); a raising widget becomes an
+isolated error tile. Managers pick/reorder widgets per tenant at
+`/admin/dashboard_widgets`; unconfigured tenants get the full registered set.
 
 ## Seeding a new tenant
 

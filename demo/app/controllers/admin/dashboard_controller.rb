@@ -1,7 +1,9 @@
 module Admin
   class DashboardController < BaseController
     def index
-      @audit_records = Loam::AuditRecord.order(created_at: :desc).limit(50)
+      # Configurable, role-visible widgets (Loam::Dashboard) — a raising widget
+      # is isolated into an error tile, never breaking the page.
+      @widgets = Loam::Dashboard.for(actor: current_actor, role: current_role)
     end
 
     # A capability behind a flag: only tenants with beta_dashboard turned on can

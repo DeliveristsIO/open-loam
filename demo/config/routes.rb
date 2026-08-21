@@ -76,6 +76,8 @@ Rails.application.routes.draw do
     # A capability gated by a flag (Loam::Features.require_feature!) — a demo of
     # the guard: off for Krakow (404), on for Warsaw once enabled in seeds.
     get "dashboard/beta", to: "dashboard#beta", as: :beta_dashboard
+    get   "dashboard_widgets", to: "dashboard_widgets#index", as: :dashboard_widgets  # dashboard settings
+    patch "dashboard_widgets", to: "dashboard_widgets#update"
     get "search", to: "search#index"
   end
 

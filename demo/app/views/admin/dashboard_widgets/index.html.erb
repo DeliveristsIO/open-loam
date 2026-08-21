@@ -1,0 +1,24 @@
+<h1>Dashboard settings</h1>
+
+<p>Choose which widgets appear on the dashboard and their order (lower position
+first). Leaving none active shows the default set.</p>
+
+<%= form_with url: admin_dashboard_widgets_path, method: :patch do %>
+  <table>
+    <thead><tr><th>Show</th><th>Widget</th><th>Roles</th><th>Position</th></tr></thead>
+    <tbody>
+      <% @registered.each do |widget| %>
+        <% row = @config[widget.key] %>
+        <tr>
+          <td><%= check_box_tag "widgets[#{widget.key}][active]", "1", row.nil? || row.active %></td>
+          <td><%= widget.title %> <small>(<code><%= widget.key %></code>)</small></td>
+          <td><%= widget.roles ? Array(widget.roles).join(", ") : "all" %></td>
+          <td><%= number_field_tag "widgets[#{widget.key}][position]", row&.position || 0, style: "width:4rem" %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <%= submit_tag "Save dashboard" %>
+<% end %>
+
+<p><%= link_to "Back to dashboard", admin_root_path %></p>

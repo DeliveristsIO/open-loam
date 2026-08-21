@@ -9,6 +9,7 @@ module Loam
     config.after_initialize do
       Loam::Webhooks.subscribe!
       Loam::BusinessRules.subscribe!
+      Loam::Widgets.register_builtins!  # the default dashboard widgets
     end
 
     # lib/tasks/loam.rake (bin/rails loam:sync) is picked up by Rails::Engine's

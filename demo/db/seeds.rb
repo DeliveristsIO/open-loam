@@ -133,6 +133,13 @@ Loam.as_tenant(warsaw, actor: anna) do
     fd.dictionary_key = "damage_severity"
   end
 
+  # A configured dashboard (Loam::DashboardWidget): audit + pending approvals +
+  # running tasks, in this order. A manager rearranges these under Dashboard
+  # settings; with no rows a tenant gets the default set.
+  [ %w[audit_recent 1], %w[pending_approvals 2], %w[open_progress 3] ].each do |key, pos|
+    Loam::DashboardWidget.find_or_create_by!(widget_key: key) { |dw| dw.position = pos.to_i }
+  end
+
   # A finished long-running task (Loam::ProgressJob) so the Tasks screen shows
   # history; run a live one from that screen's "Run a demo job" button.
   Loam::ProgressJob.find_or_create_by!(name: "Nightly reindex") do |job|

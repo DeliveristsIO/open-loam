@@ -1,19 +1,26 @@
 <h1>Dashboard</h1>
 
-<h2>Audit trail (this tenant)</h2>
-<table>
-  <thead>
-    <tr><th>When</th><th>Who</th><th>What</th><th>Action</th><th>Changes</th></tr>
-  </thead>
-  <tbody>
-    <%% @audit_records.each do |audit| %>
-      <tr>
-        <td><%%= audit.created_at %></td>
-        <td><%%= User.find_by(id: audit.actor_id)&.name || "—" %></td>
-        <td><%%= audit.auditable_type %> #<%%= audit.auditable_id %></td>
-        <td><%%= audit.action %></td>
-        <td><code><%%= audit.changeset %></code></td>
-      </tr>
-    <%% end %>
-  </tbody>
-</table>
+<%% if current_role == :manager %>
+  <p><%%= link_to "Dashboard settings", admin_dashboard_widgets_path %></p>
+<%% end %>
+
+<div class="widgets" style="display:flex; flex-wrap:wrap; gap:1rem">
+  <%% @widgets.each do |widget| %>
+    <div class="widget" style="border:1px solid #ccc; padding:0.75rem; min-width:200px">
+      <h3><%%= widget[:title] %></h3>
+      <%% if widget[:error] %>
+        <p style="color:#b00">This widget could not load.</p>
+      <%% else %>
+        <%% data = widget[:data] %>
+        <%% case data[:kind] %>
+        <%% when "count" %>
+          <p style="font-size:2rem; margin:0"><%%= data[:value] %></p>
+        <%% when "list" %>
+          <ul><%% data[:items].each do |item| %><li><%%= item %></li><%% end %></ul>
+        <%% else %>
+          <p><%%= data.inspect %></p>
+        <%% end %>
+      <%% end %>
+    </div>
+  <%% end %>
+</div>
