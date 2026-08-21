@@ -229,6 +229,52 @@ such tasks with zero isolation violations, versus 1-in-10 on plain Rails.)
 
 ---
 
+## 7. Going further — the rest of the foundation
+
+The five sections above cover the everyday loop. Loam ships more, each the same
+shape: one obvious way, safe by default. A tour of the real API:
+
+**Soft-delete — a recycle bin, not an erase.** Every generated entity gets it.
+`record.soft_delete!` hides the row from every query by default (still
+tenant-scoped); `Model.with_deleted` / `only_deleted` see the bin;
+`record.restore!` brings it back. The soft-delete is audited. Hard `destroy`
+still erases for a deliberate "forget me".
+
+**Settings — per-tenant configuration.** `Loam::Configs.get("billing.currency",
+default: "PLN")` resolves most-specific-first: this tenant's override → the
+global row → a declared default. `Loam::Configs.set(key, value)` writes the
+current tenant's override; a manager-only **Settings** admin screen edits them.
+
+**Feature flags — a per-tenant kill-switch.** `Loam::Features.on?(:beta_dashboard)`
+gates a *capability* (is this on for the tenant), orthogonal to policy which
+gates a *person*. `require_feature!(:x)` in a controller 404s when off;
+`feature_on?(:x)` hides UI. Flip per tenant from the **Features** screen.
+
+**Encryption at rest — for regulated data.** `encrypts :tax_id` in a model
+transparently seals the column with a per-tenant AES-256-GCM key (a DB dump
+leaks nothing; tenant A's key never decrypts tenant B's row). `encrypts :email,
+searchable: true` adds a keyed blind index so exact-match lookup still works.
+Set a `LOAM_MASTER_KEY`; plaintext never reaches the audit trail, events, or
+webhooks.
+
+**MFA + step-up — a second factor.** Users enroll a TOTP authenticator; login
+prompts for a code when active; recovery codes are single-use. `require_sudo!`
+gates a sensitive action behind a fresh re-challenge (an MFA user re-proves with
+a code, never a password downgrade). Require MFA per role via a config key.
+
+**AI mutation approval gate — human-in-the-loop.** When an agent runs under
+confirm-mode, a write is *staged* instead of applied: `Loam::PendingActions.stage(
+summary:, on:, action:, changes:)` records the intent with a before/after
+preview and touches nothing; a manager reviews the queue and `approve!(by:)`
+executes it in a transaction, audited to the approver. The proposal is encrypted
+at rest and never leaks in the preview. This is the primitive the MCP server
+(roadmap) will use to keep agent writes reviewable.
+
+Each of these has its own guardrail-tested conventions in `AGENTS.md`, so an
+agent extends them the same way it extends anything else.
+
+---
+
 ## Where to look next
 
 - [`AGENTS.md`](../lib/generators/loam/install/templates/AGENTS.md) — the full
