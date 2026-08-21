@@ -24,7 +24,11 @@ module Loam
       # Is this event name allowed to reach browsers at all? Empty allow-list →
       # false, always (nothing leaks by default).
       def broadcastable?(event_name)
-        Loam.broadcast_events.any? { |pattern| Loam::Events.pattern_matches?(pattern, event_name) }
+        Loam.broadcast_events.any? do |pattern|
+          next false if Loam::Overrides.disabled?(:broadcast_events, pattern) # an app can turn a default pattern off
+
+          Loam::Events.pattern_matches?(pattern, event_name)
+        end
       end
 
       # Should a broadcastable event reach a stream connected as (tenant, actor)?

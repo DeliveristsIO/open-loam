@@ -33,6 +33,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Dictionaries | `Loam::Dictionary` + `Loam::Dictionaries` (managed lookup lists) | curate at `/admin/dictionaries`; a `FieldDefinition` of type "dictionary" makes a custom field a select of its entries; read via `Loam::Dictionaries.entries`/`default`/`label_for` |
 | Task progress | `Loam::Progress` + `Loam::ProgressJob` (live over SSE) | `start(name:, total:)` then `advance`/`complete!`/`fail!`/`cancel!`; percent/ETA push to the `/admin/progress_jobs` bar live; broadcast throttled per-percent; `cancelled?` for a cooperative stop |
 | Scheduler | `Loam::Scheduler` + `Loam::ScheduledJob` (recurring cron/interval jobs) | `register(key:, job_class:, schedule:, scope:)` a schedule (or add one at `/admin/scheduled_jobs`); `loam:scheduler:tick` (system cron) fires due ones with an atomic no-double-fire claim; job_class must be a real ActiveJob ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/agents/scheduler.md)) |
+| Override registry | `Loam::Overrides` (customization without forking) | `Loam::Overrides.disable(:widgets, "open_progress")` / `.replace(:widgets, key) { ... }` in the initializer to drop/swap a Loam registry entry (widgets, broadcast_events); `check!` warns about stale overrides at boot; VIEWS/CONTROLLERS/ROUTES use Rails path-shadowing, not this |
 | Content translations | `Loam::Translatable` + `Loam::Translation` | `translates :name` overlays `record.name` with the current locale's value (else the base column); `set_translation(field, locale, value)`; locale is request state (`Loam::Current.locale`, admin switcher over `Loam.locales`); NEVER `translates` an encrypted field (refused at load) — this is data, not Rails i18n |
 | Auto OpenAPI | `Loam::OpenApi` (introspected, no annotations) | `Loam::OpenApi.document`/`.markdown` describe the JSON API (bearer auth, per-entity schemas, writable-only request bodies, tenancy note); browse at `/admin/api_docs` (+`.json`), export with `loam:openapi:export`; it's automatic — add an entity and it appears |
 | Dashboard widgets | `Loam::Widgets` + `Loam::Dashboard` + `Loam::DashboardWidget` | `Loam::Widgets.register(key:, title:, roles:, &block)` a tile (block returns `{kind:"count"/"list", ...}`, tenant-scoped); managers arrange them at `/admin/dashboard_widgets`; role-filtered server-side, a raising widget is an isolated error tile |
@@ -250,6 +251,16 @@ never tenant_id, encrypted fields typed as plain strings, a tenancy note). Brows
 it at `/admin/api_docs` (a plain server-rendered explorer, no external JS) or
 `/admin/api_docs.json`; `bin/rails loam:openapi:export` writes it to disk. Add an
 entity with the generator and it appears automatically.
+
+## Override registry
+
+Customize Loam WITHOUT forking. `Loam::Overrides.disable(registry, key)` and
+`.replace(registry, key) { ... }` in the initializer drop or swap an entry in one
+of Loam's keyed registries — `:widgets`, `:broadcast_events`. A stale override (a
+key that no longer exists) is warned about at boot (`check!`), so a typo isn't a
+silent no-op. BOUNDARY: this is only for Loam's in-gem registries — override a
+VIEW, CONTROLLER, or ROUTE the standard Rails way (shadow the file by path, or
+`prepend`), never here.
 
 ## Content translations
 

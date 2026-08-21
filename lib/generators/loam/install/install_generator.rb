@@ -94,6 +94,7 @@ module Loam
         template "admin/dashboard_widgets_controller.rb", "app/controllers/admin/dashboard_widgets_controller.rb"
         template "admin/api_docs_controller.rb", "app/controllers/admin/api_docs_controller.rb"
         template "admin/translations_controller.rb", "app/controllers/admin/translations_controller.rb"
+        template "admin/overrides_controller.rb", "app/controllers/admin/overrides_controller.rb"
         template "import_job.rb", "app/jobs/import_job.rb"
         template "admin/search_controller.rb", "app/controllers/admin/search_controller.rb"
         template "admin/pagination.rb", "app/controllers/admin/pagination.rb"
@@ -139,6 +140,7 @@ module Loam
         template "admin/dashboard_widgets_index.html.erb", "app/views/admin/dashboard_widgets/index.html.erb"
         template "admin/api_docs_index.html.erb", "app/views/admin/api_docs/index.html.erb"
         template "admin/translations_index.html.erb", "app/views/admin/translations/index.html.erb"
+        template "admin/overrides_index.html.erb", "app/views/admin/overrides/index.html.erb"
         template "admin/search_index.html.erb", "app/views/admin/search/index.html.erb"
       end
 
@@ -207,6 +209,7 @@ module Loam
             delete "features",         to: "features#reset"
             get "search", to: "search#index"
             get "api_docs", to: "api_docs#index", as: :api_docs  # OpenAPI explorer (+ .json)
+            get "overrides", to: "overrides#index", as: :overrides  # Loam::Overrides (read-only)
             get   "translations", to: "translations#index", as: :translations  # per-record content translations
             patch "translations", to: "translations#update"
             get   "dashboard_widgets", to: "dashboard_widgets#index", as: :dashboard_widgets  # dashboard settings

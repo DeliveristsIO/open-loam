@@ -37,10 +37,13 @@ module Loam
       # can't see it (so its data is never computed), otherwise
       # { key, title, data } — or { key, title, error: } when the provider raises.
       def resolve(key, actor:, role:)
+        return nil if Loam::Overrides.disabled?(:widgets, key) # customization without forking
+
         widget = find(key)
         return nil unless widget&.visible_to?(role)
 
-        { key: widget.key, title: widget.title, data: widget.provider.call(actor) }
+        provider = Loam::Overrides.replacement(:widgets, key) || widget.provider
+        { key: widget.key, title: widget.title, data: provider.call(actor) }
       rescue StandardError => error
         { key: widget&.key, title: widget&.title, error: error.message }
       end

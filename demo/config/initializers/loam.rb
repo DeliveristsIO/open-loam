@@ -19,6 +19,12 @@ Loam.default_roles = %w[manager employee]
 # these. English is the base/default; German and Polish are overlay locales.
 Loam.locales = %w[en de pl]
 
+# Customization without forking (Loam::Overrides): disable or replace an entry in
+# one of Loam's keyed registries from here. This demo drops the "running tasks"
+# dashboard widget — it disappears from the dashboard with no monkeypatching. A
+# stale override (a key that doesn't exist) is warned about at boot by check!.
+Loam::Overrides.disable(:widgets, "open_progress")
+
 # Events pushed live to the browser over SSE (Loam::EventStream). Default off;
 # here the notification pattern is on, so the bell increments without a reload.
 # Add more patterns (e.g. "rental.") to stream domain events to live widgets.

@@ -22,6 +22,19 @@ Loam.default_roles = %w[manager employee]
 # (a product name), NOT developer UI strings — those stay Rails i18n.
 Loam.locales = %w[en]
 
+# Customization WITHOUT forking (Loam::Overrides): disable or replace an entry in
+# one of Loam's keyed registries (:widgets, :broadcast_events). A stale override
+# (a key that no longer exists) is warned about at boot by `check!`, so a
+# typo'd override is visible instead of silently doing nothing.
+#
+#   Loam::Overrides.disable(:widgets, "open_progress")   # drop a built-in widget
+#   Loam::Overrides.replace(:widgets, "audit_recent") { |actor| { kind: "count", value: 0 } }
+#   Loam::Overrides.disable(:broadcast_events, "loam.progress.")  # stop pushing it over SSE
+#
+# BOUNDARY: this is only for Loam's in-gem registries. Override a VIEW, CONTROLLER,
+# or ROUTE the standard Rails way (create a file at the same path to shadow the
+# engine's, or `prepend` a module) — not here.
+
 # Events pushed live to the browser over SSE (Loam::EventStream). Default off; the
 # notification pattern is enabled here so the admin bell increments without a
 # reload. Add patterns (e.g. "billing.") to stream domain events to live widgets —

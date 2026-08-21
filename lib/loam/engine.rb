@@ -10,6 +10,7 @@ module Loam
       Loam::Webhooks.subscribe!
       Loam::BusinessRules.subscribe!
       Loam::Widgets.register_builtins!  # the default dashboard widgets
+      Loam::Overrides.check!            # warn about any stale disable/replace overrides
     end
 
     # lib/tasks/loam.rake (bin/rails loam:sync) is picked up by Rails::Engine's

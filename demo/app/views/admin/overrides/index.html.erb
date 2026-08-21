@@ -1,0 +1,29 @@
+<h1>Overrides</h1>
+
+<p>Registry entries this app disables or replaces (declared in
+<code>config/initializers/loam.rb</code> via <code>Loam::Overrides</code>) —
+customization without forking. Structural pieces (views, controllers, routes)
+are overridden the Rails way (path shadowing), not here.</p>
+
+<% if @stale.any? %>
+  <p style="color:#b00"><strong>Stale overrides</strong> (the key no longer exists — the override does nothing):
+    <%= @stale.map { |reg, key| "#{reg}/#{key}" }.join(", ") %></p>
+<% end %>
+
+<table>
+  <thead><tr><th>Registry</th><th>Key</th><th>Effect</th></tr></thead>
+  <tbody>
+    <% @overrides.each do |registry, entries| %>
+      <% entries.each do |key, value| %>
+        <tr>
+          <td><code><%= registry %></code></td>
+          <td><code><%= key %></code></td>
+          <td><%= value == Loam::Overrides::DISABLED ? "disabled" : "replaced" %></td>
+        </tr>
+      <% end %>
+    <% end %>
+    <% if @overrides.values.all?(&:empty?) %>
+      <tr><td colspan="3"><em>No overrides declared.</em></td></tr>
+    <% end %>
+  </tbody>
+</table>
