@@ -40,10 +40,16 @@ module Loam
       }
     end
 
-    # The Loam entities that have a generated JSON API controller.
+    # The Loam entities that have a generated JSON API controller. Anonymous
+    # subclasses (Class.new(Loam::TenantRecord), common in tests) have no name,
+    # so model_name would raise "Class name cannot be blank" — skip them: a
+    # nameless class has no controller or route to document anyway.
     def api_entities
       Rails.application.eager_load! if defined?(Rails) && Rails.respond_to?(:application)
-      Loam::TenantRecord.descendants.select { |model| controller_for(model) }.sort_by(&:name)
+      Loam::TenantRecord.descendants
+                        .reject { |model| model.name.blank? }
+                        .select { |model| controller_for(model) }
+                        .sort_by(&:name)
     end
 
     def controller_for(model)

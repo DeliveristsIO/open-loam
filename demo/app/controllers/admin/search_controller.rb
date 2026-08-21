@@ -42,7 +42,7 @@ module Admin
       Rails.application.eager_load!
 
       Loam::TenantRecord.descendants.select do |model|
-        model.respond_to?(:loam_searchable?) && model.loam_searchable?
+        model.name.present? && model.respond_to?(:loam_searchable?) && model.loam_searchable?
       end.sort_by(&:name)
     end
   end

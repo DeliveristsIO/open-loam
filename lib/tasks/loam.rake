@@ -45,7 +45,7 @@ namespace :loam do
     task reindex: :environment do
       Rails.application.eager_load!
       models = Loam::TenantRecord.descendants.select do |model|
-        model.respond_to?(:loam_searchable?) && model.loam_searchable?
+        model.name.present? && model.respond_to?(:loam_searchable?) && model.loam_searchable?
       end
 
       tenants = 0

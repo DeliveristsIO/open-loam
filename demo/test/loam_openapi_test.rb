@@ -54,6 +54,16 @@ class LoamOpenApiTest < ActiveSupport::TestCase
     assert_equal "string", props["tax_id"]["type"]
   end
 
+  test "the document builds even when an anonymous TenantRecord subclass exists" do
+    # A nameless Class.new(Loam::TenantRecord) leaks into TenantRecord.descendants
+    # (from tests or metaprogramming); model_name would raise "Class name cannot
+    # be blank". Discovery must skip it, not crash — this was a CI-order flake.
+    Class.new(Loam::TenantRecord) { self.table_name = "loam_translations" }
+
+    assert_nothing_raised { Loam::OpenApi.document }
+    refute_includes Loam::OpenApi.api_entities.map(&:name), nil
+  end
+
   test "the tenancy guarantee is documented" do
     assert_match(/tenant-scoped/, @doc["x-tenancy"])
     assert_match(/tenant/, @doc["info"]["description"])
