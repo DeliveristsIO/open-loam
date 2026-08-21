@@ -78,8 +78,11 @@ module Loam
           end
           is_new ? (result.created += 1) : (result.updated += 1)
         rescue StandardError => error
+          # Store ONLY the row number + message — NEVER the raw cell values. The
+          # result is persisted (Loam::ProgressJob.result); a failed row into an
+          # encrypted field would otherwise write PLAINTEXT PII at rest.
           result.failed += 1
-          result.errors << { "row" => line, "message" => error.message, "data" => Hash[headers.zip(row)] }
+          result.errors << { "row" => line, "message" => error.message }
         end
         progress&.advance
       end
@@ -87,13 +90,20 @@ module Loam
       result
     end
 
-    # The failed rows as a fix-and-re-upload CSV: the original columns + "_error".
-    def error_csv(result, headers)
+    # The failed rows as a fix-and-re-upload CSV — rebuilt from the ORIGINAL csv
+    # (a transient download the user already holds), NOT from the persisted
+    # result (which carries no cell values). Each cell is neutralized against CSV
+    # formula injection.
+    def error_csv(result, csv_string)
+      rows = safe_parse(csv_string)
+      headers = rows.first || []
+      data_rows = rows.drop(1)
+
       CSV.generate do |out|
         out << (Array(headers) + [ "_error" ])
         result.errors.each do |error|
-          data = error["data"] || {}
-          out << Array(headers).map { |h| data[h] } + [ error["message"] ]
+          original = data_rows[error["row"] - 2] || [] # row is 1-based incl. the header
+          out << original.map { |cell| Loam::Csv.safe(cell) } + [ error["message"] ]
         end
       end
     end

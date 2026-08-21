@@ -134,8 +134,13 @@ module Loam
 
     def exposed_fields(model)
       controller = controller_for(model)
-      fields = controller.const_defined?(:FIELDS) ? controller::FIELDS.map(&:to_s) : (model.column_names - plumbing(model))
-      fields
+      return controller::FIELDS.map(&:to_s) if controller.const_defined?(:FIELDS)
+
+      # No declared FIELDS: fall back to columns, but NEVER surface an encrypted
+      # column or its blind-index `_hash` (same exclusion as Loam::Export).
+      encrypted = model.respond_to?(:loam_encrypted_attributes) ? model.loam_encrypted_attributes : []
+      blind = model.respond_to?(:loam_searchable_encrypted_attributes) ? model.loam_searchable_encrypted_attributes.map { |a| "#{a}_hash" } : []
+      model.column_names - plumbing(model) - encrypted - blind
     end
 
     def plumbing(model)

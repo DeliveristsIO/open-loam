@@ -15,7 +15,10 @@ module Admin
     end
 
     def create
-      @job = Loam::ScheduledJob.new(job_params)
+      # scope is forced to "tenant": a tenant admin must never create a
+      # "system" schedule (which would run with no tenant context). System
+      # schedules are created only by the app/console.
+      @job = Loam::ScheduledJob.new(job_params.merge(scope: "tenant"))
       @job.next_run_at ||= safe_next_run(@job)
       if @job.save
         redirect_to admin_scheduled_jobs_path, notice: "Schedule created."
@@ -53,7 +56,7 @@ module Admin
     end
 
     def job_params
-      params.require(:scheduled_job).permit(:key, :name, :job_class, :schedule, :timezone, :scope, :active)
+      params.require(:scheduled_job).permit(:key, :name, :job_class, :schedule, :timezone, :active)
     end
 
     # A malformed cron shouldn't 500 — let validation surface it instead.

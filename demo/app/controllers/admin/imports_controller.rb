@@ -47,7 +47,7 @@ module Admin
       mapping = params[:mapping].to_unsafe_h.reject { |_h, target| target.blank? }
       result = Loam::Import.run(csv, model: model, mapping: mapping, actor: current_actor,
                                 match_key: params[:match_key].presence, dry_run: true)
-      send_data Loam::Import.error_csv(result, Loam::Import.preview(csv)[:headers]),
+      send_data Loam::Import.error_csv(result, csv),
                 filename: "#{@entity_type.underscore}-import-errors.csv", type: "text/csv"
     end
 

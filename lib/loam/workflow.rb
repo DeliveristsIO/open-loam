@@ -100,6 +100,14 @@ module Loam
     included do
       # nil until `workflow` is called; inherited by subclasses.
       class_attribute :loam_workflow, instance_writer: false, default: nil
+
+      # THE gate: the workflow column may only change through a transition
+      # (loam_perform_transition!), which enforces from-state and role. A direct
+      # write — the edit form, Bulk.set_field, an import, a business-rule
+      # set_field — would otherwise let a member self-"approve", skipping the
+      # transition's roles:. Closing it here closes ALL paths at once. Creation
+      # (the initial state) is exempt (`on: :update`).
+      validate :loam_workflow_column_only_via_transition, on: :update
     end
 
     class_methods do
@@ -177,6 +185,16 @@ module Loam
 
     private
 
+    def loam_workflow_column_only_via_transition
+      return unless self.class.loam_workflow
+
+      column = self.class.loam_workflow.column
+      return unless attribute_changed?(column)
+      return if @loam_in_transition
+
+      errors.add(column, "can only change through a workflow transition, not a direct write")
+    end
+
     def loam_perform_transition!(transition)
       from = loam_workflow_state
 
@@ -189,7 +207,12 @@ module Loam
       loam_authorize_transition!(transition)
 
       self[self.class.loam_workflow.column] = transition.to
-      save!
+      begin
+        @loam_in_transition = true # tells the guard THIS column change is blessed
+        save!
+      ensure
+        @loam_in_transition = false
+      end
 
       Loam::Events.publish(
         "#{loam_workflow_event_domain}.#{model_name.param_key}.#{transition.name}",

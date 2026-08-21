@@ -10,7 +10,6 @@
   <p><%%= f.label :job_class, "Job class (an ActiveJob, e.g. DemoScheduledJob)" %><br><%%= f.text_field :job_class %></p>
   <p><%%= f.label :schedule, "Schedule (cron '0 7 * * *' or 'interval:3600')" %><br><%%= f.text_field :schedule %></p>
   <p><%%= f.label :timezone, "Timezone (IANA, blank = UTC)" %><br><%%= f.text_field :timezone %></p>
-  <p><%%= f.label :scope %><br><%%= f.select :scope, Loam::ScheduledJob::SCOPES %></p>
   <p><%%= f.label :active %> <%%= f.check_box :active %></p>
 
   <%%= f.submit %>

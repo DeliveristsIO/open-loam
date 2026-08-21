@@ -56,11 +56,12 @@ module Loam
     end
 
     def cell(record, column)
-      case column[:kind]
-      when :encrypted then REDACTED
-      when :custom    then (record.custom_field(column[:name]) rescue nil)
-      else record.public_send(column[:name])
-      end
+      value = case column[:kind]
+              when :encrypted then REDACTED
+              when :custom    then (record.custom_field(column[:name]) rescue nil)
+              else record.public_send(column[:name])
+              end
+      Loam::Csv.safe(value) # neutralize CSV formula injection (=, +, -, @, tab/CR)
     end
 
     def policy_for(model, actor)

@@ -38,9 +38,13 @@ class LoamSchedulerTest < ActiveSupport::TestCase
   include ActiveJob::TestHelper
 
   setup do
+    @allowed = Loam.schedulable_jobs
+    Loam.schedulable_jobs = %w[SchedTenantJob SchedSystemJob]  # allowlist the test jobs
     @warsaw = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-sched")
     @krakow = Loam::Tenant.create!(name: "Branch Krakow", slug: "krakow-sched")
   end
+
+  teardown { Loam.schedulable_jobs = @allowed }
 
   def make_job(tenant, key:, job_class: "SchedTenantJob", scope: "tenant", due: true, active: true)
     with_tenant(tenant) do

@@ -139,6 +139,11 @@ end
 #
 #   Loam::Scheduler.register(key: "nightly_digest", name: "Nightly digest",
 #                            job_class: "DigestJob", schedule: "0 7 * * *", scope: "tenant")
+#
+# Only ALLOWLISTED job classes are schedulable (a registered one, or one listed
+# here) — so a tenant admin can't schedule ActiveStorage::PurgeJob or a mailer:
+#
+#   Loam.schedulable_jobs = %w[DigestJob ReindexJob]
 
 # Domain event subscriptions. Subscribe to a single event or a whole domain
 # (trailing dot = prefix). Register them here at file scope, not inside

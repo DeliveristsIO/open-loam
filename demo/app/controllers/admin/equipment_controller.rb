@@ -30,6 +30,7 @@ module Admin
         count = Loam::Bulk.set_field(Equipment, ids, field: "status", value: params[:value])
         redirect_to admin_equipment_index_path, notice: "Updated #{count} record(s)."
       when "export"
+        require_role!(:manager)  # same gate as the dedicated export action
         send_data Loam::Export.csv(Loam::Bulk.selected(Equipment, ids), actor: current_actor),
                   filename: "equipment-selected.csv", type: "text/csv"
       else

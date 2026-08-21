@@ -30,6 +30,7 @@ module Admin
         count = Loam::Bulk.set_field(<%= class_name %>, ids, field: params[:field], value: params[:value])
         redirect_to polymorphic_path([:admin, <%= class_name %>]), notice: "Updated #{count} record(s)."
       when "export"
+        require_role!(:manager)  # same gate as the dedicated export action
         send_data Loam::Export.csv(Loam::Bulk.selected(<%= class_name %>, ids), actor: current_actor),
                   filename: "<%= plural_name %>-selected.csv", type: "text/csv"
       else

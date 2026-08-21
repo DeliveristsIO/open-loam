@@ -99,6 +99,18 @@ module Loam
       @locales = Array(codes).map(&:to_s)
     end
 
+    # Job classes an app EXPLICITLY allows the scheduler to run, beyond the ones
+    # it registers via Loam::Scheduler.register. An allowlist (not "any
+    # ActiveJob") so a tenant admin can't schedule ActiveStorage::PurgeJob or a
+    # mailer. Declared in the initializer: `Loam.schedulable_jobs = %w[DigestJob]`.
+    def self.schedulable_jobs
+      @schedulable_jobs ||= []
+    end
+
+    def self.schedulable_jobs=(names)
+      @schedulable_jobs = Array(names).map(&:to_s)
+    end
+
     def self.default_locale
       (defined?(I18n) ? I18n.default_locale : :en).to_s
     end
@@ -155,6 +167,10 @@ module Loam
   def self.locales = Lifecycle.locales
   def self.locales=(codes)
     Lifecycle.locales = codes
+  end
+  def self.schedulable_jobs = Lifecycle.schedulable_jobs
+  def self.schedulable_jobs=(names)
+    Lifecycle.schedulable_jobs = names
   end
   def self.default_locale = Lifecycle.default_locale
   def self.locale = Lifecycle.locale

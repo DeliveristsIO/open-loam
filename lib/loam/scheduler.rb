@@ -78,10 +78,19 @@ module Loam
       end
 
       # THE code-execution guard: a job_class must resolve to a real ActiveJob
-      # subclass — never an arbitrary constant to constantize-and-perform.
+      # subclass AND be ALLOWLISTED — either registered here or listed in
+      # Loam.schedulable_jobs. "Any ActiveJob" would let a tenant admin schedule
+      # ActiveStorage::PurgeJob, a mailer's delivery job, etc.
       def resolve_job_class(name)
-        klass = name.to_s.safe_constantize
+        name = name.to_s
+        return nil unless allowed_job_class?(name)
+
+        klass = name.safe_constantize
         klass if klass.is_a?(Class) && defined?(ActiveJob::Base) && klass < ActiveJob::Base
+      end
+
+      def allowed_job_class?(name)
+        registered.any? { |default| default[:job_class] == name } || Loam.schedulable_jobs.include?(name)
       end
 
       def resolve_job_class!(name)

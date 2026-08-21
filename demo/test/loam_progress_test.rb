@@ -143,7 +143,7 @@ class LoamProgressAdminTest < ActionDispatch::IntegrationTest
   end
 
   test "cancel stops a running job" do
-    job = with_tenant(@tenant) { Loam::Progress.start(name: "x", total: 10) }
+    job = with_tenant(@tenant, actor: @user) { Loam::Progress.start(name: "x", total: 10) } # owner may cancel
 
     post cancel_admin_progress_job_path(job)
 

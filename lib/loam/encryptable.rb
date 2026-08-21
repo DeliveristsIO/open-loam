@@ -51,6 +51,15 @@ module Loam
                 "`encrypts :#{name}, searchable: true` for exact-match lookup instead."
         end
 
+        # A translation row would store the field's PLAINTEXT — recreating the
+        # leak encryption closes. Caught whichever declaration comes second
+        # (Translatable runs the mirror check), so model order does not matter.
+        if respond_to?(:loam_translatable_attributes) && loam_translatable_attributes.include?(name)
+          raise Loam::Error,
+                "#{self.name}: `#{name}` is declared both `translates` and `encrypts` — a translation " \
+                "would store plaintext. Encrypted data is not translatable."
+        end
+
         self.loam_encrypted_attributes = (loam_encrypted_attributes + [name]).freeze
         self.loam_searchable_encrypted_attributes = (loam_searchable_encrypted_attributes + [name]).freeze if searchable
 

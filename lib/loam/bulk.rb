@@ -46,7 +46,14 @@ module Loam
     end
 
     def writable_column?(model, field)
-      model.column_names.include?(field) && Loam::Import::PLUMBING.exclude?(field)
+      model.column_names.include?(field) && Loam::Import::PLUMBING.exclude?(field) && !workflow_column?(model, field)
+    end
+
+    # A workflow status column may ONLY change through a transition (role-gated).
+    # Skip it here so a bulk set-field can't self-"approve" (the model guard is
+    # the backstop; this keeps the bulk op a clean no-op rather than an error).
+    def workflow_column?(model, field)
+      model.respond_to?(:loam_workflow) && model.loam_workflow&.column == field
     end
   end
 end

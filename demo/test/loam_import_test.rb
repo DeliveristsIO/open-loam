@@ -60,10 +60,10 @@ class LoamImportTest < ActiveSupport::TestCase
     with_tenant(@warsaw, actor: @mgr) do
       csv = "Desc,State\nbad,NOPE\n"
       result = Loam::Import.run(csv, model: DamageReport, mapping: { "Desc" => "description", "State" => "state" }, actor: @mgr, dry_run: true)
-      error_csv = Loam::Import.error_csv(result, %w[Desc State])
+      error_csv = Loam::Import.error_csv(result, csv)  # rebuilt from the original csv
 
       assert_match "_error", error_csv.lines.first
-      assert_match "bad", error_csv
+      assert_match "bad", error_csv, "the failed row's original cells are in the downloadable file"
     end
   end
 
