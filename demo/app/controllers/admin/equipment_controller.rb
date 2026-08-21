@@ -138,7 +138,20 @@ module Admin
       scope = Equipment.order(created_at: :desc, id: :desc)
       perspective = Loam::Perspectives.resolve("Equipment", user: current_actor, id: params[:perspective_id])
       scope = perspective.apply(scope) if perspective
-      scope.search(params[:q])
+      scope = scope.search(params[:q])
+      scope = apply_custom_field_filter(scope, Equipment)
+      scope
+    end
+
+    # A custom-field filter routed through the read-model index
+    # (Loam::CustomFieldIndex) instead of a JSON scan. An unknown field is
+    # ignored rather than raising.
+    def apply_custom_field_filter(scope, model)
+      return scope if params[:cf_field].blank?
+
+      scope.merge(Loam::CustomFieldIndex.filter(model, params[:cf_field], params[:cf_op].presence || "eq", params[:cf_value]))
+    rescue Loam::Error
+      scope
     end
 
     # Field-level enforcement: the permit list comes from the policy, so a

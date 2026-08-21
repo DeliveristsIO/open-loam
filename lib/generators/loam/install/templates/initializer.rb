@@ -62,6 +62,14 @@ Loam.broadcast_events = [ "loam.notification.", "loam.progress." ]
 #
 #   Loam::Search.driver = Loam::Search::TokenDriver
 
+# Custom-field read-model index (Loam::CustomFieldIndex). Filtering/sorting on a
+# custom field is index-backed (a typed projection in loam_custom_field_values)
+# instead of a per-row JSON scan. Records project themselves on save; backfill
+# existing data once with `bin/rails loam:index:reindex` (or
+# `Loam::CustomFieldIndex.reindex(Model)`). Query with
+# `Loam::CustomFieldIndex.filter(Model, field_key, op, value)` — the generated
+# entity index routes a `cf_field`/`cf_op`/`cf_value` filter through it.
+
 # Single sign-on (Loam::Sso). OIDC is shipped end-to-end: configure a per-tenant
 # provider under /admin/sso_providers (issuer, client_id, client_secret, email
 # domain, default JIT role). Home-realm discovery routes a user to their tenant's

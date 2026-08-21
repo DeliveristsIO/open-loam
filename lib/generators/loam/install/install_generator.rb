@@ -38,6 +38,7 @@ module Loam
         migration_template "migrations/create_loam_dashboard_widgets.rb", "db/migrate/create_loam_dashboard_widgets.rb"
         migration_template "migrations/create_loam_translations.rb", "db/migrate/create_loam_translations.rb"
         migration_template "migrations/create_loam_auth_attempts.rb", "db/migrate/create_loam_auth_attempts.rb"
+        migration_template "migrations/create_loam_custom_field_values.rb", "db/migrate/create_loam_custom_field_values.rb"
       end
 
       # Attachments (Loam::Attachable, included in every generated entity) are

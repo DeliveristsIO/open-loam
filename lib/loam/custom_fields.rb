@@ -14,6 +14,19 @@ module Loam
   module CustomFields
     extend ActiveSupport::Concern
 
+    included do
+      # Keep the read-model index (Loam::CustomFieldIndex) current so custom-field
+      # filter/sort is index-backed. Re-project only when the custom_fields column
+      # actually changed (a soft-delete touches only deleted_at, so the rows stay
+      # and the base scope hides the record — the L-912 posture). A no-op for a
+      # model with no custom_fields column. Guarded by respond_to? so Loam::
+      # CustomFields stays includable in a plain class for a DSL-only test.
+      if respond_to?(:after_save)
+        after_save    :loam_reindex_custom_fields, if: :loam_custom_fields_dirty?
+        after_destroy :loam_deindex_custom_fields
+      end
+    end
+
     class_methods do
       def custom_field_definitions
         Loam::FieldDefinition.where(entity_type: name)
@@ -44,6 +57,17 @@ module Loam
     end
 
     private
+
+    def loam_reindex_custom_fields = Loam::CustomFieldIndex.project(self)
+    def loam_deindex_custom_fields = Loam::CustomFieldIndex.remove(self)
+
+    def loam_custom_fields_dirty?
+      return false unless self.class.respond_to?(:custom_field_definitions)
+
+      # On create every column counts as changed; on update, only re-project when
+      # the custom_fields json actually moved.
+      respond_to?(:saved_change_to_custom_fields?) ? saved_change_to_custom_fields? : true
+    end
 
     def custom_field_definition!(name)
       custom_field_definitions_by_name.fetch(name.to_s) do

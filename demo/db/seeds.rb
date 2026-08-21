@@ -159,7 +159,10 @@ Loam.as_tenant(warsaw, actor: anna) do
   # index themselves on save, but a RE-seed touches existing rows with
   # find_or_create_by! (no save, no tokens), so rebuild the index explicitly —
   # the same thing `bin/rails loam:search:reindex` does after a deploy.
-  [ Equipment, Customer, DamageReport ].each { |model| Loam::Search.reindex(model) }
+  [ Equipment, Customer, DamageReport ].each do |model|
+    Loam::Search.reindex(model)
+    Loam::CustomFieldIndex.reindex(model) # read-model index for custom-field filter/sort
+  end
 end
 
 Loam.as_tenant(krakow, actor: anna) do

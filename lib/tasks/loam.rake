@@ -33,6 +33,28 @@ namespace :loam do
     end
   end
 
+  namespace :index do
+    # Rebuild the custom-field read-model index (Loam::CustomFieldIndex) for every
+    # entity with custom fields, in every tenant. Run once after enabling it so
+    # existing rows are projected; new/updated records index themselves on save.
+    #
+    #   bin/rails loam:index:reindex
+    desc "Rebuild the custom-field read-model index for every model in every tenant"
+    task reindex: :environment do
+      Rails.application.eager_load!
+      models = Loam::TenantRecord.descendants.select do |model|
+        model.name.present? && model.respond_to?(:custom_field_definitions)
+      end
+
+      tenants = 0
+      Loam::Tenant.find_each do |tenant|
+        Loam.as_tenant(tenant) { models.each { |model| Loam::CustomFieldIndex.reindex(model) } }
+        tenants += 1
+      end
+      puts "loam:index:reindex — rebuilt #{models.size} model(s) across #{tenants} tenant(s)."
+    end
+  end
+
   namespace :search do
     # Rebuild the active driver's search index for every searchable model in
     # every tenant. Needed once after switching to a driver that keeps an index

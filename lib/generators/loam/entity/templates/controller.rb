@@ -128,6 +128,17 @@ module Admin
 <% if searchable_attributes.any? -%>
       scope = scope.search(params[:q])
 <% end -%>
+      apply_custom_field_filter(scope)
+    end
+
+    # A custom-field filter routed through the read-model index
+    # (Loam::CustomFieldIndex) — index-backed, not a JSON scan. An unknown field
+    # is ignored rather than raising.
+    def apply_custom_field_filter(scope)
+      return scope if params[:cf_field].blank?
+
+      scope.merge(Loam::CustomFieldIndex.filter(<%= class_name %>, params[:cf_field], params[:cf_op].presence || "eq", params[:cf_value]))
+    rescue Loam::Error
       scope
     end
 

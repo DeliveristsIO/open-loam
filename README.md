@@ -54,7 +54,7 @@ need to — never a blank page.
 |--------|------------------------------|
 | 🏢 **Multi-tenancy** | Tenant isolation baked into every query, background job, and event. New models are tenant-scoped by default; a missing tenant context raises, never silently widens a query. |
 | 🔐 **Permissions & auth** | Password login, roles, policies, and field-level write access — declared, not hand-rolled per controller. Tenant selection limited to a user's memberships. |
-| 🌾 **Custom fields** | Define fields at runtime (a `custom_fields` JSON column + a `Loam::FieldDefinition` row), so agents and admins extend a model without a migration for every idea. |
+| 🌾 **Custom fields** | Define fields at runtime (a `custom_fields` JSON column + a `Loam::FieldDefinition` row), so agents and admins extend a model without a migration for every idea. Filtering and sorting on a custom field is **index-backed** at scale via a typed read-model projection (`Loam::CustomFieldIndex`), not a per-row JSON scan. |
 | 🔀 **Workflow** | Declared states, transitions, and role-gated approvals on any entity; each transition emits an event and is audited. |
 | 📡 **Event backbone** | A first-class domain event bus (`domain.thing.happened`, publish/subscribe) so modules stay decoupled and workflows are legible. |
 | 🔔 **Notifications** | Tenant-scoped in-app notifications, created from events, surfaced in the admin. |

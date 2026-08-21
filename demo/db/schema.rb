@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_22_110000) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_22_120000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -172,6 +172,23 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_110000) do
     t.index ["key", "tenant_id"], name: "index_loam_configs_on_key_and_tenant", unique: true
     t.index ["key"], name: "index_loam_configs_global_key", unique: true, where: "tenant_id IS NULL"
     t.index ["tenant_id"], name: "index_loam_configs_on_tenant_id"
+  end
+
+  create_table "loam_custom_field_values", force: :cascade do |t|
+    t.integer "tenant_id", null: false
+    t.string "indexable_type", null: false
+    t.bigint "indexable_id", null: false
+    t.string "field_key", null: false
+    t.text "value_text"
+    t.decimal "value_number"
+    t.boolean "value_boolean"
+    t.datetime "value_datetime"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["indexable_type", "indexable_id", "field_key"], name: "index_loam_cfv_unique", unique: true
+    t.index ["tenant_id", "indexable_type", "field_key", "value_number"], name: "index_loam_cfv_number"
+    t.index ["tenant_id", "indexable_type", "field_key", "value_text"], name: "index_loam_cfv_text"
+    t.index ["tenant_id"], name: "index_loam_custom_field_values_on_tenant_id"
   end
 
   create_table "loam_dashboard_widgets", force: :cascade do |t|
@@ -449,6 +466,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_110000) do
   add_foreign_key "loam_comments", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_comments", "users", column: "author_id"
   add_foreign_key "loam_configs", "loam_tenants", column: "tenant_id"
+  add_foreign_key "loam_custom_field_values", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_dashboard_widgets", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_dictionaries", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_dictionary_entries", "loam_dictionaries", column: "dictionary_id"
