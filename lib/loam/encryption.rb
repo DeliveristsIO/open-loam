@@ -75,14 +75,25 @@ module Loam
       # Explicit-scope variants, for data owned by something OTHER than a tenant
       # — an MFA secret, say, keyed "user/42" so it decrypts in whatever tenant
       # the user is currently in, or at login when no tenant is chosen yet.
-      def encrypt_scoped(plaintext, scope)
+      def encrypt_scoped(plaintext, scope, aad: nil)
         return nil if plaintext.nil?
-        Cipher.seal(plaintext.to_s, data_key(scope, :encryption))
+        Cipher.seal(plaintext.to_s, data_key(scope, :encryption), aad: aad)
       end
 
-      def decrypt_scoped(payload, scope)
+      def decrypt_scoped(payload, scope, aad: nil)
         return nil if payload.nil?
-        Cipher.open(payload, data_key(scope, :encryption))
+        Cipher.open(payload, data_key(scope, :encryption), aad: aad)
+      end
+
+      # The Additional Authenticated Data that BINDS a ciphertext to where it
+      # lives — the key scope (tenant/owner) + table + column. Reconstructed
+      # identically on read and write, so a blob moved to a different column,
+      # table, or tenant fails the auth tag. NOT the record id (see
+      # Loam::Encryptable): the id is unknown at INSERT time, and binding it would
+      # force an ugly post-insert double-write; record-swap within one
+      # tenant+table+column stays a documented residual.
+      def aad(scope, table, column)
+        "loam-aad:v2:#{scope}:#{table}:#{column}"
       end
 
       def blind_index_scoped(value, scope)

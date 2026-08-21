@@ -6,39 +6,45 @@ module Loam
     #
     # Stored format, one string column:
     #
-    #   "v1:" + base64( iv[12] ++ auth_tag[16] ++ ciphertext )
+    #   "v1:" + base64( iv[12] ++ auth_tag[16] ++ ciphertext )              (no AAD)
+    #   "v2:" + base64( iv[12] ++ auth_tag[16] ++ ciphertext )   sealed WITH AAD
     #
-    # The "v1" prefix is a version tag: a future scheme (a rotated key, a new
-    # cipher) writes "v2:" and old "v1:" rows keep decrypting, so rotation is a
-    # lazy re-encrypt, not a stop-the-world data migration (see loam:encryption).
+    # The version tag lets the scheme evolve without a stop-the-world migration:
+    # v2 binds Additional Authenticated Data (the field's tenant+table+column) into
+    # the auth tag, so a ciphertext moved to a DIFFERENT column/table/tenant fails
+    # the tag on read — it can't be transplanted. Old "v1:" rows (no AAD) keep
+    # decrypting, so upgrading is a lazy re-encrypt (loam:encryption:rotate writes
+    # v2), never a data migration. The AAD is authenticated but NOT secret — it
+    # never conceals anything, it only pins WHERE the ciphertext is allowed to live.
     module Cipher
-      VERSION = "v1".freeze
+      VERSION = "v1".freeze  # legacy, no AAD — still readable
+      V2      = "v2".freeze  # current writes — AAD-bound
       IV_BYTES  = 12   # GCM's standard nonce size
       TAG_BYTES = 16   # full-length GCM tag; a shorter tag weakens authentication
 
       # Encrypt with a fresh random IV. Reusing an IV under one key is
       # catastrophic for GCM, so the IV is never derived or fixed — always
-      # OpenSSL's CSPRNG, once per value.
-      def self.seal(plaintext, key)
+      # OpenSSL's CSPRNG, once per value. With an `aad:` the ciphertext is bound
+      # to that context (v2); without one it stays v1 (a bare tenant-scoped blob).
+      def self.seal(plaintext, key, aad: nil)
         cipher = OpenSSL::Cipher.new("aes-256-gcm").encrypt
         cipher.key = key
         iv = cipher.random_iv
-        # No AAD: per-tenant key separation already isolates tenants, so binding
-        # extra associated data into the tag would buy nothing here.
-        # TODO (follow-up): bind the column/record identity as AAD so a ciphertext
-        # cannot be transplanted between columns/rows — a documented tradeoff, not
-        # yet enforced.
+        version = aad ? V2 : VERSION
+        cipher.auth_data = aad if aad # folded into the tag, not encrypted
         ciphertext = cipher.update(plaintext) + cipher.final
         tag = cipher.auth_tag(TAG_BYTES)
-        "#{VERSION}:" + [iv + tag + ciphertext].pack("m0")
+        "#{version}:" + [iv + tag + ciphertext].pack("m0")
       end
 
       # Decrypt, or raise Loam::Encryption::DecryptionError. The wrong tenant's
-      # key, a tampered blob, a truncated tag, or plain garbage all fail the
-      # same loud way — never a partial or silently-wrong plaintext.
-      def self.open(payload, key)
+      # key, a tampered blob, a truncated tag, a v2 blob read with the WRONG (or
+      # missing) AAD, or plain garbage all fail the same loud way — never a
+      # partial or silently-wrong plaintext. A v1 blob carries no AAD, so the
+      # passed `aad:` is ignored for it (backward compatible).
+      def self.open(payload, key, aad: nil)
         version, blob = payload.to_s.split(":", 2)
-        raise DecryptionError, "unrecognized ciphertext format" unless version == VERSION && blob
+        raise DecryptionError, "unrecognized ciphertext format" unless [ VERSION, V2 ].include?(version) && blob
 
         raw = blob.unpack1("m0")
         # Enforce the full IV+tag length BEFORE slicing: OpenSSL will verify a
@@ -54,6 +60,7 @@ module Loam
         cipher.key = key
         cipher.iv = iv
         cipher.auth_tag = tag
+        cipher.auth_data = aad if version == V2 && aad # v2 rows require the matching AAD
         plaintext = cipher.update(ciphertext) + cipher.final
         # Decryption yields ASCII-8BIT bytes; our columns hold UTF-8 text.
         plaintext.force_encoding(Encoding::UTF_8)

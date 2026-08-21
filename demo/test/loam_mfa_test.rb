@@ -28,7 +28,7 @@ class LoamMfaTest < ActiveSupport::TestCase
     raw = Loam::MfaCredential.connection.select_value(
       "SELECT totp_secret FROM loam_mfa_credentials WHERE id = #{credential.id}"
     )
-    assert raw.start_with?("v1:"), "stored as versioned ciphertext"
+    assert raw.start_with?("v2:"), "stored as v2 (AAD-bound) versioned ciphertext"
     refute_includes raw, secret, "the base32 secret must not appear in the column"
   end
 

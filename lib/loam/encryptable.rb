@@ -75,12 +75,17 @@ module Loam
 
         Module.new do
           define_method(name) do
-            Loam::Encryption.decrypt_scoped(read_attribute(name), loam_encryption_scope(scope))
+            resolved = loam_encryption_scope(scope)
+            aad = Loam::Encryption.aad(resolved, self.class.table_name, name)
+            Loam::Encryption.decrypt_scoped(read_attribute(name), resolved, aad: aad)
           end
 
           define_method("#{name}=") do |value|
             resolved = loam_encryption_scope(scope)
-            write_attribute(name, Loam::Encryption.encrypt_scoped(value, resolved))
+            # Bind this ciphertext to its (scope, table, column) so it can't be
+            # transplanted to another column/table/tenant (v2 AAD).
+            aad = Loam::Encryption.aad(resolved, self.class.table_name, name)
+            write_attribute(name, Loam::Encryption.encrypt_scoped(value, resolved, aad: aad))
             # The blind index tracks the ciphertext column: rewrite it in the
             # same breath, so an exact-match lookup can never go stale.
             write_attribute(hash_column, Loam::Encryption.blind_index_scoped(value, resolved)) if searchable

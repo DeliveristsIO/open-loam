@@ -147,7 +147,7 @@ class LoamPendingActionTest < ActiveSupport::TestCase
       assert_equal({ "from" => "[encrypted]", "to" => "[encrypted]" }, pending.preview["tax_id"])
 
       raw = Loam::PendingAction.connection.select_value("SELECT changeset FROM loam_pending_actions WHERE id = #{id}")
-      assert raw.start_with?("v1:")
+      assert raw.start_with?("v2:")
       refute_includes raw, "PL-SECRET-999", "no plaintext in the stored changeset"
 
       audit = Loam::AuditRecord.where(auditable_type: "Loam::PendingAction", auditable_id: id).first

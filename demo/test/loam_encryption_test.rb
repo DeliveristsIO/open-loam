@@ -28,8 +28,8 @@ class LoamEncryptionTest < ActiveSupport::TestCase
     raw_email = Customer.connection.select_value("SELECT email FROM customers WHERE id = #{id}")
     raw_tax   = Customer.connection.select_value("SELECT tax_id FROM customers WHERE id = #{id}")
 
-    assert raw_email.start_with?("v1:"), "ciphertext must carry the version tag"
-    assert raw_tax.start_with?("v1:")
+    assert raw_email.start_with?("v2:"), "new writes carry the v2 (AAD-bound) version tag"
+    assert raw_tax.start_with?("v2:")
     refute_includes raw_email, "ceo@acme.test", "a dump must not leak the plaintext"
     refute_includes raw_tax, "PL-999"
   end
@@ -165,6 +165,6 @@ class AdminEncryptionFlowTest < ActionDispatch::IntegrationTest
 
     # The rendered HTML shows plaintext, but the stored column is ciphertext.
     raw = Customer.connection.select_value("SELECT email FROM customers WHERE id = #{id}")
-    assert raw.start_with?("v1:")
+    assert raw.start_with?("v2:")
   end
 end
