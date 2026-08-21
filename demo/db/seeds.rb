@@ -165,4 +165,4 @@ Loam.as_tenant(krakow, actor: anna) do
   Loam::Search.reindex(Equipment)
 end
 
-puts "Seeded: 2 tenants, 2 users, 3 equipment records, rental settings (global + Warsaw override), beta_dashboard on for Warsaw, 1 customer with encrypted PII, 1 pending approval, 2 saved views, 1 business rule, 1 SSO provider (Warsaw, OIDC), a damage_severity dictionary per tenant (+ a dictionary-typed DamageReport field), 1 completed task, word-level search index (TokenDriver)."
+puts "Seeded: 2 tenants, 2 users, 3 equipment records, rental settings (global + Warsaw override), beta_dashboard on for Warsaw, 1 customer with encrypted PII, 1 pending approval, 2 saved views, 1 business rule, 1 SSO provider (Warsaw, OIDC), a damage_severity dictionary per tenant (+ a dictionary-typed DamageReport field), 1 completed task, a nightly schedule per tenant, word-level search index (TokenDriver)."

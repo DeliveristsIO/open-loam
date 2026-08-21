@@ -32,6 +32,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | SSO (OIDC) | `Loam::Sso` + `Loam::SsoProvider` (per-tenant, admin-configured) | configure at `/admin/sso_providers` (issuer, client_id, client_secret, email domain, JIT role); a matching-domain email is routed to the IdP, verified, and JIT-provisioned/linked; the client_secret is encrypted (needs `LOAM_MASTER_KEY`); SAML/SCIM are seams |
 | Dictionaries | `Loam::Dictionary` + `Loam::Dictionaries` (managed lookup lists) | curate at `/admin/dictionaries`; a `FieldDefinition` of type "dictionary" makes a custom field a select of its entries; read via `Loam::Dictionaries.entries`/`default`/`label_for` |
 | Task progress | `Loam::Progress` + `Loam::ProgressJob` (live over SSE) | `start(name:, total:)` then `advance`/`complete!`/`fail!`/`cancel!`; percent/ETA push to the `/admin/progress_jobs` bar live; broadcast throttled per-percent; `cancelled?` for a cooperative stop |
+| Scheduler | `Loam::Scheduler` + `Loam::ScheduledJob` (recurring cron/interval jobs) | `register(key:, job_class:, schedule:, scope:)` a schedule (or add one at `/admin/scheduled_jobs`); `loam:scheduler:tick` (system cron) fires due ones with an atomic no-double-fire claim; job_class must be a real ActiveJob |
 | Long lists | `paginate(scope)` from `Admin::Pagination` in `BaseController` | already wired into generated index screens — 25 a page, with a filter box |
 | Comments | `Loam::Comment` rows via `Loam::Commentable` | `record.comment!("...")`, or the form on the entity's show screen; publishes `loam.comment.created` |
 | Attachments | ActiveStorage `files` via `Loam::Attachable` | `record.files.attach(...)`, or the file field on the entity's form — uploading counts as an update, so the entity's policy decides |
@@ -287,6 +288,15 @@ unit and `complete!`/`fail!`/`cancel!` at the end; check `progress.cancelled?` t
 stop early. Pushes id/percent/status to the `/admin/progress_jobs` bar, throttled
 per-percent. In a background job wrap the work in `Loam.as_tenant(tenant, actor:)`
 (tenant-scoped, not audited; `stale?` flags a dead job).
+
+## Scheduler
+
+Recurring jobs, per tenant. `Loam::Scheduler.register(key:, job_class:, schedule:,
+scope:)` at file scope (materialized by `sync_tenant` in `on_tenant_created`), or
+add one at `/admin/scheduled_jobs`. `schedule` is cron (`0 7 * * *`) or
+`interval:N`; `scope` "tenant" (enqueues `tenant_id:`) or "system" (once);
+`job_class` MUST be a real ActiveJob (validated). `bin/rails loam:scheduler:tick`
+(system cron) fires due ones with an atomic no-double-fire claim.
 
 ## Seeding a new tenant
 

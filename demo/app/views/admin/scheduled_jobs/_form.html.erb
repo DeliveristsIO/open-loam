@@ -1,0 +1,17 @@
+<%# Loam::ScheduledJob is namespaced, so pin the URL + param scope. %>
+<%= form_with model: @job, scope: :scheduled_job,
+      url: (@job.persisted? ? admin_scheduled_job_path(@job) : admin_scheduled_jobs_path) do |f| %>
+  <% if @job.errors.any? %>
+    <ul><% @job.errors.full_messages.each do |m| %><li><%= m %></li><% end %></ul>
+  <% end %>
+
+  <p><%= f.label :key %><br><%= f.text_field :key %></p>
+  <p><%= f.label :name %><br><%= f.text_field :name %></p>
+  <p><%= f.label :job_class, "Job class (an ActiveJob, e.g. DemoScheduledJob)" %><br><%= f.text_field :job_class %></p>
+  <p><%= f.label :schedule, "Schedule (cron '0 7 * * *' or 'interval:3600')" %><br><%= f.text_field :schedule %></p>
+  <p><%= f.label :timezone, "Timezone (IANA, blank = UTC)" %><br><%= f.text_field :timezone %></p>
+  <p><%= f.label :scope %><br><%= f.select :scope, Loam::ScheduledJob::SCOPES %></p>
+  <p><%= f.label :active %> <%= f.check_box :active %></p>
+
+  <%= f.submit %>
+<% end %>

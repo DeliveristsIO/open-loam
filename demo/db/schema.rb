@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_22_092000) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_22_093000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -312,6 +312,25 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_092000) do
     t.index ["tenant_id"], name: "index_loam_record_locks_on_tenant_id"
   end
 
+  create_table "loam_scheduled_jobs", force: :cascade do |t|
+    t.integer "tenant_id", null: false
+    t.string "key", null: false
+    t.string "name", null: false
+    t.string "job_class", null: false
+    t.string "schedule", null: false
+    t.string "timezone"
+    t.string "scope", default: "tenant", null: false
+    t.datetime "next_run_at"
+    t.datetime "last_run_at"
+    t.datetime "locked_until"
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["active", "next_run_at", "locked_until"], name: "idx_on_active_next_run_at_locked_until_ace422474c"
+    t.index ["tenant_id", "key"], name: "index_loam_scheduled_jobs_on_tenant_id_and_key", unique: true
+    t.index ["tenant_id"], name: "index_loam_scheduled_jobs_on_tenant_id"
+  end
+
   create_table "loam_search_tokens", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "searchable_type", null: false
@@ -410,6 +429,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_092000) do
   add_foreign_key "loam_progress_jobs", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_record_locks", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_record_locks", "users", column: "locked_by_id"
+  add_foreign_key "loam_scheduled_jobs", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_search_tokens", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_sso_identities", "loam_sso_providers", column: "sso_provider_id"
   add_foreign_key "loam_sso_identities", "loam_tenants", column: "tenant_id"

@@ -37,6 +37,13 @@ end)
 # `bin/rails loam:search:reindex`); new/updated records index themselves on save.
 Loam::Search.driver = Loam::Search::TokenDriver
 
+# Recurring jobs (Loam::Scheduler). Modules self-register default schedules at
+# file scope; on_tenant_created (below) materializes the tenant-scope ones as
+# rows per tenant. A cron entry runs `bin/rails loam:scheduler:tick` every minute.
+# Here: touch every equipment nightly at 03:00 (a stand-in for real periodic work).
+Loam::Scheduler.register(key: "nightly_touch", name: "Nightly equipment touch",
+                         job_class: "DemoScheduledJob", schedule: "0 3 * * *", scope: "tenant")
+
 # SSO (Loam::Sso). The demo has no real identity provider and MUST NOT hit the
 # network, so it injects the offline FakeProvider for every SSO round-trip: its
 # authorization_url loops straight back to our callback and it returns verified
@@ -86,6 +93,10 @@ Loam.on_tenant_created do |tenant|
     fd.field_type = "string"
     fd.writable_roles = [ "manager" ]
   end
+
+  # Materialize the registered tenant-scope schedules as rows for this tenant
+  # (idempotent — also re-run for existing tenants by `bin/rails loam:sync`).
+  Loam::Scheduler.sync_tenant(tenant)
 end
 
 # Domain event subscriptions. Subscribe to a single event or a whole domain

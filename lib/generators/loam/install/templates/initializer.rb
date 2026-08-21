@@ -102,7 +102,24 @@ Loam.on_tenant_created do |tenant|
   #   [%w[minor Minor], %w[major Major], %w[critical Critical]].each_with_index do |(value, label), i|
   #     severity.entries.find_or_create_by!(value: value) { |e| e.label = label; e.position = i }
   #   end
+
+  # Materialize the registered tenant-scope schedules (see Loam::Scheduler.register
+  # below) as rows for this tenant. A no-op until you register one.
+  Loam::Scheduler.sync_tenant(tenant)
 end
+
+# Recurring jobs (Loam::Scheduler). Register default schedules here at file scope;
+# on_tenant_created materializes the tenant-scope ones per tenant. A "tenant" job
+# is enqueued with `tenant_id:` (establish it with Loam.as_tenant); a "system" job
+# runs once with no tenant. job_class MUST be a real ActiveJob (validated — never
+# arbitrary code). Wire the runner to system cron, every minute:
+#
+#   * * * * * cd /path/to/app && bin/rails loam:scheduler:tick
+#
+# The claim is atomic, so running it from several hosts never double-fires a job.
+#
+#   Loam::Scheduler.register(key: "nightly_digest", name: "Nightly digest",
+#                            job_class: "DigestJob", schedule: "0 7 * * *", scope: "tenant")
 
 # Domain event subscriptions. Subscribe to a single event or a whole domain
 # (trailing dot = prefix). Register them here at file scope, not inside

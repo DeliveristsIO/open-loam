@@ -1,0 +1,28 @@
+<h1>Schedules</h1>
+
+<p>Recurring jobs for this tenant. The runner (<code>loam:scheduler:tick</code>,
+wired to system cron) fires them on schedule. <%%= link_to "New schedule", new_admin_scheduled_job_path %></p>
+
+<table>
+  <thead>
+    <tr><th>Key</th><th>Job</th><th>Schedule</th><th>Scope</th><th>Next run</th><th>Last run</th><th>Active</th><th></th></tr>
+  </thead>
+  <tbody>
+    <%% @jobs.each do |job| %>
+      <tr>
+        <td><%%= job.name %> <small>(<code><%%= job.key %></code>)</small></td>
+        <td><code><%%= job.job_class %></code></td>
+        <td><code><%%= job.schedule %></code><%%= " #{job.timezone}" if job.timezone.present? %></td>
+        <td><%%= job.scope %></td>
+        <td><%%= job.next_run_at&.strftime("%Y-%m-%d %H:%M UTC") %></td>
+        <td><%%= job.last_run_at&.strftime("%Y-%m-%d %H:%M UTC") || "—" %></td>
+        <td><%%= job.active? ? "yes" : "no" %></td>
+        <td>
+          <%%= button_to "Run now", run_now_admin_scheduled_job_path(job), form: { style: "display:inline" } %>
+          <%%= link_to "Edit", edit_admin_scheduled_job_path(job) %>
+          <%%= button_to "Delete", admin_scheduled_job_path(job), method: :delete, form: { style: "display:inline" } %>
+        </td>
+      </tr>
+    <%% end %>
+  </tbody>
+</table>

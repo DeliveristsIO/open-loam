@@ -5,6 +5,18 @@ namespace :loam do
     puts "loam:sync — ran #{Loam.tenant_created_callbacks.size} tenant callback(s) across #{synced} tenant(s)."
   end
 
+  namespace :scheduler do
+    # Fire every due recurring job once. Wire to system cron, every minute:
+    #   * * * * * cd /app && bin/rails loam:scheduler:tick
+    # The claim is atomic, so running this from several hosts never double-fires
+    # a job (Postgres SKIP LOCKED; SQLite serializes the single-process claim).
+    desc "Enqueue every due Loam::ScheduledJob (run from cron)"
+    task tick: :environment do
+      fired = Loam::Scheduler.tick
+      puts "loam:scheduler:tick — fired #{fired} scheduled job(s)."
+    end
+  end
+
   namespace :search do
     # Rebuild the active driver's search index for every searchable model in
     # every tenant. Needed once after switching to a driver that keeps an index

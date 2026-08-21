@@ -44,6 +44,9 @@ Rails.application.routes.draw do
       post :run, on: :collection
       post :cancel, on: :member
     end
+    resources :scheduled_jobs, only: %i[index new create edit update destroy] do  # recurring jobs
+      post :run_now, on: :member
+    end
     resources :field_definitions, only: %i[index new create destroy]
     resources :notifications, only: %i[index] do
       post :mark_read, on: :member

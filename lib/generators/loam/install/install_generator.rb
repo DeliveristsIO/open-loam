@@ -34,6 +34,7 @@ module Loam
         migration_template "migrations/create_loam_dictionaries.rb", "db/migrate/create_loam_dictionaries.rb"
         migration_template "migrations/create_loam_dictionary_entries.rb", "db/migrate/create_loam_dictionary_entries.rb"
         migration_template "migrations/create_loam_progress_jobs.rb", "db/migrate/create_loam_progress_jobs.rb"
+        migration_template "migrations/create_loam_scheduled_jobs.rb", "db/migrate/create_loam_scheduled_jobs.rb"
       end
 
       # Attachments (Loam::Attachable, included in every generated entity) are
@@ -86,6 +87,7 @@ module Loam
         template "admin/dictionaries_controller.rb", "app/controllers/admin/dictionaries_controller.rb"
         template "admin/dictionary_entries_controller.rb", "app/controllers/admin/dictionary_entries_controller.rb"
         template "admin/progress_jobs_controller.rb", "app/controllers/admin/progress_jobs_controller.rb"
+        template "admin/scheduled_jobs_controller.rb", "app/controllers/admin/scheduled_jobs_controller.rb"
         template "admin/search_controller.rb", "app/controllers/admin/search_controller.rb"
         template "admin/pagination.rb", "app/controllers/admin/pagination.rb"
         template "admin/layout.html.erb", "app/views/layouts/admin.html.erb"
@@ -120,6 +122,10 @@ module Loam
         template "admin/dictionaries_edit.html.erb", "app/views/admin/dictionaries/edit.html.erb"
         template "admin/dictionaries_form.html.erb", "app/views/admin/dictionaries/_form.html.erb"
         template "admin/progress_jobs_index.html.erb", "app/views/admin/progress_jobs/index.html.erb"
+        template "admin/scheduled_jobs_index.html.erb", "app/views/admin/scheduled_jobs/index.html.erb"
+        template "admin/scheduled_jobs_new.html.erb", "app/views/admin/scheduled_jobs/new.html.erb"
+        template "admin/scheduled_jobs_edit.html.erb", "app/views/admin/scheduled_jobs/edit.html.erb"
+        template "admin/scheduled_jobs_form.html.erb", "app/views/admin/scheduled_jobs/_form.html.erb"
         template "admin/search_index.html.erb", "app/views/admin/search/index.html.erb"
       end
 
@@ -158,6 +164,9 @@ module Loam
             end
             resources :progress_jobs, only: %i[index] do  # long-running task progress (live via SSE)
               post :cancel, on: :member
+            end
+            resources :scheduled_jobs, only: %i[index new create edit update destroy] do  # recurring jobs
+              post :run_now, on: :member
             end
             resources :field_definitions, only: %i[index new create destroy]
             resources :notifications, only: %i[index] do
