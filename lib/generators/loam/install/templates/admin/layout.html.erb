@@ -30,6 +30,7 @@
         <%%= link_to "Features", admin_features_path %>
         <%%= link_to "Rules", admin_business_rules_path %>
         <%%= link_to "SSO", admin_sso_providers_path %>
+        <%%= link_to "Dictionaries", admin_dictionaries_path %>
         <%%= form_with url: admin_search_path, method: :get, class: "search" do %>
           <%%= text_field_tag :q, params[:q], placeholder: "Search" %>
         <%% end %>

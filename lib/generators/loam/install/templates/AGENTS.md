@@ -30,6 +30,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Notifications | `Loam::Notification` rows, read at `/admin/notifications` | `Loam::Notifications.notify(user, title:)` / `notify_role(:manager, title:)`, normally from an event subscriber |
 | Search | `searchable_by :col, :col` in the model (`Loam::Searchable`) | declared with the entity for its string/text columns; `Model.search(q)` and the admin's global box at `/admin/search`. HOW it matches is a swappable driver (`Loam::Search.driver`): substring LIKE (default) or the portable word-level TokenDriver — call sites never change |
 | SSO (OIDC) | `Loam::Sso` + `Loam::SsoProvider` (per-tenant, admin-configured) | configure at `/admin/sso_providers` (issuer, client_id, client_secret, email domain, JIT role); a matching-domain email is routed to the IdP, verified, and JIT-provisioned/linked; the client_secret is encrypted (needs `LOAM_MASTER_KEY`); SAML/SCIM are seams |
+| Dictionaries | `Loam::Dictionary` + `Loam::Dictionaries` (managed lookup lists) | curate at `/admin/dictionaries`; a `FieldDefinition` of type "dictionary" makes a custom field a select of its entries; read via `Loam::Dictionaries.entries`/`default`/`label_for` |
 | Long lists | `paginate(scope)` from `Admin::Pagination` in `BaseController` | already wired into generated index screens — 25 a page, with a filter box |
 | Comments | `Loam::Comment` rows via `Loam::Commentable` | `record.comment!("...")`, or the form on the entity's show screen; publishes `loam.comment.created` |
 | Attachments | ActiveStorage `files` via `Loam::Attachable` | `record.files.attach(...)`, or the file field on the entity's form — uploading counts as an update, so the entity's policy decides |
@@ -268,6 +269,14 @@ a tenant membership at the mapped role. The client_secret is encrypted at rest,
 so `LOAM_MASTER_KEY` must be set. OIDC is shipped end-to-end; SAML and SCIM are
 seams behind the protocol interface. In tests, inject `Loam::Sso::FakeProvider`
 via `Loam::Sso.builder` so nothing touches the network.
+
+## Dictionaries
+
+Per-tenant managed lookup lists (`Loam::Dictionary`), curated at
+`/admin/dictionaries` with no deploy. Use one as a custom-field type: a
+`FieldDefinition` of `field_type: "dictionary"` (dictionary key in its `config`)
+renders a select of active entries and stores the chosen value — read it with
+`custom_field`, its label with `custom_field_label` / `Loam::Dictionaries.label_for`.
 
 ## Seeding a new tenant
 

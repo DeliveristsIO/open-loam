@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_22_090000) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_22_091700) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -165,6 +165,34 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_090000) do
     t.index ["tenant_id"], name: "index_loam_configs_on_tenant_id"
   end
 
+  create_table "loam_dictionaries", force: :cascade do |t|
+    t.integer "tenant_id", null: false
+    t.string "key", null: false
+    t.string "name", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tenant_id", "key"], name: "index_loam_dictionaries_on_tenant_id_and_key", unique: true
+    t.index ["tenant_id"], name: "index_loam_dictionaries_on_tenant_id"
+  end
+
+  create_table "loam_dictionary_entries", force: :cascade do |t|
+    t.integer "tenant_id", null: false
+    t.integer "dictionary_id", null: false
+    t.string "value", null: false
+    t.string "label", null: false
+    t.string "color"
+    t.string "icon"
+    t.integer "position", default: 0, null: false
+    t.boolean "is_default", default: false, null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["dictionary_id", "value"], name: "index_loam_dictionary_entries_on_dictionary_id_and_value", unique: true
+    t.index ["dictionary_id"], name: "index_loam_dictionary_entries_on_dictionary_id"
+    t.index ["tenant_id", "dictionary_id", "position"], name: "idx_on_tenant_id_dictionary_id_position_0a9045964a"
+    t.index ["tenant_id"], name: "index_loam_dictionary_entries_on_tenant_id"
+  end
+
   create_table "loam_field_definitions", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "entity_type", null: false
@@ -173,6 +201,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_090000) do
     t.json "writable_roles", default: [], null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.json "config", default: {}, null: false
     t.index ["tenant_id", "entity_type", "name"], name: "index_loam_field_definitions_on_tenant_entity_name", unique: true
     t.index ["tenant_id"], name: "index_loam_field_definitions_on_tenant_id"
   end
@@ -349,6 +378,9 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_090000) do
   add_foreign_key "loam_comments", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_comments", "users", column: "author_id"
   add_foreign_key "loam_configs", "loam_tenants", column: "tenant_id"
+  add_foreign_key "loam_dictionaries", "loam_tenants", column: "tenant_id"
+  add_foreign_key "loam_dictionary_entries", "loam_dictionaries", column: "dictionary_id"
+  add_foreign_key "loam_dictionary_entries", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_field_definitions", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_memberships", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_memberships", "users"

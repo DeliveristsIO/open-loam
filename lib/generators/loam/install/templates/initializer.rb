@@ -94,6 +94,14 @@ Loam.on_tenant_created do |tenant|
   # a default added in a later release reaches tenants that already exist.
   # Use find_or_create_by!, never create!. The block runs inside
   # Loam.as_tenant(tenant), so tenant-scoped writes need no extra ceremony.
+  #
+  # Baseline managed lookup lists (Loam::Dictionary) — a FieldDefinition of type
+  # "dictionary" can then point a custom field at the key, rendering a select:
+  #
+  #   severity = Loam::Dictionary.find_or_create_by!(key: "damage_severity") { |d| d.name = "Damage severity" }
+  #   [%w[minor Minor], %w[major Major], %w[critical Critical]].each_with_index do |(value, label), i|
+  #     severity.entries.find_or_create_by!(value: value) { |e| e.label = label; e.position = i }
+  #   end
 end
 
 # Domain event subscriptions. Subscribe to a single event or a whole domain

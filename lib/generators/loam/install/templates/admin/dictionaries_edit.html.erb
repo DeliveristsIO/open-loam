@@ -1,0 +1,45 @@
+<h1>Dictionary: <code><%%= @dictionary.key %></code></h1>
+
+<%%= render "form" %>
+
+<h2>Entries</h2>
+<p>Ordered by position; an inactive entry stops being offered but keeps existing values readable.</p>
+
+<table>
+  <thead>
+    <tr><th>Pos</th><th>Value</th><th>Label</th><th>Color</th><th>Icon</th><th>Default</th><th>Active</th><th></th></tr>
+  </thead>
+  <tbody>
+    <%% @dictionary.entries.ordered.each do |entry| %>
+      <tr>
+        <%%= form_with model: entry, scope: :dictionary_entry, url: admin_dictionary_entry_path(@dictionary, entry) do |f| %>
+          <td><%%= f.number_field :position, style: "width:4rem" %></td>
+          <td><%%= f.text_field :value %></td>
+          <td><%%= f.text_field :label %></td>
+          <td><%%= f.text_field :color, placeholder: "#a00", style: "width:6rem" %></td>
+          <td><%%= f.text_field :icon, style: "width:6rem" %></td>
+          <td><%%= f.check_box :is_default %></td>
+          <td><%%= f.check_box :active %></td>
+          <td>
+            <%%= f.submit "Save" %>
+            <%%= button_to "Delete", admin_dictionary_entry_path(@dictionary, entry), method: :delete, form: { style: "display:inline" } %>
+          </td>
+        <%% end %>
+      </tr>
+    <%% end %>
+  </tbody>
+</table>
+
+<h3>Add entry</h3>
+<%%= form_with model: @entry, scope: :dictionary_entry, url: admin_dictionary_entries_path(@dictionary) do |f| %>
+  <p><%%= f.label :value %> <%%= f.text_field :value %>
+     <%%= f.label :label %> <%%= f.text_field :label %>
+     <%%= f.label :position %> <%%= f.number_field :position, value: 0, style: "width:4rem" %></p>
+  <p><%%= f.label :color %> <%%= f.text_field :color, placeholder: "#a00" %>
+     <%%= f.label :icon %> <%%= f.text_field :icon %>
+     <%%= f.label :is_default %> <%%= f.check_box :is_default %>
+     <%%= f.label :active %> <%%= f.check_box :active, checked: true %></p>
+  <%%= f.submit "Add entry" %>
+<%% end %>
+
+<p><%%= link_to "Back to dictionaries", admin_dictionaries_path %></p>

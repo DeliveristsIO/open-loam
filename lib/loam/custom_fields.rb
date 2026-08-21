@@ -31,6 +31,18 @@ module Loam
       value
     end
 
+    # The display label for a custom field. For a dictionary-typed field this is
+    # the matching entry's label; for every other type it is just the value. A
+    # dictionary value is stored as its plain code, so read/write is unchanged —
+    # only the human-facing rendering differs.
+    def custom_field_label(name)
+      definition = custom_field_definition!(name)
+      value = custom_field(name)
+      return value unless definition.field_type == "dictionary"
+
+      Loam::Dictionaries.label_for(definition.dictionary_key, value)
+    end
+
     private
 
     def custom_field_definition!(name)

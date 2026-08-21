@@ -12,6 +12,8 @@ module Loam
     # means writes commit normally; :confirm means a caller (an MCP tool acting
     # for an AI agent) stages writes for human approval instead. It lives here so
     # it is per-request and resets automatically.
-    attribute :tenant, :actor, :config_cache, :mutation_mode
+    # dictionary_cache memoizes resolved Loam::Dictionaries lookups for one
+    # request/job, keyed by [kind, key, tenant_id] — same posture as config_cache.
+    attribute :tenant, :actor, :config_cache, :mutation_mode, :dictionary_cache
   end
 end

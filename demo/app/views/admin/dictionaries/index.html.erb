@@ -1,0 +1,21 @@
+<h1>Dictionaries</h1>
+
+<p>Managed lookup lists for this tenant — curate the values here, then use one as
+a "dictionary" custom-field type. <%= link_to "New dictionary", new_admin_dictionary_path %></p>
+
+<table>
+  <thead><tr><th>Key</th><th>Name</th><th>Entries</th><th></th></tr></thead>
+  <tbody>
+    <% @dictionaries.each do |dictionary| %>
+      <tr>
+        <td><code><%= dictionary.key %></code></td>
+        <td><%= dictionary.name %></td>
+        <td><%= dictionary.entries.count %></td>
+        <td>
+          <%= link_to "Edit", edit_admin_dictionary_path(dictionary) %>
+          <%= button_to "Delete", admin_dictionary_path(dictionary), method: :delete, form: { style: "display:inline" } %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

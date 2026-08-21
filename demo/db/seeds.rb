@@ -117,6 +117,22 @@ Loam.as_tenant(warsaw, actor: anna) do
     p.active = true
   end
 
+  # A managed lookup list (Loam::Dictionary): damage severity, curated in the
+  # admin without a deploy. The DamageReport "severity" custom field below is a
+  # dictionary-typed field driven by it, so its edit form renders a select of
+  # these entries and stores the chosen value.
+  severity = Loam::Dictionary.find_or_create_by!(key: "damage_severity") { |d| d.name = "Damage severity" }
+  [
+    { value: "minor",    label: "Minor",    color: "#2e7d32", position: 1 },
+    { value: "major",    label: "Major",    color: "#f9a825", position: 2 },
+    { value: "critical", label: "Critical", color: "#c62828", position: 3, is_default: true }
+  ].each { |attrs| severity.entries.find_or_create_by!(value: attrs[:value]) { |e| e.assign_attributes(attrs) } }
+
+  Loam::FieldDefinition.find_or_create_by!(entity_type: "DamageReport", name: "severity") do |fd|
+    fd.field_type = "dictionary"
+    fd.dictionary_key = "damage_severity"
+  end
+
   # The demo uses the TokenDriver (see config/initializers/loam.rb). New records
   # index themselves on save, but a RE-seed touches existing rows with
   # find_or_create_by! (no save, no tokens), so rebuild the index explicitly —
@@ -129,7 +145,14 @@ Loam.as_tenant(krakow, actor: anna) do
 
   Equipment.find_or_create_by!(name: "Scaffolding set") { |e| e.daily_rate = 80.0; e.status = "available" }
 
+  # Krakow gets the same managed severity list (each tenant curates its own).
+  severity = Loam::Dictionary.find_or_create_by!(key: "damage_severity") { |d| d.name = "Damage severity" }
+  [
+    { value: "minor",    label: "Minor",    color: "#2e7d32", position: 1 },
+    { value: "critical", label: "Critical", color: "#c62828", position: 2, is_default: true }
+  ].each { |attrs| severity.entries.find_or_create_by!(value: attrs[:value]) { |e| e.assign_attributes(attrs) } }
+
   Loam::Search.reindex(Equipment)
 end
 
-puts "Seeded: 2 tenants, 2 users, 3 equipment records, rental settings (global + Warsaw override), beta_dashboard on for Warsaw, 1 customer with encrypted PII, 1 pending approval, 2 saved views, 1 business rule, 1 SSO provider (Warsaw, OIDC), word-level search index (TokenDriver)."
+puts "Seeded: 2 tenants, 2 users, 3 equipment records, rental settings (global + Warsaw override), beta_dashboard on for Warsaw, 1 customer with encrypted PII, 1 pending approval, 2 saved views, 1 business rule, 1 SSO provider (Warsaw, OIDC), a damage_severity dictionary per tenant (+ a dictionary-typed DamageReport field), word-level search index (TokenDriver)."

@@ -31,6 +31,8 @@ module Loam
         migration_template "migrations/create_loam_business_rules.rb", "db/migrate/create_loam_business_rules.rb"
         migration_template "migrations/create_loam_search_tokens.rb", "db/migrate/create_loam_search_tokens.rb"
         migration_template "migrations/create_loam_sso_providers.rb", "db/migrate/create_loam_sso_providers.rb"
+        migration_template "migrations/create_loam_dictionaries.rb", "db/migrate/create_loam_dictionaries.rb"
+        migration_template "migrations/create_loam_dictionary_entries.rb", "db/migrate/create_loam_dictionary_entries.rb"
       end
 
       # Attachments (Loam::Attachable, included in every generated entity) are
@@ -80,6 +82,8 @@ module Loam
         template "admin/features_controller.rb", "app/controllers/admin/features_controller.rb"
         template "admin/business_rules_controller.rb", "app/controllers/admin/business_rules_controller.rb"
         template "admin/sso_providers_controller.rb", "app/controllers/admin/sso_providers_controller.rb"
+        template "admin/dictionaries_controller.rb", "app/controllers/admin/dictionaries_controller.rb"
+        template "admin/dictionary_entries_controller.rb", "app/controllers/admin/dictionary_entries_controller.rb"
         template "admin/search_controller.rb", "app/controllers/admin/search_controller.rb"
         template "admin/pagination.rb", "app/controllers/admin/pagination.rb"
         template "admin/layout.html.erb", "app/views/layouts/admin.html.erb"
@@ -109,6 +113,10 @@ module Loam
         template "admin/sso_providers_new.html.erb", "app/views/admin/sso_providers/new.html.erb"
         template "admin/sso_providers_edit.html.erb", "app/views/admin/sso_providers/edit.html.erb"
         template "admin/sso_providers_form.html.erb", "app/views/admin/sso_providers/_form.html.erb"
+        template "admin/dictionaries_index.html.erb", "app/views/admin/dictionaries/index.html.erb"
+        template "admin/dictionaries_new.html.erb", "app/views/admin/dictionaries/new.html.erb"
+        template "admin/dictionaries_edit.html.erb", "app/views/admin/dictionaries/edit.html.erb"
+        template "admin/dictionaries_form.html.erb", "app/views/admin/dictionaries/_form.html.erb"
         template "admin/search_index.html.erb", "app/views/admin/search/index.html.erb"
       end
 
@@ -142,6 +150,9 @@ module Loam
             get "events/stream", to: "events#stream", as: :events_stream  # SSE push (Loam::EventStream)
             resources :business_rules, only: %i[index new create edit update destroy]  # when/then rules
             resources :sso_providers, only: %i[index new create edit update destroy]  # per-tenant OIDC config
+            resources :dictionaries, only: %i[index new create edit update destroy] do # managed lookup lists
+              resources :entries, only: %i[create update destroy], controller: "dictionary_entries"
+            end
             resources :field_definitions, only: %i[index new create destroy]
             resources :notifications, only: %i[index] do
               post :mark_read, on: :member

@@ -37,6 +37,9 @@ Rails.application.routes.draw do
     get "events/stream", to: "events#stream", as: :events_stream  # SSE push (Loam::EventStream)
     resources :business_rules, only: %i[index new create edit update destroy]  # when/then rules
     resources :sso_providers, only: %i[index new create edit update destroy]   # per-tenant OIDC config
+    resources :dictionaries, only: %i[index new create edit update destroy] do # managed lookup lists
+      resources :entries, only: %i[create update destroy], controller: "dictionary_entries"
+    end
     resources :field_definitions, only: %i[index new create destroy]
     resources :notifications, only: %i[index] do
       post :mark_read, on: :member

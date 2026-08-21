@@ -1,0 +1,10 @@
+<%%# Loam::Dictionary is namespaced, so pin the URL + param scope. %>
+<%%= form_with model: @dictionary, scope: :dictionary,
+      url: (@dictionary.persisted? ? admin_dictionary_path(@dictionary) : admin_dictionaries_path) do |f| %>
+  <%% if @dictionary.errors.any? %>
+    <ul><%% @dictionary.errors.full_messages.each do |m| %><li><%%= m %></li><%% end %></ul>
+  <%% end %>
+  <p><%%= f.label :key, "Key (code, e.g. damage_severity)" %><br><%%= f.text_field :key %></p>
+  <p><%%= f.label :name %><br><%%= f.text_field :name %></p>
+  <%%= f.submit %>
+<%% end %>

@@ -19,11 +19,16 @@
         <%= datetime_field_tag param_name, value %>
       <% when "integer", "decimal" %>
         <%= number_field_tag param_name, value %>
+      <% when "dictionary" %>
+        <% options = Loam::Dictionaries.entries(definition.dictionary_key).map { |e| [e.label, e.value] } %>
+        <%= select_tag param_name, options_for_select(options, value), include_blank: true, id: param_name %>
       <% else %>
         <%= text_field_tag param_name, value %>
       <% end %>
     <% else %>
-      <%= definition.name.humanize %>: <%= value %>
+      <%# A dictionary field shows its entry label, not the raw stored code. %>
+      <% display = definition.field_type == "dictionary" ? Loam::Dictionaries.label_for(definition.dictionary_key, value) : value %>
+      <%= definition.name.humanize %>: <%= display %>
       <% if mode == :edit %><em>(read-only for your role)</em><% end %>
     <% end %>
   </p>

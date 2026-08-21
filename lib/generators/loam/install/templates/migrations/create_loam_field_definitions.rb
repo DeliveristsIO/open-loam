@@ -6,6 +6,7 @@ class CreateLoamFieldDefinitions < ActiveRecord::Migration[<%= ActiveRecord::VER
       t.string :name, null: false
       t.string :field_type, null: false
       t.json :writable_roles, default: [], null: false
+      t.json :config, null: false, default: {}  # type-specific settings (e.g. a dictionary field's key)
       t.timestamps
     end
     add_index :loam_field_definitions, %i[tenant_id entity_type name], unique: true, name: "index_loam_field_definitions_on_tenant_entity_name"

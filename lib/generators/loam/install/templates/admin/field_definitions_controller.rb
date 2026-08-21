@@ -41,7 +41,7 @@ module Admin
     end
 
     def permitted_params
-      params.require(:field_definition).permit(:entity_type, :name, :field_type)
+      params.require(:field_definition).permit(:entity_type, :name, :field_type, :dictionary_key)
     end
 
     def parse_roles(raw)
