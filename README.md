@@ -109,18 +109,29 @@ for an agent or a human.
 
 ## Status
 
-**Working prototype — the full Days 1–14 core runs end to end.** The pillars
-above aren't a plan; they're built, tested, and exercised by a demo app and an
-agent benchmark.
+**Working prototype — every pillar in the table above is built, tested, and
+exercised end to end** by a demo app, a generator harness, and an agent
+benchmark. Some two dozen `Loam::` modules, from tenancy through SSO, each
+added the same way: a small in-gem implementation behind a convention, wired to
+agree with the rest.
 
 **What's in the repo**
 
 | Path | What it is |
 |------|-----------|
 | `lib/` | The `loam` gem — every pillar as a small `Loam::` module, plus the `loam:install` and `loam:entity` generators that are the whole interface. |
-| `demo/` | An equipment-rental app built with those generators, carrying the generated guardrail tests (tenant isolation, no-context-raises, a lint against `.unscoped` in `app/`, a 32 KB `AGENTS.md` budget). |
+| `demo/` | An equipment-rental app built with those generators (~1,300 assertions), carrying the generated guardrail tests: tenant isolation, no-context-raises, a lint against `.unscoped` in `app/`, and a 32 KB `AGENTS.md` budget. |
 | `ai/` | The agent benchmark — `golden_tasks.md` and recorded runs. First run: **10/10 tasks, zero isolation or authorization violations**; a vanilla-Rails control under the same prompts enforced isolation in **1/10**. |
+| `docs/agents/` | Deep-dive conventions (encryption, SSO, scheduler, …) linked from `AGENTS.md`, so the agent contract stays inside its byte budget. |
 | `.github/` | CI runs the generator harness and the demo suite on every push. |
+
+**Security-hardened by adversarial review.** Each batch of features went through
+an independent adversarial security review; the reviews found and closed real
+cross-tenant account-takeover chains, privilege escalations, and PII-leak
+vectors — every fix landing with a regression test that reproduces the exploit.
+That the *power* features (a business-rules engine, bulk import, SSO) are where
+the holes appeared, and that the guardrails and reviews caught them, is the
+whole thesis in miniature.
 
 **How honest the "prototype" label is** — deliberately, each pillar is a
 *minimal in-gem implementation* rather than a wrapper around
