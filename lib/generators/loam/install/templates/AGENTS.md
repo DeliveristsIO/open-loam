@@ -31,6 +31,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Search | `searchable_by :col, :col` in the model (`Loam::Searchable`) | declared with the entity for its string/text columns; `Model.search(q)` and the admin's global box at `/admin/search`. HOW it matches is a swappable driver (`Loam::Search.driver`): substring LIKE (default) or the portable word-level TokenDriver — call sites never change |
 | SSO (OIDC) | `Loam::Sso` + `Loam::SsoProvider` (per-tenant, admin-configured) | configure at `/admin/sso_providers` (issuer, client_id, client_secret, email domain, JIT role); a matching-domain email is routed to the IdP, verified, and JIT-provisioned/linked; the client_secret is encrypted (needs `LOAM_MASTER_KEY`); SAML/SCIM are seams |
 | Dictionaries | `Loam::Dictionary` + `Loam::Dictionaries` (managed lookup lists) | curate at `/admin/dictionaries`; a `FieldDefinition` of type "dictionary" makes a custom field a select of its entries; read via `Loam::Dictionaries.entries`/`default`/`label_for` |
+| Task progress | `Loam::Progress` + `Loam::ProgressJob` (live over SSE) | `start(name:, total:)` then `advance`/`complete!`/`fail!`/`cancel!`; percent/ETA push to the `/admin/progress_jobs` bar live; broadcast throttled per-percent; `cancelled?` for a cooperative stop |
 | Long lists | `paginate(scope)` from `Admin::Pagination` in `BaseController` | already wired into generated index screens — 25 a page, with a filter box |
 | Comments | `Loam::Comment` rows via `Loam::Commentable` | `record.comment!("...")`, or the form on the entity's show screen; publishes `loam.comment.created` |
 | Attachments | ActiveStorage `files` via `Loam::Attachable` | `record.files.attach(...)`, or the file field on the entity's form — uploading counts as an update, so the entity's policy decides |
@@ -277,6 +278,15 @@ Per-tenant managed lookup lists (`Loam::Dictionary`), curated at
 `FieldDefinition` of `field_type: "dictionary"` (dictionary key in its `config`)
 renders a select of active entries and stores the chosen value — read it with
 `custom_field`, its label with `custom_field_label` / `Loam::Dictionaries.label_for`.
+
+## Task progress
+
+A long-running job reports progress live (SSE, no polling): `progress =
+Loam::Progress.start(name:, total:)`, then `progress.advance(by:, message:)` per
+unit and `complete!`/`fail!`/`cancel!` at the end; check `progress.cancelled?` to
+stop early. Pushes id/percent/status to the `/admin/progress_jobs` bar, throttled
+per-percent. In a background job wrap the work in `Loam.as_tenant(tenant, actor:)`
+(tenant-scoped, not audited; `stale?` flags a dead job).
 
 ## Seeding a new tenant
 

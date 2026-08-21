@@ -1,0 +1,31 @@
+<h1>Tasks</h1>
+
+<p>Long-running jobs report progress here live (no reload — pushed over SSE).
+<%= button_to "Run a demo job", run_admin_progress_jobs_path, form: { style: "display:inline" } %></p>
+
+<table>
+  <thead>
+    <tr><th>Name</th><th>Status</th><th>Progress</th><th>Message</th><th>ETA</th><th></th></tr>
+  </thead>
+  <tbody>
+    <% @jobs.each do |job| %>
+      <tr>
+        <td><%= job.name %><% if job.stale? %> <em>(stale)</em><% end %></td>
+        <td><span id="progress-status-<%= job.id %>"><%= job.status %></span></td>
+        <td>
+          <div style="background:#eee; width:160px; height:12px; display:inline-block; vertical-align:middle">
+            <div id="progress-fill-<%= job.id %>" style="background:#2e7d32; height:12px; width:<%= job.percent %>%"></div>
+          </div>
+          <span id="progress-percent-<%= job.id %>"><%= job.percent %>%</span>
+        </td>
+        <td><%= job.message %></td>
+        <td><%= job.eta_seconds ? "#{job.eta_seconds}s" : "—" %></td>
+        <td>
+          <% if job.running? %>
+            <%= button_to "Cancel", cancel_admin_progress_job_path(job), form: { style: "display:inline" } %>
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

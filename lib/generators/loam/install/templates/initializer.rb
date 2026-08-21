@@ -20,7 +20,7 @@ Loam.default_roles = %w[manager employee]
 # notification pattern is enabled here so the admin bell increments without a
 # reload. Add patterns (e.g. "billing.") to stream domain events to live widgets —
 # nothing reaches the browser unless it matches a pattern here (security posture).
-Loam.broadcast_events = [ "loam.notification." ]
+Loam.broadcast_events = [ "loam.notification.", "loam.progress." ]
 
 # Response enrichers (Loam::Enrichers): attach a computed block onto ANOTHER
 # module's entity in admin/API responses, with no foreign-key coupling — billing

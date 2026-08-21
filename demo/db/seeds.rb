@@ -133,6 +133,16 @@ Loam.as_tenant(warsaw, actor: anna) do
     fd.dictionary_key = "damage_severity"
   end
 
+  # A finished long-running task (Loam::ProgressJob) so the Tasks screen shows
+  # history; run a live one from that screen's "Run a demo job" button.
+  Loam::ProgressJob.find_or_create_by!(name: "Nightly reindex") do |job|
+    job.total = 42
+    job.completed = 42
+    job.status = "completed"
+    job.started_at = 1.hour.ago
+    job.finished_at = 55.minutes.ago
+  end
+
   # The demo uses the TokenDriver (see config/initializers/loam.rb). New records
   # index themselves on save, but a RE-seed touches existing rows with
   # find_or_create_by! (no save, no tokens), so rebuild the index explicitly —
@@ -155,4 +165,4 @@ Loam.as_tenant(krakow, actor: anna) do
   Loam::Search.reindex(Equipment)
 end
 
-puts "Seeded: 2 tenants, 2 users, 3 equipment records, rental settings (global + Warsaw override), beta_dashboard on for Warsaw, 1 customer with encrypted PII, 1 pending approval, 2 saved views, 1 business rule, 1 SSO provider (Warsaw, OIDC), a damage_severity dictionary per tenant (+ a dictionary-typed DamageReport field), word-level search index (TokenDriver)."
+puts "Seeded: 2 tenants, 2 users, 3 equipment records, rental settings (global + Warsaw override), beta_dashboard on for Warsaw, 1 customer with encrypted PII, 1 pending approval, 2 saved views, 1 business rule, 1 SSO provider (Warsaw, OIDC), a damage_severity dictionary per tenant (+ a dictionary-typed DamageReport field), 1 completed task, word-level search index (TokenDriver)."

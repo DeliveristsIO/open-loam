@@ -40,6 +40,10 @@ Rails.application.routes.draw do
     resources :dictionaries, only: %i[index new create edit update destroy] do # managed lookup lists
       resources :entries, only: %i[create update destroy], controller: "dictionary_entries"
     end
+    resources :progress_jobs, only: %i[index] do  # long-running task progress (live via SSE)
+      post :run, on: :collection
+      post :cancel, on: :member
+    end
     resources :field_definitions, only: %i[index new create destroy]
     resources :notifications, only: %i[index] do
       post :mark_read, on: :member

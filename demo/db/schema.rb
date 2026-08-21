@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_22_091700) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_22_092000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -280,6 +280,24 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_091700) do
     t.index ["tenant_id"], name: "index_loam_perspectives_on_tenant_id"
   end
 
+  create_table "loam_progress_jobs", force: :cascade do |t|
+    t.integer "tenant_id", null: false
+    t.string "key"
+    t.string "name", null: false
+    t.string "status", default: "running", null: false
+    t.integer "total", default: 0, null: false
+    t.integer "completed", default: 0, null: false
+    t.text "message"
+    t.text "error"
+    t.bigint "actor_id"
+    t.datetime "started_at"
+    t.datetime "finished_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tenant_id", "status"], name: "index_loam_progress_jobs_on_tenant_id_and_status"
+    t.index ["tenant_id"], name: "index_loam_progress_jobs_on_tenant_id"
+  end
+
   create_table "loam_record_locks", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "lockable_type", null: false
@@ -389,6 +407,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_091700) do
   add_foreign_key "loam_notifications", "users"
   add_foreign_key "loam_pending_actions", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_perspectives", "loam_tenants", column: "tenant_id"
+  add_foreign_key "loam_progress_jobs", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_record_locks", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_record_locks", "users", column: "locked_by_id"
   add_foreign_key "loam_search_tokens", "loam_tenants", column: "tenant_id"

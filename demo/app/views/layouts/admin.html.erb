@@ -31,6 +31,7 @@
         <%= link_to "Rules", admin_business_rules_path %>
         <%= link_to "SSO", admin_sso_providers_path %>
         <%= link_to "Dictionaries", admin_dictionaries_path %>
+        <%= link_to "Tasks", admin_progress_jobs_path %>
         <%# Gated by a flag: the link only appears for tenants with the capability on. %>
         <% if feature_on?(:beta_dashboard) %>
           <%= link_to "Beta", admin_beta_dashboard_path %>
@@ -50,6 +51,17 @@
           source.addEventListener("loam.notification.created", function () {
             var badge = document.getElementById("loam-notification-count");
             if (badge) badge.textContent = (parseInt(badge.textContent, 10) || 0) + 1;
+          });
+          // Live task progress (Loam::ProgressJob): move the matching bar. The
+          // frame carries only id/percent/status.
+          source.addEventListener("loam.progress.updated", function (e) {
+            var d = JSON.parse(e.data);
+            var fill = document.getElementById("progress-fill-" + d.id);
+            if (fill) fill.style.width = d.percent + "%";
+            var pct = document.getElementById("progress-percent-" + d.id);
+            if (pct) pct.textContent = d.percent + "%";
+            var st = document.getElementById("progress-status-" + d.id);
+            if (st) st.textContent = d.status;
           });
           // EventSource reconnects on transient errors on its own; only stop if
           // it has fully closed — no hand-rolled reconnect loop (a connection storm).

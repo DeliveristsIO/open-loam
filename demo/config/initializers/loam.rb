@@ -17,7 +17,7 @@ Loam.default_roles = %w[manager employee]
 # Events pushed live to the browser over SSE (Loam::EventStream). Default off;
 # here the notification pattern is on, so the bell increments without a reload.
 # Add more patterns (e.g. "rental.") to stream domain events to live widgets.
-Loam.broadcast_events = [ "loam.notification." ]
+Loam.broadcast_events = [ "loam.notification.", "loam.progress." ]
 
 # Response enricher (Loam::Enrichers): billing/rental cross-cutting concerns can
 # attach a computed block onto another entity's response WITHOUT that entity

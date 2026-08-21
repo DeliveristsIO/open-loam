@@ -49,7 +49,9 @@ module Loam
       private
 
       def safe_payload(payload)
-        payload.symbolize_keys.slice(:id, :type, :user_id, :from, :to).compact
+        # id-ish keys only — never attribute values. percent/status ride along for
+        # the progress bar (Loam::ProgressJob); both are non-sensitive.
+        payload.symbolize_keys.slice(:id, :type, :user_id, :from, :to, :percent, :status).compact
       end
     end
 
