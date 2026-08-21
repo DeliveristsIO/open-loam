@@ -85,6 +85,31 @@ class LoamSsoProvisioningTest < ActiveSupport::TestCase
     end
   end
 
+  test "a verified claim on a domain the provider does NOT own is refused (cross-domain takeover)" do
+    victim = User.create!(name: "Victim", email: "victim@other.example", password: "password")
+    with_tenant(@warsaw) do
+      # The provider owns warsaw-corp.example; a claim for another domain must not link.
+      claims = Loam::Sso::Claims.new(sub: "attacker", email: "victim@other.example", email_verified: true, name: "V", groups: [])
+
+      assert_raises(Loam::Sso::DomainMismatchError) { Loam::Sso.provision(@provider, claims) }
+      refute Loam::SsoIdentity.exists?(sso_provider_id: @provider.id, sub: "attacker"), "nothing was linked"
+    end
+    assert_equal 1, User.where(email: "victim@other.example").count, "the victim account is untouched, no duplicate"
+    assert victim.reload.authenticate("password"), "the victim's credential is unchanged"
+  end
+
+  test "SSO re-maps the role on every login, so an IdP role change takes effect" do
+    with_tenant(@warsaw) do
+      Loam::Sso.provision(@provider, Loam::Sso::Claims.new(sub: "idp|r", email: "r@warsaw-corp.example", email_verified: true, name: "R", groups: [ "managers" ]))
+      user = User.find_by(email: "r@warsaw-corp.example")
+      assert_equal "manager", Loam::Membership.find_by(user_id: user.id).role, "first login: the group mapped to manager"
+
+      # The IdP later drops them from the managers group.
+      Loam::Sso.provision(@provider, Loam::Sso::Claims.new(sub: "idp|r", email: "r@warsaw-corp.example", email_verified: true, name: "R", groups: []))
+      assert_equal "employee", Loam::Membership.find_by(user_id: user.id).role, "next login downgrades to the default role"
+    end
+  end
+
   test "an UNVERIFIED email is refused — no link, no takeover, no account" do
     User.create!(name: "Victim", email: "victim@warsaw-corp.example", password: "password")
     with_tenant(@warsaw) do

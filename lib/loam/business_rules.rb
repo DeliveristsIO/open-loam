@@ -98,7 +98,15 @@ module Loam
       def subject_for(rule, payload)
         return nil if rule.entity_type.blank? || payload[:id].blank?
 
-        rule.entity_type.safe_constantize&.find_by(id: payload[:id])
+        klass = rule.entity_type.safe_constantize
+        # A rule may ONLY target a tenant-scoped model. This is the security
+        # boundary: a global model like `User` has no tenant default scope, so a
+        # find_by(id:) would reach across tenants — refusing anything that is not
+        # a Loam::TenantRecord closes that, and a TenantRecord.find_by can only
+        # ever return a record in the CURRENT tenant even if an id is injected.
+        return nil unless klass.is_a?(Class) && klass < Loam::TenantRecord
+
+        klass.find_by(id: payload[:id])
       end
 
       def within_depth_guard

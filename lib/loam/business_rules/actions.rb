@@ -46,6 +46,8 @@ module Loam
       def self.run_set_field(action, record)
         field = action["field"].to_s
         refuse_workflow_column!(record, field)
+        refuse_credential_column!(field)
+        refuse_cross_tenant!(record)
 
         if writable_column?(record.class, field)
           record.update!(field => action["value"])
@@ -66,6 +68,24 @@ module Loam
         return unless record.class.respond_to?(:loam_workflow) && record.class.loam_workflow&.column == field
 
         raise ArgumentError, "set_field must not write the workflow column #{field.inspect} — use a transition"
+      end
+
+      # A business rule has no business setting credentials, even on a
+      # tenant-scoped record: never a password column, a *_digest, or email.
+      def self.refuse_credential_column!(field)
+        normalized = field.downcase
+        return unless normalized.include?("password") || normalized.end_with?("_digest") || normalized == "email"
+
+        raise ArgumentError, "set_field must not write the credential column #{field.inspect}"
+      end
+
+      # Belt-and-suspenders: subject_for only ever loads a current-tenant record,
+      # but never write one whose tenant is not the tenant in context.
+      def self.refuse_cross_tenant!(record)
+        return unless record.respond_to?(:tenant_id)
+        return if record.tenant_id == Loam.tenant!.id
+
+        raise ArgumentError, "set_field refuses a record outside the current tenant"
       end
     end
   end

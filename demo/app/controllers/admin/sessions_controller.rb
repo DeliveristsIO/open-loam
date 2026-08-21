@@ -123,10 +123,12 @@ module Admin
       else
         complete_authentication(user)
       end
-    rescue Loam::Sso::UnverifiedEmailError
+    rescue Loam::Sso::Error
+      # An unverified email, a domain the provider does not own, or any other
+      # provisioning refusal: no session, nothing linked, one generic message.
       reset_session
       redirect_to new_admin_session_path,
-                  alert: "Your identity provider has not verified this email, so we can't sign you in."
+                  alert: "We couldn't sign you in with SSO. Please contact your administrator."
     end
 
     # Step two (or three): the tenant picker posts here.

@@ -26,6 +26,12 @@ module Loam
     # flow refuses it.
     class UnverifiedEmailError < Error; end
 
+    # The verified email is on a domain this provider does not own. A provider
+    # only vouches for its OWN domain; letting it assert an email on another
+    # domain would let a tenant's IdP hijack a user of a different domain
+    # (cross-domain account takeover), so the flow refuses it.
+    class DomainMismatchError < Error; end
+
     class << self
       attr_writer :builder
 
@@ -69,12 +75,24 @@ module Loam
       def provision(provider, claims)
         raise UnverifiedEmailError, "the identity provider did not verify #{claims.email.inspect}" unless claims.email_verified?
 
-        identity = Loam::SsoIdentity.find_by(sso_provider_id: provider.id, sub: claims.sub)
-        return identity.user if identity
+        # The provider only vouches for its own domain. Check this BEFORE any
+        # lookup, link, or create — an email on another domain is refused
+        # outright (no session, nothing touched).
+        email_domain = claims.email.to_s.split("@").last.to_s.downcase
+        unless email_domain.present? && email_domain == provider.domain.to_s.downcase
+          raise DomainMismatchError,
+                "verified email domain #{email_domain.inspect} is not this provider's domain #{provider.domain.inspect}"
+        end
 
-        user = User.find_by(email: claims.email) || jit_create_user(claims)
+        # Resolve the user: the durable (provider, sub) identity first, then an
+        # existing User by verified email (link), else just-in-time create.
+        identity = Loam::SsoIdentity.find_by(sso_provider_id: provider.id, sub: claims.sub)
+        user = identity&.user || User.find_by(email: claims.email) || jit_create_user(claims)
+
+        # Re-map claims -> role on EVERY login (including a returning identity),
+        # so an IdP role change takes effect.
         ensure_membership(provider, user, claims)
-        Loam::SsoIdentity.create!(user: user, sso_provider: provider, sub: claims.sub)
+        Loam::SsoIdentity.create!(user: user, sso_provider: provider, sub: claims.sub) unless identity
         user
       end
 
@@ -98,10 +116,13 @@ module Loam
         )
       end
 
+      # Re-map claims -> role on EVERY login, so an IdP role change takes effect
+      # (a promotion reflects, a removed group downgrades) rather than freezing
+      # at whatever the role was when the membership was first created.
       def ensure_membership(provider, user, claims)
-        Loam::Membership.find_or_create_by!(user_id: user.id) do |membership|
-          membership.role = role_for(provider, claims)
-        end
+        membership = Loam::Membership.find_or_initialize_by(user_id: user.id)
+        membership.role = role_for(provider, claims)
+        membership.save!
       end
     end
   end

@@ -194,3 +194,86 @@ class LoamBusinessRuleEngineTest < ActiveSupport::TestCase
     end
   end
 end
+
+# Security regressions (adversarial review): a manager must not be able to point
+# a rule at a GLOBAL model (e.g. User) to reach across tenants, nor set a
+# credential column — a system-wide account-takeover chain.
+class LoamBusinessRuleSecurityTest < ActiveSupport::TestCase
+  setup do
+    @warsaw = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-br-sec")
+    @krakow = Loam::Tenant.create!(name: "Branch Krakow", slug: "krakow-br-sec")
+  end
+
+  test "a rule may only target a tenant-scoped model, refused at save time" do
+    with_tenant(@warsaw) do
+      assert Loam::BusinessRule.new(name: "ok", trigger: "rental.x", entity_type: "Equipment").valid?
+      assert Loam::BusinessRule.new(name: "event-only", trigger: "rental.x", entity_type: nil).valid?, "an event-only rule needs no entity"
+
+      user_rule = Loam::BusinessRule.new(name: "pwn", trigger: "rental.x", entity_type: "User")
+      refute user_rule.valid?, "a global model like User is refused"
+      assert user_rule.errors[:entity_type].any?
+
+      refute Loam::BusinessRule.new(name: "j1", trigger: "rental.x", entity_type: "Kernel").valid?, "a non-model class is refused"
+      refute Loam::BusinessRule.new(name: "j2", trigger: "rental.x", entity_type: "NotARealModel").valid?, "an unresolvable name is refused"
+    end
+  end
+
+  test "a poisoned rule targeting a global model resolves NO subject and cannot mutate a User" do
+    victim = User.create!(name: "Victim", email: "victim@example.test", password: "correct-horse")
+    original = victim.password_digest
+
+    rule = with_tenant(@warsaw) do
+      r = Loam::BusinessRule.create!(name: "takeover", trigger: "rental.pwn.attempt", entity_type: "Equipment",
+                                     condition: {}, actions: [ { "type" => "set_field", "field" => "password_digest", "value" => "hijacked" } ], active: true)
+      r.update_column(:entity_type, "User")  # bypass save-time validation to prove the RUN-time close (defense in depth)
+      r
+    end
+
+    with_tenant(@warsaw) do
+      assert_nil Loam::BusinessRules.send(:subject_for, rule, { id: victim.id }), "subject_for refuses a non-TenantRecord"
+      assert_nothing_raised { Loam::Events.publish("rental.pwn.attempt", id: victim.id) }
+    end
+
+    assert_equal original, victim.reload.password_digest, "the victim's credential was NOT touched"
+  end
+
+  test "the emit_event -> set_field chain cannot reach a User across the depth guard" do
+    victim = User.create!(name: "Victim2", email: "victim2@example.test", password: "correct-horse")
+    original = victim.password_digest
+
+    with_tenant(@warsaw) do
+      # Rule A emits an event carrying the victim's id.
+      Loam::BusinessRule.create!(name: "A", trigger: "rental.pwn.start", entity_type: "Equipment", condition: {},
+                                 actions: [ { "type" => "emit_event", "name" => "rental.pwn.exec", "payload" => { "id" => victim.id } } ], active: true)
+      # Rule B would set the victim's credential — but it targets a global model.
+      b = Loam::BusinessRule.create!(name: "B", trigger: "rental.pwn.exec", entity_type: "Equipment", condition: {},
+                                     actions: [ { "type" => "set_field", "field" => "password_digest", "value" => "hijacked" } ], active: true)
+      b.update_column(:entity_type, "User")
+
+      equipment = Equipment.create!(name: "Rig", daily_rate: 10, status: "available")
+      assert_nothing_raised { Loam::Events.publish("rental.pwn.start", id: equipment.id) }
+    end
+
+    assert_equal original, victim.reload.password_digest, "the two-step chain never touched the victim"
+  end
+
+  test "set_field refuses a credential column even when the record really has one" do
+    with_tenant(@warsaw) do
+      # Customer.email is a REAL (encrypted) column — writable, but a credential a
+      # rule must never touch. Before the fix, set_field would overwrite it.
+      customer = Customer.create!(name: "Acme", email: "orders@acme.test", tax_id: "PL1")
+
+      assert_raises(ArgumentError) do
+        Loam::BusinessRules::Actions.run({ "type" => "set_field", "field" => "email", "value" => "attacker@evil.test" }, customer)
+      end
+      assert_equal "orders@acme.test", customer.reload.email, "the email column was not overwritten"
+
+      # The name/pattern refusals also hold regardless of column existence.
+      %w[password_digest encrypted_password PASSWORD some_digest].each do |field|
+        assert_raises(ArgumentError, "#{field} must be refused") do
+          Loam::BusinessRules::Actions.run({ "type" => "set_field", "field" => field, "value" => "x" }, customer)
+        end
+      end
+    end
+  end
+end

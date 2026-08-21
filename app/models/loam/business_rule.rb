@@ -11,6 +11,11 @@ module Loam
     has_many :runs, class_name: "Loam::BusinessRuleRun", dependent: :delete_all
 
     validates :name, :trigger, presence: true
+    # A rule may only target a tenant-scoped model (or none, for an event-only
+    # rule). Refusing a global class like `User` at SAVE time means a poisoned
+    # rule can't even be persisted — kept in lockstep with
+    # Loam::BusinessRules.subject_for, which refuses the same at run time.
+    validate :entity_type_targets_a_tenant_record
 
     scope :active, -> { where(active: true) }
     scope :by_priority, -> { order(priority: :desc, id: :asc) }
@@ -28,6 +33,17 @@ module Loam
 
     def action_list
       actions.is_a?(Array) ? actions : []
+    end
+
+    private
+
+    def entity_type_targets_a_tenant_record
+      return if entity_type.blank?  # event-only rule, no subject to load
+
+      klass = entity_type.safe_constantize
+      unless klass.is_a?(Class) && klass < Loam::TenantRecord
+        errors.add(:entity_type, "must name a Loam tenant-scoped model (not #{entity_type.inspect})")
+      end
     end
   end
 end
