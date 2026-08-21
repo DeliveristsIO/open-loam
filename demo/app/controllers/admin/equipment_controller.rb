@@ -5,17 +5,36 @@ module Admin
     before_action :set_record, only: %i[show edit update destroy]
 
     def index
-      # id breaks ties on created_at, so a record can never slip between pages.
-      scope = Equipment.order(created_at: :desc, id: :desc)
-
-      # Apply the picked (or default) saved view first; a filter typed live into
-      # the box then composes on top of it.
       @perspective = Loam::Perspectives.resolve("Equipment", user: current_actor, id: params[:perspective_id])
-      scope = @perspective.apply(scope) if @perspective
-      scope = scope.search(params[:q])
-
       @perspectives = Loam::Perspectives.visible_to("Equipment", user: current_actor)
-      @records, @page, @has_next = paginate(scope)
+      @records, @page, @has_next = paginate(index_scope)
+    end
+
+    # CSV of the CURRENT filtered/perspective view — manager-only, policy- and
+    # encryption-aware (Loam::Export).
+    def export
+      require_role!(:manager)
+      send_data Loam::Export.csv(index_scope, actor: current_actor),
+                filename: "equipment-#{Date.current}.csv", type: "text/csv"
+    end
+
+    # Datatable bulk actions on the selected ids — each is policy-checked per
+    # record and tenant-scoped (Loam::Bulk).
+    def bulk
+      ids = Array(params[:ids])
+      case params[:bulk_action]
+      when "soft_delete"
+        count = Loam::Bulk.soft_delete(Equipment, ids)
+        redirect_to admin_equipment_index_path, notice: "Deleted #{count} record(s)."
+      when "set_status"
+        count = Loam::Bulk.set_field(Equipment, ids, field: "status", value: params[:value])
+        redirect_to admin_equipment_index_path, notice: "Updated #{count} record(s)."
+      when "export"
+        send_data Loam::Export.csv(Loam::Bulk.selected(Equipment, ids), actor: current_actor),
+                  filename: "equipment-selected.csv", type: "text/csv"
+      else
+        redirect_to admin_equipment_index_path, alert: "Unknown bulk action."
+      end
     end
 
     # The recycle bin: only_deleted stays tenant-scoped, so this never shows
@@ -110,6 +129,15 @@ module Admin
 
     def set_record
       @record = Equipment.find(params[:id])
+    end
+
+    # The same filtered/perspective/search scope the index shows — reused by
+    # export so the CSV matches what the manager is looking at.
+    def index_scope
+      scope = Equipment.order(created_at: :desc, id: :desc)
+      perspective = Loam::Perspectives.resolve("Equipment", user: current_actor, id: params[:perspective_id])
+      scope = perspective.apply(scope) if perspective
+      scope.search(params[:q])
     end
 
     # Field-level enforcement: the permit list comes from the policy, so a

@@ -14,8 +14,8 @@ module Loam
         @field_rules ||= {}
       end
 
-      def field(name, writable: nil)
-        field_rules[name.to_sym] = { writable: writable }
+      def field(name, writable: nil, readable: nil)
+        field_rules[name.to_sym] = { writable: writable, readable: readable }
       end
 
       def for(record)
@@ -57,6 +57,19 @@ module Loam
 
     def permitted_fields(field_names)
       field_names.select { |f| writable?(f) }
+    end
+
+    # Field-level READ check (used by CSV export): a field with no `readable:`
+    # rule is readable by any member; with one, only by the listed roles.
+    def readable?(field_name)
+      rule = self.class.field_rules[field_name.to_sym]
+      return member? if rule.nil? || rule[:readable].nil?
+
+      Array(rule[:readable]).map(&:to_sym).include?(role)
+    end
+
+    def readable_fields(field_names)
+      field_names.select { |f| readable?(f) }
     end
 
     # Same semantics as the static `field writable:` declaration, but for a

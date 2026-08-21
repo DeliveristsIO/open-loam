@@ -5,18 +5,36 @@ module Admin
     before_action :set_record, only: %i[show edit update destroy]
 
     def index
-      # id breaks ties on created_at, so a record can never slip between pages.
-      scope = <%= class_name %>.order(created_at: :desc, id: :desc)
-
-      # Apply the picked (or default) saved view first; a live filter composes on top.
       @perspective = Loam::Perspectives.resolve("<%= class_name %>", user: current_actor, id: params[:perspective_id])
-      scope = @perspective.apply(scope) if @perspective
-<% if searchable_attributes.any? -%>
-      scope = scope.search(params[:q])
-<% end -%>
-
       @perspectives = Loam::Perspectives.visible_to("<%= class_name %>", user: current_actor)
-      @records, @page, @has_next = paginate(scope)
+      @records, @page, @has_next = paginate(index_scope)
+    end
+
+    # CSV of the CURRENT filtered/perspective view — manager-only, policy- and
+    # encryption-aware (Loam::Export).
+    def export
+      require_role!(:manager)
+      send_data Loam::Export.csv(index_scope, actor: current_actor),
+                filename: "<%= plural_name %>-#{Date.current}.csv", type: "text/csv"
+    end
+
+    # Datatable bulk actions on the selected ids — each is policy-checked per
+    # record and tenant-scoped (Loam::Bulk). Zero selection is a no-op.
+    def bulk
+      ids = Array(params[:ids])
+      case params[:bulk_action]
+      when "soft_delete"
+        count = Loam::Bulk.soft_delete(<%= class_name %>, ids)
+        redirect_to polymorphic_path([:admin, <%= class_name %>]), notice: "Deleted #{count} record(s)."
+      when "set_field"
+        count = Loam::Bulk.set_field(<%= class_name %>, ids, field: params[:field], value: params[:value])
+        redirect_to polymorphic_path([:admin, <%= class_name %>]), notice: "Updated #{count} record(s)."
+      when "export"
+        send_data Loam::Export.csv(Loam::Bulk.selected(<%= class_name %>, ids), actor: current_actor),
+                  filename: "<%= plural_name %>-selected.csv", type: "text/csv"
+      else
+        redirect_to polymorphic_path([:admin, <%= class_name %>]), alert: "Unknown bulk action."
+      end
     end
 
     # The recycle bin: only_deleted stays tenant-scoped, so this never shows
@@ -98,6 +116,18 @@ module Admin
 
     def set_record
       @record = <%= class_name %>.find(params[:id])
+    end
+
+    # The same filtered/perspective/search scope the index shows — reused by
+    # export so the CSV matches what the manager is looking at.
+    def index_scope
+      scope = <%= class_name %>.order(created_at: :desc, id: :desc)
+      perspective = Loam::Perspectives.resolve("<%= class_name %>", user: current_actor, id: params[:perspective_id])
+      scope = perspective.apply(scope) if perspective
+<% if searchable_attributes.any? -%>
+      scope = scope.search(params[:q])
+<% end -%>
+      scope
     end
 
     # Field-level enforcement: the permit list comes from the policy, so a

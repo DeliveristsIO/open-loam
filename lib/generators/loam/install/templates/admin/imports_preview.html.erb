@@ -1,0 +1,32 @@
+<h1>Map columns — <%%= @entity_type %></h1>
+
+<%%= form_with url: admin_imports_path, method: :post do %>
+  <%%= hidden_field_tag :entity_type, @entity_type %>
+  <%%= hidden_field_tag :csv, @csv %>
+
+  <table>
+    <thead><tr><th>CSV column</th><th>Maps to field</th><th>Sample</th></tr></thead>
+    <tbody>
+      <%% @headers.each_with_index do |header, i| %>
+        <tr>
+          <td><%%= header %></td>
+          <td>
+            <%%= select_tag "mapping[#{header}]",
+                  options_for_select([["— skip —", ""]] + @targets.map { |t| [t, t] }, @targets.include?(header) ? header : "") %>
+          </td>
+          <td><%%= @sample.map { |r| r[i] }.compact.first %></td>
+        </tr>
+      <%% end %>
+    </tbody>
+  </table>
+
+  <p>
+    <%%= label_tag :match_key, "Update existing rows matching (blank = create only)" %>
+    <%%= select_tag :match_key, options_for_select([["— create only —", ""]] + @targets.map { |t| [t, t] }) %>
+  </p>
+
+  <p>
+    <%%= submit_tag "Dry run" %>
+    <%%= submit_tag "Import" %>
+  </p>
+<%% end %>

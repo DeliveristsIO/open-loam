@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_22_093000) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_22_094000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -294,6 +294,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_093000) do
     t.datetime "finished_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.json "result"
     t.index ["tenant_id", "status"], name: "index_loam_progress_jobs_on_tenant_id_and_status"
     t.index ["tenant_id"], name: "index_loam_progress_jobs_on_tenant_id"
   end

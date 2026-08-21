@@ -12,6 +12,14 @@ Rails.application.routes.draw do
       get :deleted, on: :collection
       patch :restore, on: :member
       post :propose_price, on: :member  # an "AI-proposed" change, staged for approval
+      get :export, on: :collection      # CSV of the current filtered view
+      post :bulk, on: :collection       # datatable bulk actions on selected rows
+    end
+    resources :imports, only: %i[new create] do  # generic CSV importer (by entity_type)
+      collection do
+        post :preview
+        post :download_errors
+      end
     end
     root "dashboard#index"
     resource :session, only: %i[new create destroy] do

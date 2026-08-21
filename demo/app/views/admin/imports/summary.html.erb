@@ -1,0 +1,32 @@
+<h1>Dry run — <%= @entity_type %></h1>
+
+<p>Nothing was committed. This is what an import WOULD do:</p>
+<ul>
+  <li>Create: <strong><%= @result.created %></strong></li>
+  <li>Update: <strong><%= @result.updated %></strong></li>
+  <li>Failed: <strong><%= @result.failed %></strong></li>
+</ul>
+
+<% if @result.errors.any? %>
+  <h2>Failed rows</h2>
+  <table>
+    <thead><tr><th>Row</th><th>Reason</th></tr></thead>
+    <tbody>
+      <% @result.errors.each do |error| %>
+        <tr><td><%= error["row"] %></td><td><%= error["message"] %></td></tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <%= form_with url: download_errors_admin_imports_path, method: :post do %>
+    <%= hidden_field_tag :entity_type, @entity_type %>
+    <%= hidden_field_tag :csv, @csv %>
+    <% params[:mapping].to_unsafe_h.each do |header, target| %>
+      <%= hidden_field_tag "mapping[#{header}]", target %>
+    <% end %>
+    <%= hidden_field_tag :match_key, params[:match_key] %>
+    <%= submit_tag "Download error file" %>
+  <% end %>
+<% end %>
+
+<p><%= link_to "Back", new_admin_import_path(entity_type: @entity_type) %></p>

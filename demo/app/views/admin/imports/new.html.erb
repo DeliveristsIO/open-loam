@@ -1,0 +1,10 @@
+<h1>Import <%= @entity_type %></h1>
+
+<p>Upload a CSV, map its columns to fields, then dry-run or import. Rows that
+fail validation are skipped and reported (with a downloadable error file).</p>
+
+<%= form_with url: preview_admin_imports_path, method: :post, multipart: true do %>
+  <%= hidden_field_tag :entity_type, @entity_type %>
+  <p><%= file_field_tag :file, accept: ".csv" %></p>
+  <%= submit_tag "Upload & map" %>
+<% end %>

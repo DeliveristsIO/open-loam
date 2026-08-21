@@ -74,6 +74,8 @@ module Loam
           resources :#{plural_file_name} do
             get :deleted, on: :collection
             patch :restore, on: :member
+            get :export, on: :collection   # CSV of the current view
+            post :bulk, on: :collection    # datatable bulk actions
           end
         RUBY
         route "resources :#{plural_file_name}, defaults: { format: :json }", namespace: :api

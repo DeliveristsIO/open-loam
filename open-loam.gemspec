@@ -32,4 +32,7 @@ Gem::Specification.new do |spec|
   # apps bundle before they run the generator, so a Gemfile edit would arrive
   # too late to be installed.
   spec.add_dependency "bcrypt", "~> 3.1"
+  # CSV import/export (Loam::Import / Loam::Export). `csv` left the default gems
+  # in Ruby 3.4, so it must be declared or `require "csv"` fails at boot.
+  spec.add_dependency "csv", "~> 3.3"
 end

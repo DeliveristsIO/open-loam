@@ -33,6 +33,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Dictionaries | `Loam::Dictionary` + `Loam::Dictionaries` (managed lookup lists) | curate at `/admin/dictionaries`; a `FieldDefinition` of type "dictionary" makes a custom field a select of its entries; read via `Loam::Dictionaries.entries`/`default`/`label_for` |
 | Task progress | `Loam::Progress` + `Loam::ProgressJob` (live over SSE) | `start(name:, total:)` then `advance`/`complete!`/`fail!`/`cancel!`; percent/ETA push to the `/admin/progress_jobs` bar live; broadcast throttled per-percent; `cancelled?` for a cooperative stop |
 | Scheduler | `Loam::Scheduler` + `Loam::ScheduledJob` (recurring cron/interval jobs) | `register(key:, job_class:, schedule:, scope:)` a schedule (or add one at `/admin/scheduled_jobs`); `loam:scheduler:tick` (system cron) fires due ones with an atomic no-double-fire claim; job_class must be a real ActiveJob |
+| Bulk import / export | `Loam::Import` + `Loam::Export` + `Loam::Bulk` | every entity index has (manager) Export CSV / Import CSV / a bulk-action bar; import maps columns → writable fields (dry-run, error file, update-by-key, background progress); export & bulk are policy + encryption + tenant aware |
 | Long lists | `paginate(scope)` from `Admin::Pagination` in `BaseController` | already wired into generated index screens — 25 a page, with a filter box |
 | Comments | `Loam::Comment` rows via `Loam::Commentable` | `record.comment!("...")`, or the form on the entity's show screen; publishes `loam.comment.created` |
 | Attachments | ActiveStorage `files` via `Loam::Attachable` | `record.files.attach(...)`, or the file field on the entity's form — uploading counts as an update, so the entity's policy decides |
@@ -297,6 +298,18 @@ add one at `/admin/scheduled_jobs`. `schedule` is cron (`0 7 * * *`) or
 `interval:N`; `scope` "tenant" (enqueues `tenant_id:`) or "system" (once);
 `job_class` MUST be a real ActiveJob (validated). `bin/rails loam:scheduler:tick`
 (system cron) fires due ones with an atomic no-double-fire claim.
+
+## Bulk import / export
+
+Every entity index carries (manager-only) Export CSV, Import CSV, and a
+bulk-action bar. Export (`Loam::Export.csv`) is policy- and encryption-aware —
+readable columns only, encrypted fields redacted. Import (`Loam::Import`) maps CSV
+columns to WRITABLE fields only (a mapping to `tenant_id`/a non-permitted field is
+refused; the entity_type is whitelisted to a TenantRecord), with a dry-run,
+update-by-key, a per-row skipped-row error file, and background progress. Bulk
+actions (`Loam::Bulk`: soft-delete / set-field / export-selected) are
+policy-checked per record and tenant-scoped. New entities get all of this from
+the generator.
 
 ## Seeding a new tenant
 

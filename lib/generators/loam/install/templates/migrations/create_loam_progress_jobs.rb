@@ -12,6 +12,7 @@ class CreateLoamProgressJobs < ActiveRecord::Migration[<%= ActiveRecord::VERSION
       t.bigint :actor_id                              # who started it
       t.datetime :started_at
       t.datetime :finished_at
+      t.json :result                                  # structured result for a finished job (e.g. an import summary)
       t.timestamps                                    # updated_at is the heartbeat
     end
     add_index :loam_progress_jobs, %i[tenant_id status]

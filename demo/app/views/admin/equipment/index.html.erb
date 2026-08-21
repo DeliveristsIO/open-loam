@@ -3,6 +3,10 @@
 <p>
   <%= link_to "New equipment", new_polymorphic_path([:admin, Equipment]) %>
   <%= link_to "Deleted equipment", polymorphic_path([:deleted, :admin, Equipment]) %>
+  <% if current_role == :manager %>
+    <%= link_to "Export CSV", export_admin_equipment_index_path(q: params[:q], perspective_id: params[:perspective_id]) %>
+    <%= link_to "Import CSV", new_admin_import_path(entity_type: "Equipment") %>
+  <% end %>
 </p>
 
 <%# Saved views (Loam::Perspectives): pick one to apply, or save the current one. %>
@@ -30,31 +34,43 @@
   <%= submit_tag "Save current view" %>
 <% end %>
 
-<table>
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Name</th>
-      <th>Daily rate</th>
-      <th>Status</th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @records.each do |record| %>
+<%# Bulk actions on selected rows (Loam::Bulk). Zero selection = no-op. Each
+    action is policy-checked per record server-side. %>
+<%= form_with url: bulk_admin_equipment_index_path, method: :post do %>
+  <p>
+    <%= select_tag :bulk_action, options_for_select([["Delete selected", "soft_delete"], ["Set status of selected", "set_status"], ["Export selected", "export"]]) %>
+    <%= text_field_tag :value, nil, placeholder: "status (for Set status)" %>
+    <%= submit_tag "Apply to selected", data: { turbo_confirm: "Apply to the selected rows?" } %>
+  </p>
+
+  <table>
+    <thead>
       <tr>
-        <td><%= record.id %></td>
-        <td><%= record.name %></td>
-        <td><%= record.daily_rate %></td>
-        <td><%= record.status %></td>
-        <td>
-          <%= link_to "Show", [:admin, record] %>
-          <%= link_to "Edit", edit_polymorphic_path([:admin, record]) %>
-        </td>
+        <th><input type="checkbox" onclick="document.querySelectorAll('.bulk-select').forEach(function(c){c.checked=this.checked}.bind(this))"></th>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Daily rate</th>
+        <th>Status</th>
+        <th></th>
       </tr>
-    <% end %>
-  </tbody>
-</table>
+    </thead>
+    <tbody>
+      <% @records.each do |record| %>
+        <tr>
+          <td><%= check_box_tag "ids[]", record.id, false, class: "bulk-select", id: "sel-#{record.id}" %></td>
+          <td><%= record.id %></td>
+          <td><%= record.name %></td>
+          <td><%= record.daily_rate %></td>
+          <td><%= record.status %></td>
+          <td>
+            <%= link_to "Show", [:admin, record] %>
+            <%= link_to "Edit", edit_polymorphic_path([:admin, record]) %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>
 
 <%# Page links carry the filter, or page 2 would quietly drop it. %>
 <p>
