@@ -165,6 +165,7 @@ showing the real commands and exactly what you *didn't* have to write.
 - [Agent deep-dives](docs/agents/) — encryption, SSO, scheduler, events, inbound webhooks, bulk, confirm-mode
 - [Roadmap](ROADMAP.md) — ordered backlog, Mercato-informed
 - [Backward-compatibility contract](BACKWARD_COMPATIBILITY.md) — the frozen public surfaces
+- [Architecture decisions](docs/adr/) & [lessons](ai/lessons.md) — why things are the way they are, and the gotchas
 - [Manifesto](docs/manifesto.md)
 - [Contributing](CONTRIBUTING.md)
 

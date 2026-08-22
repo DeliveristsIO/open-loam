@@ -99,7 +99,9 @@ number = higher priority.
 - ~~L-707 — frozen contract inventory~~ — ✅ shipped: `BACKWARD_COMPATIBILITY.md`
   catalogues every frozen public surface (tenancy, events, generators, policy,
   encryption format, webhook signature, API, custom fields, audit/undo, …).
-- **L-708 — specs-as-ADRs + `lessons.md`** convention.
+- ~~L-708 — specs-as-ADRs + `lessons.md`~~ — ✅ shipped: `docs/adr/` (convention +
+  template + 5 seed ADRs) and `ai/lessons.md` (the framework's real gotchas),
+  referenced from `AGENTS.md`.
 - **L-712 — observability seam**: OTLP/log spans around jobs, durable deliveries,
   and the scheduler tick.
 

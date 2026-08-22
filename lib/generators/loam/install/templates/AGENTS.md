@@ -5,6 +5,12 @@ foundation where tenancy, permissions, audit, events, and admin are already
 decided. There is ONE way to do each thing. Follow it and your change is small,
 reviewable, and safe. Improvise and the guardrail tests will fail.
 
+Before a non-trivial change, record a substantial decision as an ADR (a
+`docs/adr/NNNN-*.md` — [the convention](https://github.com/DeliveristsIO/open-loam/blob/main/docs/adr/README.md))
+and note what you learned in a `ai/lessons.md` afterward. Loam's own
+[lessons](https://github.com/DeliveristsIO/open-loam/blob/main/ai/lessons.md) list
+the gotchas in the framework itself.
+
 ## The map
 
 | Thing | Lives in | Added by |
