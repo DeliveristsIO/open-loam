@@ -62,6 +62,15 @@ Loam::Scheduler.register(key: "nightly_touch", name: "Nightly equipment touch",
 # events; a real app subscribes to "billing.invoice.paid" and the like.
 Loam::DurableEvents.register(key: "demo_echo", to: "demo.", call: "DurableEventEcho")
 
+# Feature-string permissions (Loam::Permissions) — a finer capability layer under
+# the coarse role. Deny-by-default; `*` grants all, a trailing `.*` is a prefix.
+# Check with `Loam.can?("equipment.edit")` / `require_permission!` / the `can?`
+# view helper. Orthogonal to roles/policies.
+Loam::Permissions.configure do
+  role :manager,  allow: "*"
+  role :employee, allow: %w[equipment.read damage_report.*]
+end
+
 # SSO (Loam::Sso). The demo has no real identity provider and MUST NOT hit the
 # network, so it injects the offline FakeProvider for every SSO round-trip: its
 # authorization_url loops straight back to our callback and it returns verified

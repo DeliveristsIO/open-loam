@@ -25,6 +25,18 @@ Loam.default_roles = %w[manager employee]
 # for each locale you list here.
 Loam.locales = %w[en]
 
+# Feature-string permissions (Loam::Permissions) — a finer capability layer under
+# the coarse role. Deny-by-default; `*` grants everything, a trailing `.*` is a
+# prefix ("equipment.*"). Check with `Loam.can?("equipment.edit")`,
+# `require_permission!("...")` in a controller, or the `can?` view helper.
+# Orthogonal to roles (Loam::Membership) and field-level policies (Loam::Policy).
+#
+#   Loam::Permissions.configure do
+#     role :admin,   allow: "*"
+#     role :manager, allow: %w[equipment.* billing.read]
+#     role :clerk,   allow: %w[equipment.read]
+#   end
+
 # Customization WITHOUT forking (Loam::Overrides): disable or replace an entry in
 # one of Loam's keyed registries (:widgets, :broadcast_events). A stale override
 # (a key that no longer exists) is warned about at boot by `check!`, so a

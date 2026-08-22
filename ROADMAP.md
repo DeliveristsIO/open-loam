@@ -90,8 +90,12 @@ number = higher priority.
   exist under `ai/benchmark_runs/`; automate the harness).
 
 ### P3 — Hardening backlog (fed by the Open Mercato research)
-- **L-704 — command pattern with undo/redo** on top of the audit trail.
-- **L-705 — feature-string permissions with wildcards.**
+- ~~L-704 — undo/redo on the audit trail~~ — ✅ shipped: `Loam::Undo` + a
+  per-record History screen; undo records itself (redo = undo the undo), with
+  stack-order / encrypted / workflow-column guardrails.
+- ~~L-705 — feature-string permissions with wildcards~~ — ✅ shipped:
+  `Loam::Permissions` (role → wildcard capability strings), `Loam.can?` /
+  `require_permission!` / `can?` helper, deny-by-default.
 - **L-707 — frozen contract inventory** (`BACKWARD_COMPATIBILITY.md`).
 - **L-708 — specs-as-ADRs + `lessons.md`** convention.
 - **L-712 — observability seam**: OTLP/log spans around jobs, durable deliveries,

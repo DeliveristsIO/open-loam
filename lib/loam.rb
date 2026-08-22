@@ -10,6 +10,7 @@ require "loam/auth_throttle"
 require "loam/dictionaries"
 require "loam/custom_field_index"
 require "loam/undo"
+require "loam/permissions"
 require "loam/progress"
 require "loam/cron"
 require "loam/scheduler"
@@ -55,6 +56,14 @@ module Loam
 
   def self.actor
     Current.actor
+  end
+
+  # Feature-string permission check for the current actor's role (see
+  # Loam::Permissions) — deny-by-default, wildcard-aware. `role:` overrides the
+  # actor's role. Returns false with no actor/role.
+  def self.can?(permission, role: nil)
+    role ||= Current.actor && Loam::Membership.find_by(user_id: Current.actor.id)&.role
+    Loam::Permissions.allow?(role, permission)
   end
 
   # The approval-gate seam. When a caller runs under :confirm (an MCP tool acting

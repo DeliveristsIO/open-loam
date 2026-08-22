@@ -23,7 +23,7 @@ module Admin
       render plain: "422 — #{error.message}", status: :unprocessable_entity
     end
 
-    helper_method :current_tenant, :current_actor, :unread_notification_count, :feature_on?, :pending_approval_count, :current_role, :current_locale, :sort_link
+    helper_method :current_tenant, :current_actor, :unread_notification_count, :feature_on?, :pending_approval_count, :current_role, :current_locale, :sort_link, :can?
 
     private
 
@@ -117,6 +117,17 @@ module Admin
 
     def require_role!(*roles)
       raise Loam::NotAuthorizedError unless roles.include?(current_role)
+    end
+
+    # Feature-string permission gate (Loam::Permissions) — a finer capability
+    # check than require_role!. `can?` is a helper_method so views hide UI a role
+    # lacks; require_permission! enforces it (403) server-side.
+    def can?(permission)
+      Loam.can?(permission)
+    end
+
+    def require_permission!(permission)
+      raise Loam::NotAuthorizedError unless Loam.can?(permission)
     end
 
     # Feature guards. These gate a CAPABILITY (is the feature on for this
