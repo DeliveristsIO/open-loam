@@ -6,6 +6,7 @@ class CreateLoamFieldDefinitions < ActiveRecord::Migration[<%= ActiveRecord::VER
       t.string :name, null: false
       t.string :field_type, null: false
       t.json :writable_roles, default: [], null: false
+      t.json :readable_roles, default: [], null: false  # empty = any member may read (used by the index oracle guard)
       t.json :config, null: false, default: {}  # type-specific settings (e.g. a dictionary field's key)
       t.timestamps
     end

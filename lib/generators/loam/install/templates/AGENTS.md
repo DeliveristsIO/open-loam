@@ -25,7 +25,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Real-time updates | `Loam::EventStream` (SSE push, default off) | declare patterns in `Loam.broadcast_events` (e.g. `"loam.notification."`); matching events, filtered to the connection's tenant + audience, stream to the browser at `/admin/events/stream`; the bell updates live |
 | Response enrichers | `Loam::Enrichers` (computed cross-module blocks) | `register(entity_type, key:, batch:)` in the initializer to attach a computed value onto another entity's response; shown on the admin show screen and under `enrichments` in the API; use `batch:` to avoid N+1 |
 | Business rules | `Loam::BusinessRules` + `Loam::BusinessRule` (admin-editable WHEN/THEN) | declare at `/admin/business_rules`: a `trigger` event pattern + a safe `{field, op, value}` condition + typed actions (notify / emit_event / set_field / block_transition); fires tenant-scoped in priority order on matching events; the run log shows why it acted |
-| Migration-free field | `custom_fields` jsonb column, read/written via `Loam::CustomFields` | a `Loam::FieldDefinition` row, created via the admin "Field definitions" screen (`/admin/field_definitions`) — never a migration; filter/sort is index-backed via `Loam::CustomFieldIndex.filter(model, key, op, value)` (the entity index takes `cf_field`/`cf_op`/`cf_value`); a gappy index still returns CORRECT results (JSON fallback) and self-heals in the background — `coverage(model, key)` / `loam:index:coverage` show completeness |
+| Migration-free field | `custom_fields` jsonb column, read/written via `Loam::CustomFields` | a `Loam::FieldDefinition` row, created via the admin "Field definitions" screen (`/admin/field_definitions`) — never a migration; filter/sort is index-backed via `Loam::CustomFieldIndex.filter(model, key, op, value)` (the entity index takes `cf_field`/`cf_op`/`cf_value`); a gappy index still returns CORRECT results (JSON fallback) and self-heals in the background — `coverage(model, key)` / `loam:index:coverage` show completeness; a field's `readable_roles` gate filter/sort (a role that can't read a field can't use it as a filter oracle) |
 | States & approvals | a `workflow` block in the model (`Loam::Workflow`) | `include Loam::Workflow`; add a string column for the state |
 | Notifications | `Loam::Notification` rows, read at `/admin/notifications` | `Loam::Notifications.notify(user, title:)` / `notify_role(:manager, title:)`, normally from an event subscriber |
 | Search | `searchable_by :col, :col` in the model (`Loam::Searchable`) | declared with the entity for its string/text columns; `Model.search(q)` and the admin's global box at `/admin/search`. HOW it matches is a swappable driver (`Loam::Search.driver`): substring LIKE (default) or the portable word-level TokenDriver — call sites never change |
@@ -63,7 +63,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 If a field doesn't need a real column — an admin-configurable attribute, a
 one-off value, something that varies per tenant — don't run the entity
 generator again. Create a `Loam::FieldDefinition` instead (`entity_type`,
-`name`, `field_type`, optional `writable_roles`), typically via the admin
+`name`, `field_type`, optional `writable_roles` / `readable_roles`), typically via the admin
 "Field definitions" screen. Every generated entity already has a
 `custom_fields` jsonb column and `include Loam::CustomFields`, so the field is
 immediately readable/writable via `record.custom_field(:name)` /

@@ -46,6 +46,7 @@ module Loam
     def filter(model, field_key, op, value = nil)
       field_key = field_key.to_s
       refuse_unknown_field!(model, field_key)
+      refuse_unreadable_field!(model, field_key)
       raise Loam::Error, "unknown custom-field op #{op.inspect}" unless OPS.include?(op.to_s)
 
       if covered?(model, field_key)
@@ -80,6 +81,7 @@ module Loam
     # follow-up). Records with no value sort last (LEFT JOIN + NULLs).
     def order(model, field_key, dir = :asc)
       refuse_unknown_field!(model, field_key.to_s)
+      refuse_unreadable_field!(model, field_key.to_s)
       # The LEFT JOIN keeps EVERY record (un-indexed ones sort as NULL), so an
       # incomplete index mis-orders the gap but never drops a row. Flag it and
       # heal in the background.
@@ -234,6 +236,23 @@ module Loam
     def refuse_unknown_field!(model, field_key)
       known = model.respond_to?(:custom_field_definitions) && model.custom_field_definitions.exists?(name: field_key)
       raise Loam::Error, "no custom field #{field_key.inspect} on #{model.name}" unless known
+    end
+
+    # THE oracle guard: filtering or sorting on a custom field the current role
+    # may not read would let a user infer restricted values by observing which
+    # records match. Enforced against the current actor's role; a system/background
+    # context (no actor — reindex, a business rule) is trusted and not gated.
+    def refuse_unreadable_field!(model, field_key)
+      actor = Loam::Current.actor
+      return if actor.nil?
+
+      definition = model.custom_field_definitions.find_by(name: field_key.to_s)
+      return if definition.nil? # unknown field is refuse_unknown_field!'s job
+
+      role = Loam::Membership.find_by(user_id: actor.id)&.role
+      return if definition.readable_by?(role)
+
+      raise Loam::FieldAccessError, "custom field #{field_key.inspect} is not readable by #{role.inspect}"
     end
 
     def sanitize_like(value)

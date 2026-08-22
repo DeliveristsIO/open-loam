@@ -15,6 +15,15 @@ module Loam
     validates :field_type, presence: true, inclusion: { in: FIELD_TYPES }
     validate :dictionary_key_resolves, if: -> { field_type == "dictionary" }
 
+    # Field-level READ gate for the runtime field, mirroring writable_roles: an
+    # empty readable_roles means any member may read it; otherwise only the listed
+    # roles. Used by Loam::CustomFieldIndex (so a filter can't be an oracle on a
+    # restricted field) and Loam::Policy#custom_field_readable?.
+    def readable_by?(role)
+      roles = readable_roles
+      roles.blank? || (role.present? && roles.map(&:to_sym).include?(role.to_sym))
+    end
+
     # The `config` json holds type-specific settings. For a "dictionary" field it
     # carries the key of the Loam::Dictionary whose entries populate the select.
     def dictionary_key

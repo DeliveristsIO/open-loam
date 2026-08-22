@@ -20,6 +20,7 @@ module Admin
     def create
       @record = Loam::FieldDefinition.new(permitted_params)
       @record.writable_roles = parse_roles(params.dig(:field_definition, :writable_roles))
+      @record.readable_roles = parse_roles(params.dig(:field_definition, :readable_roles))
 
       if @record.save
         redirect_to admin_field_definitions_path(entity_type: @record.entity_type)

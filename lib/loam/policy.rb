@@ -87,5 +87,20 @@ module Loam
     def permitted_custom_fields(field_names)
       field_names.select { |f| custom_field_writable?(f) }
     end
+
+    # Read counterpart of custom_field_writable?: a runtime field with no
+    # readable_roles is readable by any member; with some, only by those roles.
+    def custom_field_readable?(field_name)
+      return false unless member?
+
+      definition = record.class.custom_field_definitions.find_by(name: field_name.to_s)
+      return false unless definition
+
+      definition.readable_by?(role)
+    end
+
+    def readable_custom_fields(field_names)
+      field_names.select { |f| custom_field_readable?(f) }
+    end
   end
 end

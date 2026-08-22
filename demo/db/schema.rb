@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_22_130000) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_22_140000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -255,6 +255,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_130000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.json "config", default: {}, null: false
+    t.json "readable_roles", default: [], null: false
     t.index ["tenant_id", "entity_type", "name"], name: "index_loam_field_definitions_on_tenant_entity_name", unique: true
     t.index ["tenant_id"], name: "index_loam_field_definitions_on_tenant_id"
   end

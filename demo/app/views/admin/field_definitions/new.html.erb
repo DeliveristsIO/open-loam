@@ -29,6 +29,11 @@
     <%= f.label :writable_roles, "Writable by (comma-separated roles, blank = any member)" %><br>
     <%= f.text_field :writable_roles %>
   </p>
+  <p>
+    <%= f.label :readable_roles, "Readable by (comma-separated roles, blank = any member)" %><br>
+    <%= f.text_field :readable_roles %>
+    <small>Restricts who can see, filter, and sort by this field.</small>
+  </p>
 
   <%= f.submit "Create field definition" %>
 <% end %>
