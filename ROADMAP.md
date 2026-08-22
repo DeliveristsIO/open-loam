@@ -84,8 +84,9 @@ number = higher priority.
 - **L-302 — MCP server** for live schema/entity/policy introspection. Mercato
   shipped an AI harness + MCP; this is our most on-brand move. Build it after the
   dogfood run shows which tools an agent actually reaches for.
-- **L-301 — `.loam/agents/` pack** (partial: `AGENTS.md`, `ai/golden_tasks.md`
-  exist; package them).
+- ~~L-301 — `.loam/agents/` pack~~ — ✅ shipped: `.loam/agents/README.md` is the
+  pack index/manifest tying together AGENTS.md, lessons, ADRs, deep-dives, the
+  contract inventory, and the golden-task benchmark, with a load order.
 - **L-303 — scripted "agent adds a feature" eval** (partial: benchmark runs
   exist under `ai/benchmark_runs/`; automate the harness).
 
