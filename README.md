@@ -157,9 +157,12 @@ picker) or `tomek@example.com` (Warsaw only) — password `password123` for both
 it builds a multi-tenant feature from `rails new` to a working approval flow,
 showing the real commands and exactly what you *didn't* have to write.
 
+- [**Architecture map**](https://claude.ai/code/artifact/949311d3-5e14-4f07-a8ad-7b1bb5bd87ad) — a visual tour: the module graph, a request lifecycle, the event flow
 - [Getting started](docs/getting-started.md) — hands-on, install to first feature
 - [Concept & positioning](docs/concept.md)
-- [Architecture](docs/architecture.md)
+- [Architecture](docs/architecture.md) — the diagrams above + how every pillar is built
+- [Agent deep-dives](docs/agents/) — encryption, SSO, scheduler, events, inbound webhooks, bulk, confirm-mode
+- [Roadmap](ROADMAP.md) — ordered backlog, Mercato-informed
 - [Manifesto](docs/manifesto.md)
 - [Contributing](CONTRIBUTING.md)
 

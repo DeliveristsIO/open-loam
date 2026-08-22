@@ -73,8 +73,9 @@ number = higher priority.
   localizes business *data* today (`Loam::Translatable`), but the generated admin
   *UI chrome* is hardcoded English. `t()`-wrap the views, ship a `loam.*` locale
   namespace, reuse the admin locale switcher, and make the generator emit keys.
-- **L-710 — Inbound webhook receiver** (bounded, replay-resistant): HMAC verify,
-  timestamp/nonce replay window, per-source secret, delivered onto the event bus.
+- ~~L-710 — Inbound webhook receiver~~ — ✅ shipped: public `/webhooks/:token`,
+  HMAC over the raw body, `(source, delivery-id)` replay ledger, uniform 401,
+  published onto the event bus. See `docs/agents/inbound-webhooks.md`.
 - ~~L-711 — Custom-field index ACL~~ — ✅ shipped (see Hardening above).
 
 ### P2 — AI layer (the on-brand differentiator; gate depth on L-709's signal)
