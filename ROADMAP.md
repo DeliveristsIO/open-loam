@@ -18,7 +18,7 @@ through an independent adversarial security review.
 | **NOW** (regulated + agent-native) | soft-delete, per-tenant configs, feature flags, **per-tenant field encryption (AES-256-GCM + AAD)**, MFA + step-up, AI mutation approval gate | ✅ done (L-901–906) |
 | **NEXT** (platform) | saved views, record locks, real-time SSE, response enrichers, business-rules engine, pluggable search, **SSO (OIDC + JIT)** | ✅ done (L-907–913) |
 | **LATER** | dictionaries, task progress, scheduler, bulk import/export, dashboards + widgets, auto-OpenAPI, content translations, override registry | ✅ done (L-914–922) |
-| **Hardening** | auth rate-limiting/lockout, ciphertext AAD binding, read-model custom-field index (coverage + self-heal), **durable event subscribers (retry + dead-letter)** | ✅ done (L-923–924, L-703, L-919, **L-706**) |
+| **Hardening** | auth rate-limiting/lockout, ciphertext AAD binding, read-model custom-field index (coverage + self-heal), **durable event subscribers (retry + dead-letter)**, **custom-field read ACL (index oracle guard)** | ✅ done (L-923–924, L-703, L-919, **L-706**, **L-711**) |
 
 Three adversarial security reviews (one per feature batch) plus deferred-item
 passes found and closed **4 CRITICAL + 3 HIGH** cross-tenant account-takeover
@@ -49,7 +49,7 @@ surfaced three things worth having that Loam did **not** — now ticketed:
   bounded, replay-resistant path to *receive* them. **L-710.**
 - **Query-index ACL** — Mercato's "ACL-enforced results" prevents a filter from
   leaking values a role can't read. Loam's index never exposes encrypted data,
-  but filtering on an unreadable field is an inference oracle. **L-711.**
+  but filtering on an unreadable field was an inference oracle. **Shipped as L-711.**
 
 Explicitly **not** adopted (Mercato features that are product/vertical, not
 foundation): pgvector/semantic search, mobile push + device registry, the
@@ -68,12 +68,14 @@ number = higher priority.
   (LOAM_PLAN.md Days 61–75). It also *tells us* which gap below to build next
   instead of guessing.
 
-### P1 — Foundational gaps from the Mercato 0.7 research
+### P1 — Foundational + user-facing gaps
+- **L-713 — i18n-friendly generated UI** (user-flagged priority): the framework
+  localizes business *data* today (`Loam::Translatable`), but the generated admin
+  *UI chrome* is hardcoded English. `t()`-wrap the views, ship a `loam.*` locale
+  namespace, reuse the admin locale switcher, and make the generator emit keys.
 - **L-710 — Inbound webhook receiver** (bounded, replay-resistant): HMAC verify,
   timestamp/nonce replay window, per-source secret, delivered onto the event bus.
-- **L-711 — Custom-field index ACL**: enforce field-level readability on
-  `CustomFieldIndex.filter`/`order` so a role can't use a filter as an oracle on
-  a field it may not read.
+- ~~L-711 — Custom-field index ACL~~ — ✅ shipped (see Hardening above).
 
 ### P2 — AI layer (the on-brand differentiator; gate depth on L-709's signal)
 - **L-302 — MCP server** for live schema/entity/policy introspection. Mercato
