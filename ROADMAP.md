@@ -110,7 +110,8 @@ number = higher priority.
 - ~~L-401 — pagination + search on generated admin index views~~ — ✅ shipped:
   sortable columns (whitelisted, SQLi-safe) + full filter state carried through
   paging/export.
-- **L-402** extract inline admin CSS to a shared stylesheet.
+- ~~L-402 — extract inline admin CSS to a shared stylesheet~~ — ✅ shipped:
+  `admin.css` + flash rendering in the layout.
 - **L-403** spike — evaluate Avo as an alternate admin backend.
 
 ### P5 — Prove domain-agnosticism
