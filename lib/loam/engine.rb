@@ -21,6 +21,14 @@ module Loam
       )
     end
 
+    # Loam's own UI strings ship under lib/ (the gemspec packages lib/**/*), so
+    # register them on the app's I18n load path explicitly rather than relying on
+    # the default config/locales path (which the gem does not ship). An app
+    # overrides any key with its own config/locales/loam.<locale>.yml.
+    initializer "loam.i18n" do |app|
+      app.config.i18n.load_path += Dir[File.expand_path("locales/*.yml", __dir__)]
+    end
+
     # lib/tasks/loam.rake (bin/rails loam:sync) is picked up by Rails::Engine's
     # own lib/tasks loading. Loading it again from a `rake_tasks` block here
     # would define the task twice and run its body twice.

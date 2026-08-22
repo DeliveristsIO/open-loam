@@ -19,7 +19,10 @@ Loam.default_roles = %w[manager employee]
 # Locales that CONTENT translations (Loam::Translatable) may be authored in — the
 # admin's language switcher and the per-record Translations screen offer these.
 # The first is the base/default; the rest overlay onto it. This is for user data
-# (a product name), NOT developer UI strings — those stay Rails i18n.
+# (a product name), NOT developer UI strings — those stay Rails i18n. Loam ships
+# a `loam.*` base locale (English) for its own chrome; the admin switcher sets
+# I18n.locale too, so add `config/locales/loam.pl.yml` (etc.) to translate the UI
+# for each locale you list here.
 Loam.locales = %w[en]
 
 # Customization WITHOUT forking (Loam::Overrides): disable or replace an entry in

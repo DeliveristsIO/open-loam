@@ -16,33 +16,33 @@
   <body>
     <% if defined?(current_tenant) && current_tenant %>
       <div class="context">
-        Tenant: <strong><%= current_tenant.name %></strong> ·
-        User: <strong><%= current_actor&.name %></strong> ·
-        <%= button_to "Sign out", admin_session_path, method: :delete, form: { style: "display:inline" } %>
+        <%= t("loam.chrome.tenant") %>: <strong><%= current_tenant.name %></strong> ·
+        <%= t("loam.chrome.user") %>: <strong><%= current_actor&.name %></strong> ·
+        <%= button_to t("loam.chrome.sign_out"), admin_session_path, method: :delete, form: { style: "display:inline" } %>
       </div>
       <nav>
-        <%= link_to "Dashboard", admin_root_path %>
-        <%= link_to admin_notifications_path do %>Notifications (<span id="loam-notification-count"><%= unread_notification_count %></span>)<% end %>
-        <%= link_to "API tokens", admin_api_tokens_path %>
-        <%= link_to "Security", admin_mfa_path %>
-        <%= link_to "Approvals (#{pending_approval_count})", admin_pending_actions_path %>
-        <%= link_to "Settings", admin_configs_path %>
-        <%= link_to "Features", admin_features_path %>
-        <%= link_to "Rules", admin_business_rules_path %>
-        <%= link_to "SSO", admin_sso_providers_path %>
-        <%= link_to "Dictionaries", admin_dictionaries_path %>
-        <%= link_to "Tasks", admin_progress_jobs_path %>
-        <%= link_to "Schedules", admin_scheduled_jobs_path %>
-        <%= link_to "Deliveries", admin_event_deliveries_path %>
-        <%= link_to "Inbound", admin_inbound_webhook_sources_path %>
-        <%= link_to "API docs", admin_api_docs_path %>
-        <%= link_to "Overrides", admin_overrides_path %>
+        <%= link_to t("loam.nav.dashboard"), admin_root_path %>
+        <%= link_to admin_notifications_path do %><%= t("loam.nav.notifications") %> (<span id="loam-notification-count"><%= unread_notification_count %></span>)<% end %>
+        <%= link_to t("loam.nav.api_tokens"), admin_api_tokens_path %>
+        <%= link_to t("loam.nav.security"), admin_mfa_path %>
+        <%= link_to "#{t('loam.nav.approvals')} (#{pending_approval_count})", admin_pending_actions_path %>
+        <%= link_to t("loam.nav.settings"), admin_configs_path %>
+        <%= link_to t("loam.nav.features"), admin_features_path %>
+        <%= link_to t("loam.nav.rules"), admin_business_rules_path %>
+        <%= link_to t("loam.nav.sso"), admin_sso_providers_path %>
+        <%= link_to t("loam.nav.dictionaries"), admin_dictionaries_path %>
+        <%= link_to t("loam.nav.tasks"), admin_progress_jobs_path %>
+        <%= link_to t("loam.nav.schedules"), admin_scheduled_jobs_path %>
+        <%= link_to t("loam.nav.deliveries"), admin_event_deliveries_path %>
+        <%= link_to t("loam.nav.inbound"), admin_inbound_webhook_sources_path %>
+        <%= link_to t("loam.nav.api_docs"), admin_api_docs_path %>
+        <%= link_to t("loam.nav.overrides"), admin_overrides_path %>
         <%# Gated by a flag: the link only appears for tenants with the capability on. %>
         <% if feature_on?(:beta_dashboard) %>
           <%= link_to "Beta", admin_beta_dashboard_path %>
         <% end %>
         <%= form_with url: admin_search_path, method: :get, class: "search" do %>
-          <%= text_field_tag :q, params[:q], placeholder: "Search" %>
+          <%= text_field_tag :q, params[:q], placeholder: t("loam.chrome.search") %>
         <% end %>
         <%# Locale switcher (Loam::Translatable): overlays content onto the picked language. %>
         <% if Loam.locales.size > 1 %>

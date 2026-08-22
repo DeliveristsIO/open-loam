@@ -33,6 +33,11 @@ module Admin
     def set_locale
       session[:locale] = params[:locale] if params[:locale].present? && Loam.locales.include?(params[:locale])
       Loam::Current.locale = session[:locale] || Loam.default_locale
+      # Drive Rails i18n (UI strings) off the same choice, so the switcher moves
+      # both the chrome and the content — but only to a locale that actually has
+      # translations, so an unlisted locale keeps English UI (data still overlays).
+      chosen = Loam::Current.locale.to_s
+      I18n.locale = chosen if I18n.available_locales.map(&:to_s).include?(chosen)
     end
 
     def current_locale = Loam::Current.locale

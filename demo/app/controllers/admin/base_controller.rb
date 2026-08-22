@@ -33,6 +33,8 @@ module Admin
     def set_locale
       session[:locale] = params[:locale] if params[:locale].present? && Loam.locales.include?(params[:locale])
       Loam::Current.locale = session[:locale] || Loam.default_locale
+      chosen = Loam::Current.locale.to_s
+      I18n.locale = chosen if I18n.available_locales.map(&:to_s).include?(chosen)
     end
 
     def current_locale = Loam::Current.locale

@@ -1,0 +1,26 @@
+# Demo Polish translations for Loam's chrome — overrides the gem's loam.en.yml
+# base for the pl locale. Proves the switcher moves the UI, not just the data.
+pl:
+  loam:
+    chrome:
+      tenant: "Najemca"
+      user: "Użytkownik"
+      sign_out: "Wyloguj"
+      search: "Szukaj"
+    nav:
+      dashboard: "Pulpit"
+      notifications: "Powiadomienia"
+      api_tokens: "Tokeny API"
+      security: "Bezpieczeństwo"
+      approvals: "Zatwierdzenia"
+      settings: "Ustawienia"
+      features: "Funkcje"
+      rules: "Reguły"
+      sso: "SSO"
+      dictionaries: "Słowniki"
+      tasks: "Zadania"
+      schedules: "Harmonogramy"
+      deliveries: "Dostawy"
+      inbound: "Przychodzące"
+      api_docs: "Dokumentacja API"
+      overrides: "Nadpisania"

@@ -1,0 +1,36 @@
+# Loam's own UI strings (the framework chrome). Shipped inside lib/ so the gem
+# packages it, and added to the app's I18n load path by Loam::Engine. An app
+# localizes Loam by adding its own `config/locales/loam.<locale>.yml` overriding
+# these keys — distinct from Loam::Translatable, which localizes record DATA.
+en:
+  loam:
+    chrome:
+      tenant: "Tenant"
+      user: "User"
+      sign_out: "Sign out"
+      search: "Search"
+    nav:
+      dashboard: "Dashboard"
+      notifications: "Notifications"
+      api_tokens: "API tokens"
+      security: "Security"
+      approvals: "Approvals"
+      settings: "Settings"
+      features: "Features"
+      rules: "Rules"
+      sso: "SSO"
+      dictionaries: "Dictionaries"
+      tasks: "Tasks"
+      schedules: "Schedules"
+      deliveries: "Deliveries"
+      inbound: "Inbound"
+      api_docs: "API docs"
+      overrides: "Overrides"
+    actions:
+      new: "New %{name}"
+      create: "Create %{name}"
+      edit: "Edit"
+      update: "Save changes"
+      destroy: "Delete"
+      back: "Back"
+      save: "Save"
