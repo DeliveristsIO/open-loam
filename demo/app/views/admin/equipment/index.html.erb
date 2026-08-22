@@ -8,7 +8,7 @@
   <%= link_to "New equipment", new_polymorphic_path([:admin, Equipment]) %>
   <%= link_to "Deleted equipment", polymorphic_path([:deleted, :admin, Equipment]) %>
   <% if current_role == :manager %>
-    <%= link_to "Export CSV", export_admin_equipment_index_path(q: params[:q], perspective_id: params[:perspective_id]) %>
+    <%= link_to "Export CSV", export_admin_equipment_index_path(**current_index_params) %>
     <%= link_to "Import CSV", new_admin_import_path(entity_type: "Equipment") %>
   <% end %>
 </p>
@@ -52,9 +52,9 @@
       <tr>
         <th><input type="checkbox" onclick="document.querySelectorAll('.bulk-select').forEach(function(c){c.checked=this.checked}.bind(this))"></th>
         <th>ID</th>
-        <th>Name</th>
-        <th>Daily rate</th>
-        <th>Status</th>
+        <th><%= sort_link("name", "Name") %></th>
+        <th><%= sort_link("daily_rate", "Daily rate") %></th>
+        <th><%= sort_link("status", "Status") %></th>
         <th></th>
       </tr>
     </thead>
@@ -79,10 +79,10 @@
 <%# Page links carry the filter, or page 2 would quietly drop it. %>
 <p>
   <% if @page > 1 %>
-    <%= link_to "← Previous", polymorphic_path([:admin, Equipment], page: @page - 1, q: params[:q]) %>
+    <%= link_to "← Previous", polymorphic_path([:admin, Equipment], **current_index_params, page: @page - 1) %>
   <% end %>
   Page <%= @page %>
   <% if @has_next %>
-    <%= link_to "Next →", polymorphic_path([:admin, Equipment], page: @page + 1, q: params[:q]) %>
+    <%= link_to "Next →", polymorphic_path([:admin, Equipment], **current_index_params, page: @page + 1) %>
   <% end %>
 </p>

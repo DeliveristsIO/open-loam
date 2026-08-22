@@ -4,6 +4,16 @@ module Admin
 
     before_action :set_record, only: %i[show edit update destroy]
 
+    helper_method :current_index_params
+
+    # The active index filters (search, saved view, custom-field filter, sort) as
+    # a plain hash, so pagination links, the sort headers and the export link all
+    # carry the SAME state — page 2 of a filtered/sorted view stays filtered.
+    def current_index_params
+      params.permit(:q, :perspective_id, :cf_field, :cf_op, :cf_value, :sort, :dir)
+            .to_h.symbolize_keys.reject { |_, v| v.blank? }
+    end
+
     def index
       @perspective = Loam::Perspectives.resolve("Equipment", user: current_actor, id: params[:perspective_id])
       @perspectives = Loam::Perspectives.visible_to("Equipment", user: current_actor)
@@ -136,12 +146,28 @@ module Admin
     # The same filtered/perspective/search scope the index shows — reused by
     # export so the CSV matches what the manager is looking at.
     def index_scope
-      scope = Equipment.order(created_at: :desc, id: :desc)
+      scope = Equipment.all
       perspective = Loam::Perspectives.resolve("Equipment", user: current_actor, id: params[:perspective_id])
       scope = perspective.apply(scope) if perspective
       scope = scope.search(params[:q])
       scope = apply_custom_field_filter(scope, Equipment)
-      scope
+      apply_sort(scope)
+    end
+
+    # Column sort from the clickable index headers. The column is WHITELISTED
+    # against real columns (never interpolated from params — that would be SQL
+    # injection), and the direction is constrained to asc/desc. With no valid
+    # sort param, a perspective's own order is kept, else a stable default.
+    def apply_sort(scope)
+      column = params[:sort].to_s
+      if Equipment.column_names.include?(column)
+        dir = params[:dir].to_s.casecmp("asc").zero? ? :asc : :desc
+        scope.reorder(column => dir).order(id: dir)
+      elsif scope.order_values.empty?
+        scope.order(created_at: :desc, id: :desc)
+      else
+        scope
+      end
     end
 
     # A custom-field filter routed through the read-model index

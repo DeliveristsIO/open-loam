@@ -23,9 +23,22 @@ module Admin
       render plain: "422 — #{error.message}", status: :unprocessable_entity
     end
 
-    helper_method :current_tenant, :current_actor, :unread_notification_count, :feature_on?, :pending_approval_count, :current_role, :current_locale
+    helper_method :current_tenant, :current_actor, :unread_notification_count, :feature_on?, :pending_approval_count, :current_role, :current_locale, :sort_link
 
     private
+
+    # A clickable, stateful column header for the generated index tables (L-401):
+    # toggles asc/desc, shows the active-direction arrow, and carries the current
+    # search / filter / saved-view state so sorting composes with paging and
+    # filtering. The controller whitelists the column against real columns, so a
+    # crafted `sort` param can never reach ORDER BY.
+    def sort_link(column, label)
+      active = params[:sort].to_s == column.to_s
+      ascending = active && params[:dir].to_s.casecmp("asc").zero?
+      arrow = active ? (ascending ? " ↑" : " ↓") : ""
+      carried = respond_to?(:current_index_params, true) ? current_index_params : {}
+      helpers.link_to("#{label}#{arrow}", url_for(carried.merge(sort: column, dir: ascending ? "desc" : "asc")))
+    end
 
     # Locale is request state like the tenant: from the switcher (param),
     # remembered in the session, defaulting to Loam.default_locale. Content
