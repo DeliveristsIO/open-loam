@@ -102,6 +102,13 @@ module Loam
         return unless delivery.status == "pending"
         return if delivery.next_attempt_at && delivery.next_attempt_at > now # duplicate nudge, backoff not elapsed
 
+        Loam::Telemetry.span("durable_event_delivery",
+                             subscriber_key: delivery.subscriber_key, event_name: delivery.event_name) do
+          run_delivery(delivery, now)
+        end
+      end
+
+      def run_delivery(delivery, now)
         handler = handler_for(delivery.subscriber_key)
         if handler.nil?
           delivery.update!(status: "dead",

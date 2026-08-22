@@ -30,7 +30,10 @@ module Loam
     module_function
 
     def ingest(token:, raw_body:, headers:)
-      raw_body = raw_body.to_s
+      Loam::Telemetry.span("inbound_webhook") { run_ingest(token, raw_body.to_s, headers) }
+    end
+
+    def run_ingest(token, raw_body, headers)
       return Result.new(status: 413, reason: "body too large") if raw_body.bytesize > MAX_BYTES
 
       source = Loam::InboundWebhookSource.resolve(token)

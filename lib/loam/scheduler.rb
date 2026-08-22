@@ -56,6 +56,10 @@ module Loam
       # failure never blocks the others (its lock is released so a later tick
       # retries it).
       def tick(now: Time.current)
+        Loam::Telemetry.span("scheduler_tick") { run_tick(now) }
+      end
+
+      def run_tick(now)
         fired = 0
         claim_due(now).each do |job|
           begin

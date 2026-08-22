@@ -25,6 +25,15 @@ Loam.default_roles = %w[manager employee]
 # for each locale you list here.
 Loam.locales = %w[en]
 
+# Observability (Loam::Telemetry). By default Loam wraps its async hot paths
+# (scheduler tick, durable event delivery, inbound webhook ingest) in spans that
+# emit ActiveSupport::Notifications events ("loam.span.*") — subscribe to those,
+# or plug a real tracer in here:
+#
+#   Loam::Telemetry.backend = ->(name, attributes, work) do
+#     OpenTelemetry.tracer_provider.tracer("loam").in_span(name, attributes: attributes.transform_keys(&:to_s)) { work.call }
+#   end
+
 # Feature-string permissions (Loam::Permissions) — a finer capability layer under
 # the coarse role. Deny-by-default; `*` grants everything, a trailing `.*` is a
 # prefix ("equipment.*"). Check with `Loam.can?("equipment.edit")`,

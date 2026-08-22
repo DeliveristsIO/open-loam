@@ -102,8 +102,9 @@ number = higher priority.
 - ~~L-708 — specs-as-ADRs + `lessons.md`~~ — ✅ shipped: `docs/adr/` (convention +
   template + 5 seed ADRs) and `ai/lessons.md` (the framework's real gotchas),
   referenced from `AGENTS.md`.
-- **L-712 — observability seam**: OTLP/log spans around jobs, durable deliveries,
-  and the scheduler tick.
+- ~~L-712 — observability seam~~ — ✅ shipped: `Loam::Telemetry.span` wraps the
+  scheduler tick, durable delivery, and inbound ingest; default emits
+  `loam.span.*` notifications, pluggable to OTLP via `Telemetry.backend`.
 
 ### P4 — Admin & UX polish
 - ~~L-401 — pagination + search on generated admin index views~~ — ✅ shipped:
