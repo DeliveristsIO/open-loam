@@ -107,6 +107,7 @@ module Loam
         template "admin/search_controller.rb", "app/controllers/admin/search_controller.rb"
         template "admin/pagination.rb", "app/controllers/admin/pagination.rb"
         template "admin/layout.html.erb", "app/views/layouts/admin.html.erb"
+        template "admin.css", "app/assets/stylesheets/admin.css"
         template "admin/sessions_new.html.erb", "app/views/admin/sessions/new.html.erb"
         template "admin/sessions_mfa_challenge.html.erb", "app/views/admin/sessions/mfa_challenge.html.erb"
         template "admin/mfa_show.html.erb", "app/views/admin/mfa/show.html.erb"

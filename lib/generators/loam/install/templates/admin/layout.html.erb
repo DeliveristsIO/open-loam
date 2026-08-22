@@ -3,17 +3,12 @@
   <head>
     <title>Admin</title>
     <%%= csrf_meta_tags %>
-    <style>
-      body { font-family: system-ui, sans-serif; margin: 2rem; }
-      table { border-collapse: collapse; }
-      th, td { border: 1px solid #ccc; padding: 0.4rem 0.8rem; text-align: left; }
-      nav { margin-bottom: 1.5rem; }
-      nav a { margin-right: 1rem; }
-      nav form { display: inline; }
-      .context { color: #555; font-size: 0.9rem; margin-bottom: 1rem; }
-    </style>
+    <%%= stylesheet_link_tag "admin", media: "all" %>
   </head>
   <body>
+    <%% flash.each do |type, message| %>
+      <div class="flash flash-<%%= type.to_s == "alert" ? "alert" : "notice" %>"><%%= message %></div>
+    <%% end %>
     <%% if defined?(current_tenant) && current_tenant %>
       <div class="context">
         <%%= t("loam.chrome.tenant") %>: <strong><%%= current_tenant.name %></strong> ·

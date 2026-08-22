@@ -1,0 +1,29 @@
+/* Loam admin console — shared styles (extracted from the layout, L-402). */
+body { font-family: system-ui, -apple-system, sans-serif; margin: 2rem; color: #1c1c1a; line-height: 1.5; }
+h1 { font-size: 1.55rem; margin: 0 0 0.75rem; }
+h2 { font-size: 1.2rem; margin: 1.25rem 0 0.5rem; }
+a { color: #1a5a9a; }
+
+table { border-collapse: collapse; margin: 0.5rem 0 1rem; }
+th, td { border: 1px solid #d5d5cf; padding: 0.4rem 0.8rem; text-align: left; vertical-align: top; }
+th { background: #f5f4f0; font-weight: 600; }
+
+nav { margin-bottom: 1.5rem; padding-bottom: 0.75rem; border-bottom: 1px solid #e4e2db; }
+nav a { margin-right: 1rem; }
+nav form { display: inline; }
+.context { color: #555; font-size: 0.9rem; margin-bottom: 1rem; }
+
+form p { margin: 0.5rem 0; }
+input, select, textarea { padding: 0.3rem 0.4rem; font: inherit; }
+button, input[type="submit"] { padding: 0.35rem 0.8rem; font: inherit; cursor: pointer; }
+
+/* Flash messages — controllers set notice:/alert:, the layout renders them. */
+.flash { padding: 0.6rem 0.9rem; border-radius: 6px; margin: 0 0 1rem; max-width: 60rem; }
+.flash-notice { background: #e6f4ea; border: 1px solid #b7dfc4; color: #1e5631; }
+.flash-alert  { background: #fdecec; border: 1px solid #f2b8b8; color: #8a1c1c; }
+
+.conflict { border: 2px solid #b00; padding: 0.75rem; margin-bottom: 1rem; }
+.lock-banner { background: #fffbe6; border: 1px solid #ece2a6; padding: 0.5rem; margin-bottom: 1rem; }
+
+code { background: #f3f0e9; padding: 0.05em 0.3em; border-radius: 3px; }
+small { color: #666; }
