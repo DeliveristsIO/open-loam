@@ -47,3 +47,4 @@ hindsight. Both are inputs the next agent reads.
 - [0003 — A generated ERB admin, not a dependency](0003-generated-erb-admin.md)
 - [0004 — A byte-budgeted AGENTS.md as the agent contract](0004-agents-md-contract.md)
 - [0005 — Events as the decoupling seam; two subscriber tiers](0005-event-backbone-two-tiers.md)
+- [0006 — Evaluating Avo as an alternate admin backend](0006-avo-admin-evaluation.md)

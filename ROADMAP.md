@@ -112,7 +112,9 @@ number = higher priority.
   paging/export.
 - ~~L-402 — extract inline admin CSS to a shared stylesheet~~ — ✅ shipped:
   `admin.css` + flash rendering in the layout.
-- **L-403** spike — evaluate Avo as an alternate admin backend.
+- ~~L-403 — spike: evaluate Avo as an alternate admin backend~~ — ✅ done:
+  [ADR 0006](docs/adr/0006-avo-admin-evaluation.md) — keep the generated admin
+  (tenancy + field-policy stay structural); Avo stays an app-level option.
 
 ### P5 — Prove domain-agnosticism
 - **L-501** a second demo app in a different domain (folds into the LOAM_PLAN
