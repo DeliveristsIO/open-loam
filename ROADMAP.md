@@ -69,11 +69,12 @@ number = higher priority.
   instead of guessing.
 
 ### P1 — Foundational + user-facing gaps
-- **L-713 — i18n-friendly generated UI** (user-flagged priority): **foundation
-  shipped** — a `loam.*` base locale ships in the gem, the switcher now drives
-  `I18n.locale` (chrome + content), and the admin layout/nav is `t()`-wrapped
-  (demo `pl.yml` proves it). *Remaining:* the mechanical sweep to `t()`-wrap the
-  per-entity generated views and the rest of the admin screens.
+- ~~L-713 — i18n-friendly generated UI~~ (user-flagged priority) — ✅ shipped:
+  a `loam.*` base locale ships in the gem, the switcher drives `I18n.locale`
+  (chrome + content), and the whole generated surface — admin layout + every
+  `loam:entity` view and its flashes — is `t()`-wrapped (model/field names via
+  Rails `activerecord.*`). Demo proves a Polish round-trip. *Remaining (minor):*
+  the gem's own built-in admin screens (scheduler, webhooks, …) stay English.
 - ~~L-710 — Inbound webhook receiver~~ — ✅ shipped: public `/webhooks/:token`,
   HMAC over the raw body, `(source, delivery-id)` replay ledger, uniform 401,
   published onto the event bus. See `docs/agents/inbound-webhooks.md`.
