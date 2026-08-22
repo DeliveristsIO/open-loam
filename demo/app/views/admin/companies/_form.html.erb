@@ -1,0 +1,83 @@
+<% policy = Loam::Policy.for(@record) %>
+
+<%# Optimistic-locking conflict: what the user typed vs what is now saved. %>
+<% if @conflict.present? %>
+  <div class="conflict" style="border:2px solid #b00; padding:0.75rem; margin-bottom:1rem">
+    <p><strong>This changed while you were editing.</strong> Your entries were not saved. The form now shows the current values — re-apply your changes and save again.</p>
+    <table>
+      <thead><tr><th>Field</th><th>You entered</th><th>Now saved</th></tr></thead>
+      <tbody>
+        <% @conflict.each do |field, values| %>
+          <tr><td><%= field.humanize %></td><td><%= values["yours"] %></td><td><%= values["theirs"] %></td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>
+
+<%# Advisory lock: warn (do not block) when someone else is editing. %>
+<% if @lock && @lock.locked_by_id != current_actor.id %>
+  <div class="lock-banner" style="background:#ffd; padding:0.5rem; margin-bottom:1rem">
+    Locked by <strong><%= @lock.locked_by.name %></strong> until <%= @lock.expires_at.strftime("%H:%M") %>.
+    You can still save (the version check protects you), but you may collide.
+    <% if current_role == :manager %>
+      <%= button_to "Take over", admin_record_lock_path(lockable_type: @record.class.name, lockable_id: @record.id), method: :delete, form: { style: "display:inline" } %>
+    <% end %>
+  </div>
+<% end %>
+
+<%= form_with model: [:admin, @record] do |f| %>
+  <%= f.hidden_field :lock_version %>
+  <% if @record.errors.any? %>
+    <ul>
+      <% @record.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  <% end %>
+
+  <% if policy.writable?(:name) %>
+    <p>
+      <%= f.label :name %><br>
+      <%= f.text_field :name %>
+    </p>
+  <% else %>
+    <p>
+      <%= f.label :name %>: <%= @record.name %>
+      <em><%= t("loam.form.read_only") %></em>
+    </p>
+  <% end %>
+  <% if policy.writable?(:industry) %>
+    <p>
+      <%= f.label :industry %><br>
+      <%= f.text_field :industry %>
+    </p>
+  <% else %>
+    <p>
+      <%= f.label :industry %>: <%= @record.industry %>
+      <em><%= t("loam.form.read_only") %></em>
+    </p>
+  <% end %>
+  <% if policy.writable?(:tier) %>
+    <p>
+      <%= f.label :tier %><br>
+      <%= f.text_field :tier %>
+    </p>
+  <% else %>
+    <p>
+      <%= f.label :tier %>: <%= @record.tier %>
+      <em><%= t("loam.form.read_only") %></em>
+    </p>
+  <% end %>
+
+  <%= render "loam/custom_fields/fields", record: @record, policy: policy, mode: :edit %>
+
+  <% if policy.update? %>
+    <p>
+      <%= f.label :files, t("loam.form.attach_files") %><br>
+      <%= f.file_field :files, multiple: true %>
+    </p>
+  <% end %>
+
+  <%= f.submit %>
+<% end %>

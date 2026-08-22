@@ -283,8 +283,10 @@ at rest and never leaks in the preview. This is the primitive the MCP server
   reliable twin of the inline `Loam::Events.subscribe`.
 - **Feature-string permissions** — `Loam.can?("equipment.edit")` with wildcard
   grants (`equipment.*`) per role, deny-by-default, under the coarse role.
-- **Full i18n** — `translates :name` localizes record *data*; the admin language
-  switcher moves the *UI* too (a `loam.*` locale namespace, `t()`-wrapped screens).
+- **Generated-screen i18n** — `translates :name` localizes record *data*; the
+  admin language switcher also translates the generated admin layout, entity
+  screens, and flashes through the `loam.*` locale namespace. Loam's built-in
+  screens (such as scheduler and webhooks) remain English for now.
 - **Scheduler, dictionaries, saved views, real-time SSE, bulk CSV import/export,
   auto-OpenAPI, an observability seam** — the full list is the pillar table in the
   [README](../README.md), and the visual

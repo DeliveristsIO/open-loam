@@ -121,7 +121,7 @@ agree with the rest.
 | Path | What it is |
 |------|-----------|
 | `lib/` | The `loam` gem — every pillar as a small `Loam::` module, plus the `loam:install` and `loam:entity` generators that are the whole interface. |
-| `demo/` | An equipment-rental app built with those generators (~1,530 assertions), carrying the generated guardrail tests: tenant isolation, no-context-raises, a lint against `.unscoped` in `app/`, and a 32 KB `AGENTS.md` budget. |
+| `demo/` | An equipment-rental app built with those generators (454 tests / 1,534 assertions as of 2026-08-22), carrying the generated guardrail tests: tenant isolation, no-context-raises, a lint against `.unscoped` in `app/`, and a 32 KB `AGENTS.md` budget. |
 | `ai/` | The agent benchmark — `golden_tasks.md` and recorded runs. First run: **10/10 tasks, zero isolation or authorization violations**; a vanilla-Rails control under the same prompts enforced isolation in **1/10**. |
 | `docs/agents/` | Deep-dive conventions (encryption, SSO, scheduler, …) linked from `AGENTS.md`, so the agent contract stays inside its byte budget. |
 | `.github/` | CI runs the generator harness and the demo suite on every push. |
@@ -160,6 +160,7 @@ showing the real commands and exactly what you *didn't* have to write.
 
 - [**Architecture map**](https://claude.ai/code/artifact/949311d3-5e14-4f07-a8ad-7b1bb5bd87ad) — a visual tour: the module graph, a request lifecycle, the event flow
 - [Getting started](docs/getting-started.md) — hands-on, install to first feature
+- [Investor overview](INVESTOR_OVERVIEW.md) — plain-language product, use cases, evidence, business model, and risks
 - [Concept & positioning](docs/concept.md)
 - [Architecture](docs/architecture.md) — the diagrams above + how every pillar is built
 - [Agent deep-dives](docs/agents/) — encryption, SSO, scheduler, events, inbound webhooks, bulk, confirm-mode

@@ -68,7 +68,19 @@ Loam::DurableEvents.register(key: "demo_echo", to: "demo.", call: "DurableEventE
 # view helper. Orthogonal to roles/policies.
 Loam::Permissions.configure do
   role :manager,  allow: "*"
-  role :employee, allow: %w[equipment.read damage_report.*]
+  role :employee, allow: %w[equipment.read damage_report.* company.read lead.*]
+end
+
+# CRM (L-501): winning a lead notifies the branch's managers — the same
+# event -> notification wiring the rental domain uses on damage-report approval,
+# proving the primitives are domain-agnostic.
+Loam::Events.subscribe("crm.lead.win") do |_name, payload|
+  Loam::Notifications.notify_role(
+    :manager,
+    title: "Lead ##{payload[:id]} won",
+    body: "A qualified lead was marked won.",
+    source: Lead.find_by(id: payload[:id])
+  )
 end
 
 # SSO (Loam::Sso). The demo has no real identity provider and MUST NOT hit the

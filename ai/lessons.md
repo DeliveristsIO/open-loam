@@ -8,6 +8,14 @@ Format: **Lesson** — what went wrong. **Rule** — what to do instead.
 
 ---
 
+**Adding a workflow to a generated entity breaks its generated isolation test.**
+`loam:entity` writes a test that creates the record with placeholder string values
+(`state: "Sample state 0"`). Add `workflow :state` later and those values fail the
+states-inclusion validation.
+**Rule:** after `include Loam::Workflow` on a generated entity, update the
+generated entity test's placeholder for the workflow column to a declared state
+(or omit it so it defaults to the initial state).
+
 **Custom fields are nested under the model's param key.**
 `assign_custom_fields!` first read `params[:custom_fields]` and silently saved
 nothing while the redirect still said "success". They arrive as

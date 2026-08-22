@@ -4,6 +4,18 @@ Rails.application.routes.draw do
   post "/webhooks/:token", to: "inbound_webhooks#receive", as: :inbound_webhook
 
   namespace :admin do
+    resources :leads do
+      get :deleted, on: :collection
+      patch :restore, on: :member
+      get :export, on: :collection   # CSV of the current view
+      post :bulk, on: :collection    # datatable bulk actions
+    end
+    resources :companies do
+      get :deleted, on: :collection
+      patch :restore, on: :member
+      get :export, on: :collection   # CSV of the current view
+      post :bulk, on: :collection    # datatable bulk actions
+    end
     resources :customers do
       get :deleted, on: :collection
       patch :restore, on: :member
@@ -98,6 +110,8 @@ Rails.application.routes.draw do
   end
 
   namespace :api do
+    resources :leads, defaults: { format: :json }
+    resources :companies, defaults: { format: :json }
     resources :customers, defaults: { format: :json }
     resources :damage_reports, defaults: { format: :json }
     resources :equipment, defaults: { format: :json }

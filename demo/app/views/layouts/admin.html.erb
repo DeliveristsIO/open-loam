@@ -17,6 +17,8 @@
       </div>
       <nav>
         <%= link_to t("loam.nav.dashboard"), admin_root_path %>
+        <%= link_to "Companies", admin_companies_path %>
+        <%= link_to "Leads", admin_leads_path %>
         <%= link_to admin_notifications_path do %><%= t("loam.nav.notifications") %> (<span id="loam-notification-count"><%= unread_notification_count %></span>)<% end %>
         <%= link_to t("loam.nav.api_tokens"), admin_api_tokens_path %>
         <%= link_to t("loam.nav.security"), admin_mfa_path %>

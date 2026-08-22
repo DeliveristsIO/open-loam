@@ -23,8 +23,8 @@ through an independent adversarial security review.
 Three adversarial security reviews (one per feature batch) plus deferred-item
 passes found and closed **4 CRITICAL + 3 HIGH** cross-tenant account-takeover
 chains, privilege escalations, and PII-leak vectors — each fix shipped with a
-regression test that reproduces the exploit. The demo suite carries ~1,400
-assertions; CI is green.
+regression test that reproduces the exploit. The demo suite carries 454 tests /
+1,534 assertions (verified 2026-08-22); CI is green.
 
 Naming decision: the isolation axis stays **`Loam::Tenant`** — the precise
 technical term. A business-facing `Organization` layer can sit on top later
@@ -36,7 +36,8 @@ generated UI, undo/redo on the audit trail, wildcard feature-permissions, an
 observability seam, a shared admin stylesheet, the frozen-contract inventory,
 the ADR + lessons conventions, the agent pack, and the eval scorer
 (L-301, L-303, L-401, L-402, L-403, L-704, L-705, L-706, L-707, L-708, L-710,
-L-711, L-712, L-713). The demo suite carries ~1,530 assertions; CI is green.
+L-711, L-712, L-713). The demo suite carries 454 tests / 1,534 assertions
+(verified 2026-08-22); CI is green.
 
 **The honest gap is not features — it's validation.** None of this has been used
 on a real project yet. The single highest-value next step is one measured
@@ -135,8 +136,11 @@ number = higher priority.
   (tenancy + field-policy stay structural); Avo stays an app-level option.
 
 ### P5 — Prove domain-agnosticism
-- **L-501** a second demo app in a different domain (folds into the LOAM_PLAN
-  reference CRM module).
+- ~~L-501 — a second domain in the demo~~ — ✅ shipped: a **CRM slice** (Company +
+  Lead) built with the real `loam:entity` generator, then a sales-pipeline
+  workflow (new→qualified→won/lost, manager-gated close), a field-level policy,
+  and a win→notification — the SAME primitives as the rental domain. Proves
+  domain-agnosticism; folds toward the LOAM_PLAN reference CRM.
 
 ### P6 — Swap in proven gems (a refactor, not a feature — do last)
 - **L-201** evaluate & wrap `acts_as_tenant` behind `Loam::TenantRecord`.

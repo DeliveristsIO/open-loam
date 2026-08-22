@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_22_150000) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -37,6 +37,20 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_150000) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "companies", force: :cascade do |t|
+    t.integer "tenant_id", null: false
+    t.string "name"
+    t.string "industry"
+    t.string "tier"
+    t.json "custom_fields", default: {}, null: false
+    t.datetime "deleted_at"
+    t.integer "lock_version", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["deleted_at"], name: "index_companies_on_deleted_at"
+    t.index ["tenant_id"], name: "index_companies_on_tenant_id"
   end
 
   create_table "customers", force: :cascade do |t|
@@ -82,6 +96,21 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_150000) do
     t.integer "lock_version", default: 0, null: false
     t.index ["deleted_at"], name: "index_equipment_on_deleted_at"
     t.index ["tenant_id"], name: "index_equipment_on_tenant_id"
+  end
+
+  create_table "leads", force: :cascade do |t|
+    t.integer "tenant_id", null: false
+    t.integer "company_id"
+    t.string "source"
+    t.decimal "value"
+    t.string "state"
+    t.json "custom_fields", default: {}, null: false
+    t.datetime "deleted_at"
+    t.integer "lock_version", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["deleted_at"], name: "index_leads_on_deleted_at"
+    t.index ["tenant_id"], name: "index_leads_on_tenant_id"
   end
 
   create_table "loam_api_tokens", force: :cascade do |t|
@@ -503,9 +532,11 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_150000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "companies", "loam_tenants", column: "tenant_id"
   add_foreign_key "customers", "loam_tenants", column: "tenant_id"
   add_foreign_key "damage_reports", "loam_tenants", column: "tenant_id"
   add_foreign_key "equipment", "loam_tenants", column: "tenant_id"
+  add_foreign_key "leads", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_api_tokens", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_api_tokens", "users"
   add_foreign_key "loam_audit_records", "loam_tenants", column: "tenant_id"

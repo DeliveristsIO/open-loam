@@ -1,0 +1,179 @@
+module Admin
+  class LeadsController < BaseController
+    FIELDS = %i[company_id source value state].freeze
+
+    before_action :set_record, only: %i[show edit update destroy]
+
+    helper_method :current_index_params
+
+    # The active index filters (search, saved view, custom-field filter, sort) as
+    # a plain hash, so pagination links, the sort headers and the export link all
+    # carry the SAME state — page 2 of a filtered/sorted view stays filtered.
+    def current_index_params
+      params.permit(:q, :perspective_id, :cf_field, :cf_op, :cf_value, :sort, :dir)
+            .to_h.symbolize_keys.reject { |_, v| v.blank? }
+    end
+
+    def index
+      @perspective = Loam::Perspectives.resolve("Lead", user: current_actor, id: params[:perspective_id])
+      @perspectives = Loam::Perspectives.visible_to("Lead", user: current_actor)
+      @records, @page, @has_next = paginate(index_scope)
+      @index_partial = params[:cf_field].present? && Loam::CustomFieldIndex.partial?  # incomplete-index warning (L-919)
+    end
+
+    # CSV of the CURRENT filtered/perspective view — manager-only, policy- and
+    # encryption-aware (Loam::Export).
+    def export
+      require_role!(:manager)
+      send_data Loam::Export.csv(index_scope, actor: current_actor),
+                filename: "leads-#{Date.current}.csv", type: "text/csv"
+    end
+
+    # Datatable bulk actions on the selected ids — each is policy-checked per
+    # record and tenant-scoped (Loam::Bulk). Zero selection is a no-op.
+    def bulk
+      ids = Array(params[:ids])
+      case params[:bulk_action]
+      when "soft_delete"
+        count = Loam::Bulk.soft_delete(Lead, ids)
+        redirect_to polymorphic_path([:admin, Lead]), notice: "Deleted #{count} record(s)."
+      when "set_field"
+        count = Loam::Bulk.set_field(Lead, ids, field: params[:field], value: params[:value])
+        redirect_to polymorphic_path([:admin, Lead]), notice: "Updated #{count} record(s)."
+      when "export"
+        require_role!(:manager)  # same gate as the dedicated export action
+        send_data Loam::Export.csv(Loam::Bulk.selected(Lead, ids), actor: current_actor),
+                  filename: "leads-selected.csv", type: "text/csv"
+      else
+        redirect_to polymorphic_path([:admin, Lead]), alert: "Unknown bulk action."
+      end
+    end
+
+    # The recycle bin: only_deleted stays tenant-scoped, so this never shows
+    # another tenant's deleted rows.
+    def deleted
+      authorize!(policy_for(Lead.new), :read?)
+      scope = Lead.only_deleted.order(deleted_at: :desc, id: :desc)
+      @records, @page, @has_next = paginate(scope)
+    end
+
+    def show
+      authorize!(policy_for(@record), :read?)
+    end
+
+    def new
+      @record = Lead.new
+      authorize!(policy_for(@record), :create?)
+    end
+
+    def create
+      @record = Lead.new
+      policy = policy_for(@record)
+      authorize!(policy, :create?)
+      @record.assign_attributes(permitted_params(policy))
+      assign_custom_fields!(@record, params, policy)
+      attach_files!(@record, policy)
+
+      if @record.save
+        redirect_to [:admin, @record], notice: t("loam.flash.created", name: Lead.model_name.human)
+      else
+        render :new, status: :unprocessable_entity
+      end
+    end
+
+    def edit
+      authorize!(policy_for(@record), :update?)
+      # Take the advisory lock (courtesy) or learn who holds it, for the banner.
+      @lock = Loam::RecordLocks.acquire(@record, by: current_actor) || Loam::RecordLocks.active_lock(@record)
+    end
+
+    def update
+      policy = policy_for(@record)
+      authorize!(policy, :update?)
+      assign_custom_fields!(@record, params, policy)
+      attach_files!(@record, policy)
+
+      if @record.update(permitted_params(policy))
+        Loam::RecordLocks.release(@record, by: current_actor)
+        redirect_to [:admin, @record], notice: t("loam.flash.updated", name: Lead.model_name.human)
+      else
+        render :edit, status: :unprocessable_entity
+      end
+    rescue ActiveRecord::StaleObjectError
+      # Someone saved between open and submit — show the diff, reload fresh, retry.
+      stale_conflict!(@record, FIELDS)
+      @lock = Loam::RecordLocks.acquire(@record, by: current_actor) || Loam::RecordLocks.active_lock(@record)
+      render :edit, status: :conflict
+    end
+
+    # Delete hides, it does not erase — the button is undoable. Reach for the
+    # model's `destroy` only when a row must genuinely leave the database.
+    def destroy
+      authorize!(policy_for(@record), :destroy?)
+      @record.soft_delete!
+      Loam::RecordLocks.release(@record, by: current_actor)
+      redirect_to [:admin, Lead], notice: t("loam.flash.destroyed", name: Lead.model_name.human)
+    end
+
+    # Restore looks through the deleted rows — the default scope hides them, so a
+    # plain find would 404 on the record we are trying to bring back.
+    def restore
+      @record = Lead.with_deleted.find(params[:id])
+      authorize!(policy_for(@record), :update?)
+      @record.restore!
+      redirect_to [:deleted, :admin, Lead], notice: t("loam.flash.restored", name: Lead.model_name.human)
+    end
+
+    private
+
+    def set_record
+      @record = Lead.find(params[:id])
+    end
+
+    # The same filtered/perspective/search scope the index shows — reused by
+    # export so the CSV matches what the manager is looking at.
+    def index_scope
+      scope = Lead.all
+      perspective = Loam::Perspectives.resolve("Lead", user: current_actor, id: params[:perspective_id])
+      scope = perspective.apply(scope) if perspective
+      scope = scope.search(params[:q])
+      scope = apply_custom_field_filter(scope)
+      apply_sort(scope)
+    end
+
+    # Column sort from the clickable index headers. The column is WHITELISTED
+    # against real columns (never interpolated from params — that would be SQL
+    # injection), and the direction is constrained to asc/desc. With no valid
+    # sort param, a perspective's own order is kept, else a stable default.
+    def apply_sort(scope)
+      column = params[:sort].to_s
+      if Lead.column_names.include?(column)
+        dir = params[:dir].to_s.casecmp("asc").zero? ? :asc : :desc
+        scope.reorder(column => dir).order(id: dir)
+      elsif scope.order_values.empty?
+        scope.order(created_at: :desc, id: :desc)
+      else
+        scope
+      end
+    end
+
+    # A custom-field filter routed through the read-model index
+    # (Loam::CustomFieldIndex) — index-backed, not a JSON scan. An unknown field
+    # is ignored rather than raising.
+    def apply_custom_field_filter(scope)
+      return scope if params[:cf_field].blank?
+
+      scope.merge(Loam::CustomFieldIndex.filter(Lead, params[:cf_field], params[:cf_op].presence || "eq", params[:cf_value]))
+    rescue Loam::Error
+      scope
+    end
+
+    # Field-level enforcement: the permit list comes from the policy, so a
+    # role without write access to a field cannot smuggle it in via params.
+    # lock_version rides outside the policy filter — it is optimistic-locking
+    # plumbing, and a forged value just produces a harmless conflict.
+    def permitted_params(policy)
+      params.require(:lead).permit(*policy.permitted_fields(FIELDS), :lock_version)
+    end
+  end
+end
