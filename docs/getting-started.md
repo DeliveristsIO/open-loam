@@ -270,6 +270,27 @@ executes it in a transaction, audited to the approver. The proposal is encrypted
 at rest and never leaks in the preview. This is the primitive the MCP server
 (roadmap) will use to keep agent writes reviewable.
 
+**And more, the same shape** — each guardrail-tested and one-lined in `AGENTS.md`:
+
+- **Undo / history** — every record's `/admin/history` reverts a change with one
+  click; the undo is itself recorded, so undoing an `undo` is redo (encrypted
+  fields and workflow state are never reverted — state undoes via the reverse
+  transition).
+- **Inbound webhooks** — a public `/webhooks/:token` receiver, HMAC-verified over
+  the raw body and replay-safe, that republishes the verified event onto the bus.
+- **Durable event subscribers** — `Loam::DurableEvents.register(...)` persists each
+  delivery and retries it (at-least-once, dead-letter, redelivery sweep) — the
+  reliable twin of the inline `Loam::Events.subscribe`.
+- **Feature-string permissions** — `Loam.can?("equipment.edit")` with wildcard
+  grants (`equipment.*`) per role, deny-by-default, under the coarse role.
+- **Full i18n** — `translates :name` localizes record *data*; the admin language
+  switcher moves the *UI* too (a `loam.*` locale namespace, `t()`-wrapped screens).
+- **Scheduler, dictionaries, saved views, real-time SSE, bulk CSV import/export,
+  auto-OpenAPI, an observability seam** — the full list is the pillar table in the
+  [README](../README.md), and the visual
+  [architecture map](https://claude.ai/code/artifact/949311d3-5e14-4f07-a8ad-7b1bb5bd87ad)
+  shows how they connect.
+
 Each of these has its own guardrail-tested conventions in `AGENTS.md`, so an
 agent extends them the same way it extends anything else.
 
@@ -279,6 +300,8 @@ agent extends them the same way it extends anything else.
 
 - [`AGENTS.md`](../lib/generators/loam/install/templates/AGENTS.md) — the full
   contract, and the best one-page description of "the one way to do each thing".
+- [**Architecture map**](https://claude.ai/code/artifact/949311d3-5e14-4f07-a8ad-7b1bb5bd87ad) — a visual tour of the modules and how they connect.
 - [Architecture](architecture.md) — how each pillar is built and why.
+- [Roadmap](../ROADMAP.md) — what's shipped and what's deliberately deferred.
 - [`demo/`](../demo) — a complete version of the app sketched above, with tests.
 - [Contributing](../CONTRIBUTING.md) — if you want to extend Loam itself.

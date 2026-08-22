@@ -8,8 +8,8 @@ execution backlog in the [Loam GitHub project](https://github.com/orgs/Deliveris
 ## Where we are
 
 **The technical foundation is far ahead of the plan.** LOAM_PLAN.md's Days 1–14
-core is long done; on top of it, five batches of features shipped — some two
-dozen `Loam::` modules in all — each added behind a convention, tested, and run
+core is long done; on top of it, six batches of features shipped — roughly thirty
+`Loam::` modules in all — each added behind a convention, tested, and run
 through an independent adversarial security review.
 
 | Batch | Modules | Status |
