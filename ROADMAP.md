@@ -30,10 +30,26 @@ Naming decision: the isolation axis stays **`Loam::Tenant`** — the precise
 technical term. A business-facing `Organization` layer can sit on top later
 (the Frappe/Mercato pattern) without renaming the core.
 
+A later **polish & agent-legibility** batch also shipped: inbound webhooks,
+custom-field read ACL, sortable/filter-stable admin index, full i18n of the
+generated UI, undo/redo on the audit trail, wildcard feature-permissions, an
+observability seam, a shared admin stylesheet, the frozen-contract inventory,
+the ADR + lessons conventions, the agent pack, and the eval scorer
+(L-301, L-303, L-401, L-402, L-403, L-704, L-705, L-706, L-707, L-708, L-710,
+L-711, L-712, L-713). The demo suite carries ~1,530 assertions; CI is green.
+
 **The honest gap is not features — it's validation.** None of this has been used
 on a real project yet. The single highest-value next step is one measured
 dogfood build (LOAM_PLAN.md Days 61–75, ticketed as **L-709**), not another
-module. Everything below is ordered with that in mind.
+module. **The remaining open tickets are deferred by design, not overlooked:**
+the gem-wrapping refactors (L-201…L-204) would replace the working, tested
+tenancy/policy/audit/event *spine* with third-party dependencies for no
+user-facing gain (ADR [0002](docs/adr/0002-in-gem-implementations.md) — do them
+only when a proven gem adds something the in-gem version lacks); the MCP server
+(L-302) is gated on the dogfood signal (which tools an agent actually reaches
+for); the reference-CRM second domain (L-501) is a deliberate build that folds
+into the dogfood; and monetization (L-601…L-603) awaits a business decision.
+Everything below is ordered with that in mind.
 
 ## What the Open Mercato 0.7 research changed
 
