@@ -87,8 +87,9 @@ number = higher priority.
 - ~~L-301 — `.loam/agents/` pack~~ — ✅ shipped: `.loam/agents/README.md` is the
   pack index/manifest tying together AGENTS.md, lessons, ADRs, deep-dives, the
   contract inventory, and the golden-task benchmark, with a load order.
-- **L-303 — scripted "agent adds a feature" eval** (partial: benchmark runs
-  exist under `ai/benchmark_runs/`; automate the harness).
+- ~~L-303 — scripted "agent adds a feature" eval~~ — ✅ shipped: `Loam::Eval`
+  + `bin/rails loam:eval[task]` score a run (green suite AND no invariant
+  violated) into a machine-readable scorecard under `ai/benchmark_runs/`.
 
 ### P3 — Hardening backlog (fed by the Open Mercato research)
 - ~~L-704 — undo/redo on the audit trail~~ — ✅ shipped: `Loam::Undo` + a

@@ -35,3 +35,17 @@ Record results per run in `ai/benchmark_runs/` as dated markdown files
 (`YYYY-MM-DD-<agent>.md`): task, outcome, violations, interventions, wall time.
 Do not market speed claims until there are enough real measurements
 (LOAM_PLAN.md, "Loam AI Benchmark").
+
+## Scoring a run (L-303)
+
+After an agent implements a task in a fresh app, score it consistently:
+
+```
+bin/rails "loam:eval[2]"                        # task 2 — tests only
+bin/rails "loam:eval[2,cross-tenant read in X]"  # note an invariant breach
+```
+
+`Loam::Eval` parses the suite tally and applies the bar — **green suite AND no
+invariant violated** — writing a machine-readable scorecard to
+`ai/benchmark_runs/` and exiting non-zero on failure (so it drops into CI). The
+agent loop is external; the scoring is what stays comparable across runs.
