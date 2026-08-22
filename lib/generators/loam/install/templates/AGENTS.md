@@ -43,7 +43,8 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Attachments | ActiveStorage `files` via `Loam::Attachable` | `record.files.attach(...)`, or the file field on the entity's form — uploading counts as an update, so the entity's policy decides |
 | Sign-in | `app/controllers/admin/sessions_controller.rb` (`has_secure_password` on `User`) | email + password, then a tenant — the picker only ever lists tenants you hold a `Loam::Membership` in |
 | JSON API | `app/controllers/api/<plural>_controller.rb` | generated with the entity; auth is `Authorization: Bearer <Loam::ApiToken>`, and the same policies apply |
-| Webhooks | `Loam::WebhookEndpoint` rows, managed at `/admin/webhook_endpoints` | add an endpoint with an event pattern; matching events POST signed JSON via `Loam::WebhookDeliveryJob` |
+| Webhooks (outbound) | `Loam::WebhookEndpoint` rows, managed at `/admin/webhook_endpoints` | add an endpoint with an event pattern; matching events POST signed JSON via `Loam::WebhookDeliveryJob` |
+| Webhooks (inbound) | `Loam::InboundWebhookSource` at `/admin/inbound_webhook_sources`; public `POST /webhooks/:token` | register a source (token+secret generated); external systems POST HMAC-signed bodies; verified, replay-deduped, published on the bus as the source's `event_name` — a durable subscriber reads the body from `Loam::InboundWebhookDelivery` ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/agents/inbound-webhooks.md)) |
 | Tests | `test/entities/<name>_test.rb` | generated with the entity; extend, never delete |
 | New-tenant defaults | `Loam.on_tenant_created` blocks in `config/initializers/loam.rb` | edit the initializer; backfill with `bin/rails loam:sync` |
 

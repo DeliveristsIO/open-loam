@@ -36,6 +36,7 @@ require "loam/notifications"
 require "loam/sso"
 require "loam/business_rules"
 require "loam/webhooks"
+require "loam/inbound_webhooks"
 require "loam/durable_events"
 require "loam/engine" if defined?(Rails::Engine)
 

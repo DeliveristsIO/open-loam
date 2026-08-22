@@ -40,6 +40,7 @@ module Loam
         migration_template "migrations/create_loam_auth_attempts.rb", "db/migrate/create_loam_auth_attempts.rb"
         migration_template "migrations/create_loam_custom_field_values.rb", "db/migrate/create_loam_custom_field_values.rb"
         migration_template "migrations/create_loam_event_deliveries.rb", "db/migrate/create_loam_event_deliveries.rb"
+        migration_template "migrations/create_loam_inbound_webhooks.rb", "db/migrate/create_loam_inbound_webhooks.rb"
       end
 
       # Attachments (Loam::Attachable, included in every generated entity) are
@@ -94,6 +95,8 @@ module Loam
         template "admin/progress_jobs_controller.rb", "app/controllers/admin/progress_jobs_controller.rb"
         template "admin/scheduled_jobs_controller.rb", "app/controllers/admin/scheduled_jobs_controller.rb"
         template "admin/event_deliveries_controller.rb", "app/controllers/admin/event_deliveries_controller.rb"
+        template "inbound_webhooks_controller.rb", "app/controllers/inbound_webhooks_controller.rb"
+        template "admin/inbound_webhook_sources_controller.rb", "app/controllers/admin/inbound_webhook_sources_controller.rb"
         template "admin/imports_controller.rb", "app/controllers/admin/imports_controller.rb"
         template "admin/dashboard_widgets_controller.rb", "app/controllers/admin/dashboard_widgets_controller.rb"
         template "admin/api_docs_controller.rb", "app/controllers/admin/api_docs_controller.rb"
@@ -136,6 +139,8 @@ module Loam
         template "admin/progress_jobs_index.html.erb", "app/views/admin/progress_jobs/index.html.erb"
         template "admin/scheduled_jobs_index.html.erb", "app/views/admin/scheduled_jobs/index.html.erb"
         template "admin/event_deliveries_index.html.erb", "app/views/admin/event_deliveries/index.html.erb"
+        template "admin/inbound_webhook_sources_index.html.erb", "app/views/admin/inbound_webhook_sources/index.html.erb"
+        template "admin/inbound_webhook_sources_new.html.erb", "app/views/admin/inbound_webhook_sources/new.html.erb"
         template "admin/scheduled_jobs_new.html.erb", "app/views/admin/scheduled_jobs/new.html.erb"
         template "admin/scheduled_jobs_edit.html.erb", "app/views/admin/scheduled_jobs/edit.html.erb"
         template "admin/scheduled_jobs_form.html.erb", "app/views/admin/scheduled_jobs/_form.html.erb"
@@ -191,6 +196,13 @@ module Loam
             resources :event_deliveries, only: %i[index] do  # durable-event dead-letter view (L-706)
               post :redeliver, on: :member
             end
+            resources :inbound_webhook_sources, only: %i[index new create destroy] do  # receive external webhooks (L-710)
+              member do
+                post :rotate_secret
+                post :rotate_token
+                post :toggle
+              end
+            end
             resources :imports, only: %i[new create] do  # generic CSV importer (by entity_type)
               collection do
                 post :preview
@@ -227,6 +239,10 @@ module Loam
           namespace :api do
             # `rails g loam:entity` injects `resources :<entities>` here.
           end
+
+          # Public inbound webhook receiver (L-710). No auth middleware — the HMAC
+          # signature is the auth; the :token identifies the source/tenant.
+          post "/webhooks/:token", to: "inbound_webhooks#receive", as: :inbound_webhook
         RUBY
       end
 

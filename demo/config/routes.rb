@@ -1,4 +1,8 @@
 Rails.application.routes.draw do
+  # Public inbound webhook receiver (L-710). No auth middleware — the HMAC
+  # signature is the auth; the :token identifies the source/tenant.
+  post "/webhooks/:token", to: "inbound_webhooks#receive", as: :inbound_webhook
+
   namespace :admin do
     resources :customers do
       get :deleted, on: :collection
@@ -57,6 +61,9 @@ Rails.application.routes.draw do
     end
     resources :event_deliveries, only: %i[index] do  # durable-event dead-letter view (L-706)
       post :redeliver, on: :member
+    end
+    resources :inbound_webhook_sources, only: %i[index new create destroy] do  # receive external webhooks (L-710)
+      member { post :rotate_secret; post :rotate_token; post :toggle }
     end
     resources :field_definitions, only: %i[index new create destroy]
     resources :notifications, only: %i[index] do

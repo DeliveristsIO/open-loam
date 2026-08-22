@@ -1,0 +1,49 @@
+<h1>Inbound webhooks</h1>
+
+<p>External systems allowed to POST webhooks into this tenant. The <strong>URL</strong>
+identifies a source; the <strong>secret</strong> (HMAC-SHA256 over the raw body,
+sent in the signature header) authenticates each call. A verified delivery is
+published on the event bus as its <code>event_name</code>.
+<%%= link_to "New source", new_admin_inbound_webhook_source_path %></p>
+
+<table>
+  <thead>
+    <tr><th>Name</th><th>Receive URL</th><th>Event</th><th>Active</th><th></th></tr>
+  </thead>
+  <tbody>
+    <%% @sources.each do |s| %>
+      <tr>
+        <td><%%= s.name %></td>
+        <td><code><%%= "#{request.base_url}/webhooks/#{s.token}" %></code><br>
+          <small>secret: <code><%%= s.secret %></code></small></td>
+        <td><code><%%= s.event_name %></code></td>
+        <td><%%= s.active? ? "yes" : "no" %></td>
+        <td>
+          <%%= button_to "Rotate token", rotate_token_admin_inbound_webhook_source_path(s), form: { style: "display:inline" } %>
+          <%%= button_to "Rotate secret", rotate_secret_admin_inbound_webhook_source_path(s), form: { style: "display:inline" } %>
+          <%%= button_to (s.active? ? "Disable" : "Enable"), toggle_admin_inbound_webhook_source_path(s), form: { style: "display:inline" } %>
+          <%%= button_to "Delete", admin_inbound_webhook_source_path(s), method: :delete, form: { style: "display:inline" } %>
+        </td>
+      </tr>
+    <%% end %>
+  </tbody>
+</table>
+
+<h2>Recent deliveries</h2>
+<%% if @recent.any? %>
+  <table>
+    <thead><tr><th>Source</th><th>Event</th><th>External id</th><th>Received</th></tr></thead>
+    <tbody>
+      <%% @recent.each do |d| %>
+        <tr>
+          <td><%%= d.source.name %></td>
+          <td><code><%%= d.event_name %></code></td>
+          <td><small><%%= truncate(d.external_id, length: 24) %></small></td>
+          <td><%%= d.received_at&.strftime("%Y-%m-%d %H:%M UTC") %></td>
+        </tr>
+      <%% end %>
+    </tbody>
+  </table>
+<%% else %>
+  <p>No deliveries received yet.</p>
+<%% end %>
