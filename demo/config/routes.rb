@@ -65,6 +65,8 @@ Rails.application.routes.draw do
     resources :inbound_webhook_sources, only: %i[index new create destroy] do  # receive external webhooks (L-710)
       member { post :rotate_secret; post :rotate_token; post :toggle }
     end
+    get  "history", to: "history#index", as: :history          # a record's audit trail (L-704)
+    post "history/:id/undo", to: "history#undo", as: :undo_history  # undo one change (redo = undo the undo)
     resources :field_definitions, only: %i[index new create destroy]
     resources :notifications, only: %i[index] do
       post :mark_read, on: :member

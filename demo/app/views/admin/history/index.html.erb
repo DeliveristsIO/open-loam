@@ -1,0 +1,35 @@
+<h1>History: <%= @record.class.model_name.human %> #<%= @record.id %></h1>
+
+<p><%= link_to "← Back", [:admin, @record] %></p>
+
+<p>Undo applies the inverse of a change and is itself recorded — so undoing an
+<code>undo</code> row is redo. Only the most recent field change can be undone
+(undo walks back one step at a time); encrypted fields and the workflow state are
+never reverted here.</p>
+
+<table>
+  <thead>
+    <tr><th>When</th><th>Action</th><th>By</th><th>Changes</th><th></th></tr>
+  </thead>
+  <tbody>
+    <% @audits.each do |audit| %>
+      <tr>
+        <td><%= audit.created_at.strftime("%Y-%m-%d %H:%M") %></td>
+        <td><code><%= audit.action %></code></td>
+        <td><%= audit.actor&.name || "—" %></td>
+        <td>
+          <% (audit.changeset || {}).each do |field, values| %>
+            <div><code><%= field %></code>:
+              <%= values.is_a?(Array) ? "#{values.first.inspect} → #{values.last.inspect}" : values %></div>
+          <% end %>
+        </td>
+        <td>
+          <% if Loam::Undo.undoable?(audit) %>
+            <%= button_to "Undo", admin_undo_history_path(id: audit.id, type: @record.class.name, record_id: @record.id),
+                          form: { style: "display:inline" } %>
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

@@ -97,6 +97,7 @@ module Loam
         template "admin/event_deliveries_controller.rb", "app/controllers/admin/event_deliveries_controller.rb"
         template "inbound_webhooks_controller.rb", "app/controllers/inbound_webhooks_controller.rb"
         template "admin/inbound_webhook_sources_controller.rb", "app/controllers/admin/inbound_webhook_sources_controller.rb"
+        template "admin/history_controller.rb", "app/controllers/admin/history_controller.rb"
         template "admin/imports_controller.rb", "app/controllers/admin/imports_controller.rb"
         template "admin/dashboard_widgets_controller.rb", "app/controllers/admin/dashboard_widgets_controller.rb"
         template "admin/api_docs_controller.rb", "app/controllers/admin/api_docs_controller.rb"
@@ -141,6 +142,7 @@ module Loam
         template "admin/event_deliveries_index.html.erb", "app/views/admin/event_deliveries/index.html.erb"
         template "admin/inbound_webhook_sources_index.html.erb", "app/views/admin/inbound_webhook_sources/index.html.erb"
         template "admin/inbound_webhook_sources_new.html.erb", "app/views/admin/inbound_webhook_sources/new.html.erb"
+        template "admin/history_index.html.erb", "app/views/admin/history/index.html.erb"
         template "admin/scheduled_jobs_new.html.erb", "app/views/admin/scheduled_jobs/new.html.erb"
         template "admin/scheduled_jobs_edit.html.erb", "app/views/admin/scheduled_jobs/edit.html.erb"
         template "admin/scheduled_jobs_form.html.erb", "app/views/admin/scheduled_jobs/_form.html.erb"
@@ -203,6 +205,8 @@ module Loam
                 post :toggle
               end
             end
+            get  "history", to: "history#index", as: :history              # a record's audit trail (L-704)
+            post "history/:id/undo", to: "history#undo", as: :undo_history  # undo one change (redo = undo the undo)
             resources :imports, only: %i[new create] do  # generic CSV importer (by entity_type)
               collection do
                 post :preview

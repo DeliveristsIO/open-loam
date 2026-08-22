@@ -22,6 +22,7 @@
 
 <p>
   <%= link_to t("loam.actions.edit"), edit_polymorphic_path([:admin, @record]) %>
+  <%= link_to "History", admin_history_path(type: @record.class.name, record_id: @record.id) %>
   <% if @record.class.respond_to?(:loam_translatable_attributes) && @record.class.loam_translatable_attributes.any? && current_role == :manager %>
     <%= link_to t("loam.actions.translations"), admin_translations_path(translatable_type: @record.class.name, translatable_id: @record.id) %>
   <% end %>
