@@ -97,7 +97,9 @@ number = higher priority.
   and the scheduler tick.
 
 ### P4 — Admin & UX polish
-- **L-401** pagination + search on generated admin index views.
+- ~~L-401 — pagination + search on generated admin index views~~ — ✅ shipped:
+  sortable columns (whitelisted, SQLi-safe) + full filter state carried through
+  paging/export.
 - **L-402** extract inline admin CSS to a shared stylesheet.
 - **L-403** spike — evaluate Avo as an alternate admin backend.
 
