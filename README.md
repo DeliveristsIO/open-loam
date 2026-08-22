@@ -164,6 +164,7 @@ showing the real commands and exactly what you *didn't* have to write.
 - [Architecture](docs/architecture.md) — the diagrams above + how every pillar is built
 - [Agent deep-dives](docs/agents/) — encryption, SSO, scheduler, events, inbound webhooks, bulk, confirm-mode
 - [Roadmap](ROADMAP.md) — ordered backlog, Mercato-informed
+- [Backward-compatibility contract](BACKWARD_COMPATIBILITY.md) — the frozen public surfaces
 - [Manifesto](docs/manifesto.md)
 - [Contributing](CONTRIBUTING.md)
 

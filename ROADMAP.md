@@ -96,7 +96,9 @@ number = higher priority.
 - ~~L-705 — feature-string permissions with wildcards~~ — ✅ shipped:
   `Loam::Permissions` (role → wildcard capability strings), `Loam.can?` /
   `require_permission!` / `can?` helper, deny-by-default.
-- **L-707 — frozen contract inventory** (`BACKWARD_COMPATIBILITY.md`).
+- ~~L-707 — frozen contract inventory~~ — ✅ shipped: `BACKWARD_COMPATIBILITY.md`
+  catalogues every frozen public surface (tenancy, events, generators, policy,
+  encryption format, webhook signature, API, custom fields, audit/undo, …).
 - **L-708 — specs-as-ADRs + `lessons.md`** convention.
 - **L-712 — observability seam**: OTLP/log spans around jobs, durable deliveries,
   and the scheduler tick.
