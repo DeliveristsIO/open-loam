@@ -45,7 +45,7 @@
   <%% else %>
     <p>
       <%%= f.label :<%= attribute.name %> %>: <%%= @record.<%= attribute.name %> %>
-      <em>(read-only for your role)</em>
+      <em><%%= t("loam.form.read_only") %></em>
     </p>
   <%% end %>
 <% end -%>
@@ -54,7 +54,7 @@
 
   <%% if policy.update? %>
     <p>
-      <%%= f.label :files, "Attach files" %><br>
+      <%%= f.label :files, t("loam.form.attach_files") %><br>
       <%%= f.file_field :files, multiple: true %>
     </p>
   <%% end %>

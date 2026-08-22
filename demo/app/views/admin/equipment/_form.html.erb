@@ -44,7 +44,7 @@
   <% else %>
     <p>
       <%= f.label :name %>: <%= @record.name %>
-      <em>(read-only for your role)</em>
+      <em><%= t("loam.form.read_only") %></em>
     </p>
   <% end %>
   <% if policy.writable?(:daily_rate) %>
@@ -55,7 +55,7 @@
   <% else %>
     <p>
       <%= f.label :daily_rate %>: <%= @record.daily_rate %>
-      <em>(read-only for your role)</em>
+      <em><%= t("loam.form.read_only") %></em>
     </p>
   <% end %>
   <% if policy.writable?(:status) %>
@@ -66,7 +66,7 @@
   <% else %>
     <p>
       <%= f.label :status %>: <%= @record.status %>
-      <em>(read-only for your role)</em>
+      <em><%= t("loam.form.read_only") %></em>
     </p>
   <% end %>
 
@@ -74,7 +74,7 @@
 
   <% if policy.update? %>
     <p>
-      <%= f.label :files, "Attach files" %><br>
+      <%= f.label :files, t("loam.form.attach_files") %><br>
       <%= f.file_field :files, multiple: true %>
     </p>
   <% end %>

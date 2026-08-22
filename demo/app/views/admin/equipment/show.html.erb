@@ -1,17 +1,17 @@
 <% policy = Loam::Policy.for(@record) %>
 
-<h1>Equipment #<%= @record.id %></h1>
+<h1><%= t("loam.actions.show_title", name: Equipment.model_name.human, id: @record.id) %></h1>
 
-<p><strong>Name:</strong> <%= @record.name %></p>
-<p><strong>Daily rate:</strong> <%= @record.daily_rate %></p>
-<p><strong>Status:</strong> <%= @record.status %></p>
+<p><strong><%= Equipment.human_attribute_name("name") %>:</strong> <%= @record.name %></p>
+<p><strong><%= Equipment.human_attribute_name("daily_rate") %>:</strong> <%= @record.daily_rate %></p>
+<p><strong><%= Equipment.human_attribute_name("status") %>:</strong> <%= @record.status %></p>
 
 <%= render "loam/custom_fields/fields", record: @record, policy: policy, mode: :show %>
 
 <%# Computed cross-module blocks (Loam::Enrichers) — no section when none registered. %>
 <% enrichments = Loam::Enrichers.enrich(@record) %>
 <% if enrichments.any? %>
-  <h2>Enrichments</h2>
+  <h2><%= t("loam.labels.enrichments") %></h2>
   <dl>
     <% enrichments.each do |key, value| %>
       <dt><strong><%= key.humanize %></strong></dt>
@@ -21,13 +21,13 @@
 <% end %>
 
 <p>
-  <%= link_to "Edit", edit_polymorphic_path([:admin, @record]) %>
+  <%= link_to t("loam.actions.edit"), edit_polymorphic_path([:admin, @record]) %>
   <% if @record.class.respond_to?(:loam_translatable_attributes) && @record.class.loam_translatable_attributes.any? && current_role == :manager %>
-    <%= link_to "Translations", admin_translations_path(translatable_type: @record.class.name, translatable_id: @record.id) %>
+    <%= link_to t("loam.actions.translations"), admin_translations_path(translatable_type: @record.class.name, translatable_id: @record.id) %>
   <% end %>
   <%# Delete soft-deletes: the record moves to the recycle bin, not oblivion. %>
-  <%= button_to "Delete", [:admin, @record], method: :delete if policy.destroy? %>
-  <%= link_to "Back", [:admin, Equipment] %>
+  <%= button_to t("loam.actions.destroy"), [:admin, @record], method: :delete if policy.destroy? %>
+  <%= link_to t("loam.actions.back"), [:admin, Equipment] %>
 </p>
 
 <fieldset>

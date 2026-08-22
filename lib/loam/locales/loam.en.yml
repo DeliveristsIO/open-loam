@@ -2,6 +2,8 @@
 # packages it, and added to the app's I18n load path by Loam::Engine. An app
 # localizes Loam by adding its own `config/locales/loam.<locale>.yml` overriding
 # these keys — distinct from Loam::Translatable, which localizes record DATA.
+# Entity and field names come from Rails' own activerecord.models /
+# activerecord.attributes (via model_name.human / human_attribute_name).
 en:
   loam:
     chrome:
@@ -28,9 +30,51 @@ en:
       overrides: "Overrides"
     actions:
       new: "New %{name}"
-      create: "Create %{name}"
+      new_title: "New %{name}"
+      edit_title: "Edit %{name} #%{id}"
+      show_title: "%{name} #%{id}"
+      deleted_title: "Deleted %{name}"
+      show: "Show"
       edit: "Edit"
-      update: "Save changes"
       destroy: "Delete"
+      restore: "Restore"
       back: "Back"
       save: "Save"
+      translations: "Translations"
+      export_csv: "Export CSV"
+      import_csv: "Import CSV"
+      filter: "Filter"
+      deleted: "Deleted %{name}"
+    labels:
+      id: "ID"
+      actions: "Actions"
+      enrichments: "Enrichments"
+    bulk:
+      delete_selected: "Delete selected"
+      set_field: "Set field on selected"
+      export_selected: "Export selected"
+      apply: "Apply to selected"
+      confirm: "Apply to the selected rows?"
+      new_value: "new value (for Set field)"
+    views:
+      all: "All %{name} (no saved view)"
+      manage: "Manage views"
+      manage_saved: "Manage saved views"
+      save_current: "Save current view"
+      name_placeholder: "Name this view"
+      filter_placeholder: "Filter %{name}"
+    index:
+      incomplete: "Results may be incomplete — the custom-field index is rebuilding in the background."
+      empty: "No records yet."
+    pagination:
+      previous: "← Previous"
+      next: "Next →"
+      page: "Page %{page}"
+    flash:
+      created: "%{name} created."
+      updated: "%{name} updated."
+      destroyed: "%{name} deleted."
+      restored: "%{name} restored."
+    form:
+      read_only: "(read-only for your role)"
+      attach_files: "Attach files"

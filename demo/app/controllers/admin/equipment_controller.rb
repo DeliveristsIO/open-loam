@@ -75,7 +75,7 @@ module Admin
       attach_files!(@record, policy)
 
       if @record.save
-        redirect_to [:admin, @record]
+        redirect_to [:admin, @record], notice: t("loam.flash.created", name: Equipment.model_name.human)
       else
         render :new, status: :unprocessable_entity
       end
@@ -95,7 +95,7 @@ module Admin
 
       if @record.update(permitted_params(policy))
         Loam::RecordLocks.release(@record, by: current_actor)
-        redirect_to [:admin, @record]
+        redirect_to [:admin, @record], notice: t("loam.flash.updated", name: Equipment.model_name.human)
       else
         render :edit, status: :unprocessable_entity
       end
@@ -111,7 +111,7 @@ module Admin
       authorize!(policy_for(@record), :destroy?)
       @record.soft_delete!
       Loam::RecordLocks.release(@record, by: current_actor)
-      redirect_to [:admin, Equipment], notice: "Equipment deleted. Restore it from the recycle bin."
+      redirect_to [:admin, Equipment], notice: t("loam.flash.destroyed", name: Equipment.model_name.human)
     end
 
     # Stands in for an AI agent proposing a price change: instead of applying it,
@@ -134,7 +134,7 @@ module Admin
       @record = Equipment.with_deleted.find(params[:id])
       authorize!(policy_for(@record), :update?)
       @record.restore!
-      redirect_to [:deleted, :admin, Equipment], notice: "Equipment restored."
+      redirect_to [:deleted, :admin, Equipment], notice: t("loam.flash.restored", name: Equipment.model_name.human)
     end
 
     private

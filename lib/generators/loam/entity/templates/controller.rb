@@ -75,7 +75,7 @@ module Admin
       attach_files!(@record, policy)
 
       if @record.save
-        redirect_to [:admin, @record]
+        redirect_to [:admin, @record], notice: t("loam.flash.created", name: <%= class_name %>.model_name.human)
       else
         render :new, status: :unprocessable_entity
       end
@@ -95,7 +95,7 @@ module Admin
 
       if @record.update(permitted_params(policy))
         Loam::RecordLocks.release(@record, by: current_actor)
-        redirect_to [:admin, @record]
+        redirect_to [:admin, @record], notice: t("loam.flash.updated", name: <%= class_name %>.model_name.human)
       else
         render :edit, status: :unprocessable_entity
       end
@@ -112,7 +112,7 @@ module Admin
       authorize!(policy_for(@record), :destroy?)
       @record.soft_delete!
       Loam::RecordLocks.release(@record, by: current_actor)
-      redirect_to [:admin, <%= class_name %>], notice: "<%= human_name %> deleted. Restore it from the recycle bin."
+      redirect_to [:admin, <%= class_name %>], notice: t("loam.flash.destroyed", name: <%= class_name %>.model_name.human)
     end
 
     # Restore looks through the deleted rows — the default scope hides them, so a
@@ -121,7 +121,7 @@ module Admin
       @record = <%= class_name %>.with_deleted.find(params[:id])
       authorize!(policy_for(@record), :update?)
       @record.restore!
-      redirect_to [:deleted, :admin, <%= class_name %>], notice: "<%= human_name %> restored."
+      redirect_to [:deleted, :admin, <%= class_name %>], notice: t("loam.flash.restored", name: <%= class_name %>.model_name.human)
     end
 
     private

@@ -36,4 +36,17 @@ class LoamI18nSwitcherTest < ActionDispatch::IntegrationTest
     assert_match "Dashboard", response.body
     assert_no_match(/Pulpit/, response.body)
   end
+
+  test "a generated entity index localizes its chrome and model/field names" do
+    get "/admin/equipment?locale=pl"
+    assert_response :success
+    assert_match "Sprzęt", response.body       # Equipment.model_name.human, Polish
+    assert_match "Filtruj", response.body      # the Filter button
+    assert_match "Nowy: Sprzęt", response.body # the New-record link
+
+    get "/admin/equipment?locale=en"
+    assert_response :success
+    assert_match "Filter", response.body
+    assert_no_match(/Filtruj/, response.body)
+  end
 end

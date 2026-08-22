@@ -1,6 +1,18 @@
 # Demo Polish translations for Loam's chrome — overrides the gem's loam.en.yml
 # base for the pl locale. Proves the switcher moves the UI, not just the data.
+# Entity/field names come from activerecord.* below (Rails-native).
 pl:
+  # Entity + field names for the demo's Equipment (Rails-native i18n — this is how
+  # a generated entity localizes its own model/column labels, distinct from loam.*).
+  activerecord:
+    models:
+      equipment: "Sprzęt"
+    attributes:
+      equipment:
+        name: "Nazwa"
+        daily_rate: "Stawka dzienna"
+        status: "Status"
+        deleted_at: "Usunięto o"
   loam:
     chrome:
       tenant: "Najemca"
@@ -24,3 +36,53 @@ pl:
       inbound: "Przychodzące"
       api_docs: "Dokumentacja API"
       overrides: "Nadpisania"
+    actions:
+      new: "Nowy: %{name}"
+      new_title: "Nowy: %{name}"
+      edit_title: "Edytuj %{name} #%{id}"
+      show_title: "%{name} #%{id}"
+      deleted_title: "Usunięte: %{name}"
+      show: "Pokaż"
+      edit: "Edytuj"
+      destroy: "Usuń"
+      restore: "Przywróć"
+      back: "Wstecz"
+      save: "Zapisz"
+      translations: "Tłumaczenia"
+      export_csv: "Eksport CSV"
+      import_csv: "Import CSV"
+      filter: "Filtruj"
+      deleted: "Usunięte: %{name}"
+    labels:
+      id: "ID"
+      actions: "Akcje"
+      enrichments: "Wzbogacenia"
+    bulk:
+      delete_selected: "Usuń zaznaczone"
+      set_field: "Ustaw pole zaznaczonych"
+      export_selected: "Eksportuj zaznaczone"
+      apply: "Zastosuj do zaznaczonych"
+      confirm: "Zastosować do zaznaczonych wierszy?"
+      new_value: "nowa wartość (dla Ustaw pole)"
+    views:
+      all: "Wszystkie %{name} (bez zapisanego widoku)"
+      manage: "Zarządzaj widokami"
+      manage_saved: "Zarządzaj zapisanymi widokami"
+      save_current: "Zapisz bieżący widok"
+      name_placeholder: "Nazwij ten widok"
+      filter_placeholder: "Filtruj %{name}"
+    index:
+      incomplete: "Wyniki mogą być niekompletne — indeks pól niestandardowych jest przebudowywany w tle."
+      empty: "Brak rekordów."
+    pagination:
+      previous: "← Poprzednia"
+      next: "Następna →"
+      page: "Strona %{page}"
+    flash:
+      created: "Utworzono: %{name}."
+      updated: "Zaktualizowano: %{name}."
+      destroyed: "Usunięto: %{name}."
+      restored: "Przywrócono: %{name}."
+    form:
+      read_only: "(tylko do odczytu dla Twojej roli)"
+      attach_files: "Załącz pliki"
