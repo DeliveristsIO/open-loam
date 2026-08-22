@@ -39,6 +39,7 @@ module Loam
         migration_template "migrations/create_loam_translations.rb", "db/migrate/create_loam_translations.rb"
         migration_template "migrations/create_loam_auth_attempts.rb", "db/migrate/create_loam_auth_attempts.rb"
         migration_template "migrations/create_loam_custom_field_values.rb", "db/migrate/create_loam_custom_field_values.rb"
+        migration_template "migrations/create_loam_event_deliveries.rb", "db/migrate/create_loam_event_deliveries.rb"
       end
 
       # Attachments (Loam::Attachable, included in every generated entity) are
@@ -92,6 +93,7 @@ module Loam
         template "admin/dictionary_entries_controller.rb", "app/controllers/admin/dictionary_entries_controller.rb"
         template "admin/progress_jobs_controller.rb", "app/controllers/admin/progress_jobs_controller.rb"
         template "admin/scheduled_jobs_controller.rb", "app/controllers/admin/scheduled_jobs_controller.rb"
+        template "admin/event_deliveries_controller.rb", "app/controllers/admin/event_deliveries_controller.rb"
         template "admin/imports_controller.rb", "app/controllers/admin/imports_controller.rb"
         template "admin/dashboard_widgets_controller.rb", "app/controllers/admin/dashboard_widgets_controller.rb"
         template "admin/api_docs_controller.rb", "app/controllers/admin/api_docs_controller.rb"
@@ -133,6 +135,7 @@ module Loam
         template "admin/dictionaries_form.html.erb", "app/views/admin/dictionaries/_form.html.erb"
         template "admin/progress_jobs_index.html.erb", "app/views/admin/progress_jobs/index.html.erb"
         template "admin/scheduled_jobs_index.html.erb", "app/views/admin/scheduled_jobs/index.html.erb"
+        template "admin/event_deliveries_index.html.erb", "app/views/admin/event_deliveries/index.html.erb"
         template "admin/scheduled_jobs_new.html.erb", "app/views/admin/scheduled_jobs/new.html.erb"
         template "admin/scheduled_jobs_edit.html.erb", "app/views/admin/scheduled_jobs/edit.html.erb"
         template "admin/scheduled_jobs_form.html.erb", "app/views/admin/scheduled_jobs/_form.html.erb"
@@ -184,6 +187,9 @@ module Loam
             end
             resources :scheduled_jobs, only: %i[index new create edit update destroy] do  # recurring jobs
               post :run_now, on: :member
+            end
+            resources :event_deliveries, only: %i[index] do  # durable-event dead-letter view (L-706)
+              post :redeliver, on: :member
             end
             resources :imports, only: %i[new create] do  # generic CSV importer (by entity_type)
               collection do

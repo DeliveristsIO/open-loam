@@ -8,9 +8,17 @@ module Loam
     # twice (see Loam::Webhooks.subscribe!).
     config.after_initialize do
       Loam::Webhooks.subscribe!
+      Loam::DurableEvents.subscribe!    # persist + retry durable subscribers (L-706)
       Loam::BusinessRules.subscribe!
       Loam::Widgets.register_builtins!  # the default dashboard widgets
       Loam::Overrides.check!            # warn about any stale disable/replace overrides
+
+      # The durability sweep runs per-tenant on a schedule (materialized into
+      # each tenant by Loam::Scheduler.sync_tenant). interval:300 = every 5 min.
+      Loam::Scheduler.register(
+        key: Loam::DurableEvents::SWEEP_KEY, name: "Event redelivery sweep",
+        job_class: "Loam::EventRedeliverySweepJob", schedule: "interval:300", scope: "tenant"
+      )
     end
 
     # lib/tasks/loam.rake (bin/rails loam:sync) is picked up by Rails::Engine's

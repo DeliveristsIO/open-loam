@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_22_120000) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_22_130000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -228,6 +228,22 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_120000) do
     t.index ["dictionary_id"], name: "index_loam_dictionary_entries_on_dictionary_id"
     t.index ["tenant_id", "dictionary_id", "position"], name: "idx_on_tenant_id_dictionary_id_position_0a9045964a"
     t.index ["tenant_id"], name: "index_loam_dictionary_entries_on_tenant_id"
+  end
+
+  create_table "loam_event_deliveries", force: :cascade do |t|
+    t.integer "tenant_id", null: false
+    t.string "subscriber_key", null: false
+    t.string "event_name", null: false
+    t.json "payload", null: false
+    t.string "status", default: "pending", null: false
+    t.integer "attempts", default: 0, null: false
+    t.text "last_error"
+    t.datetime "next_attempt_at"
+    t.datetime "delivered_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tenant_id", "status", "next_attempt_at"], name: "idx_on_tenant_id_status_next_attempt_at_2cb58beb5e"
+    t.index ["tenant_id"], name: "index_loam_event_deliveries_on_tenant_id"
   end
 
   create_table "loam_field_definitions", force: :cascade do |t|
@@ -471,6 +487,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_120000) do
   add_foreign_key "loam_dictionaries", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_dictionary_entries", "loam_dictionaries", column: "dictionary_id"
   add_foreign_key "loam_dictionary_entries", "loam_tenants", column: "tenant_id"
+  add_foreign_key "loam_event_deliveries", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_field_definitions", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_memberships", "loam_tenants", column: "tenant_id"
   add_foreign_key "loam_memberships", "users"

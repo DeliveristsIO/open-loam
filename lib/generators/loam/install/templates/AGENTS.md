@@ -12,7 +12,7 @@ reviewable, and safe. Improvise and the guardrail tests will fail.
 | Business entity | `app/models/<name>.rb` | `bin/rails g loam:entity Name field:type ... --domain <domain>` |
 | Permissions | `app/policies/<name>_policy.rb` | generated with the entity; edit to declare rules |
 | Admin screen | `app/controllers/admin/` + `app/views/admin/` | generated with the entity |
-| Domain events | published from models/services via `Loam::Events.publish` | subscriptions in `config/initializers/loam.rb` |
+| Domain events | published from models/services via `Loam::Events.publish` | ephemeral `Loam::Events.subscribe` (inline, best-effort) or durable `Loam::DurableEvents.register(key:, to:, call:)` (persisted, retried, at-least-once — handlers MUST be idempotent) in `config/initializers/loam.rb` ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/agents/events.md)) |
 | Audit trail | automatic (`Loam::Auditable`) | nothing — it is on by default |
 | Delete / recycle bin | soft-delete via `Loam::SoftDeletable` | `record.soft_delete` hides it (excluded by default, still tenant-scoped, audited); `Model.only_deleted` + `record.restore` bring it back; `destroy` still hard-erases |
 | Settings / config | `Loam::Configs` (a `key` + JSON value, global or per-tenant) | `Loam::Configs.get("billing.currency")`; `set(k, v)` overrides for the current tenant, `set(k, v, scope: :global)` sets the app-wide row, `reset(k)` drops the override; declare defaults in the initializer; admin at `/admin/configs` |

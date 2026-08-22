@@ -55,6 +55,13 @@ Loam::Search.driver = Loam::Search::TokenDriver
 Loam::Scheduler.register(key: "nightly_touch", name: "Nightly equipment touch",
                          job_class: "DemoScheduledJob", schedule: "0 3 * * *", scope: "tenant")
 
+# Durable event subscribers (Loam::DurableEvents) — the persistent twin of
+# Loam::Events.subscribe. Each matching event is persisted as a Loam::EventDelivery
+# and delivered by a background job with retry (at-least-once; handlers must be
+# idempotent). Here on a demo-only domain so it never fires on real lifecycle
+# events; a real app subscribes to "billing.invoice.paid" and the like.
+Loam::DurableEvents.register(key: "demo_echo", to: "demo.", call: "DurableEventEcho")
+
 # SSO (Loam::Sso). The demo has no real identity provider and MUST NOT hit the
 # network, so it injects the offline FakeProvider for every SSO round-trip: its
 # authorization_url loops straight back to our callback and it returns verified

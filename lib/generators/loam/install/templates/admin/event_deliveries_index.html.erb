@@ -1,0 +1,49 @@
+<h1>Event deliveries</h1>
+
+<p>Durable subscribers (<code>Loam::DurableEvents</code>). Delivery is at-least-once
+with retry; a delivery that exhausts its retries — or whose subscriber was removed —
+is parked here as <strong>dead</strong> for you to fix and requeue.</p>
+
+<h2>Dead-letter (<%%= @dead.size %>)</h2>
+<%% if @dead.any? %>
+  <table>
+    <thead>
+      <tr><th>Subscriber</th><th>Event</th><th>Attempts</th><th>Last error</th><th>When</th><th></th></tr>
+    </thead>
+    <tbody>
+      <%% @dead.each do |d| %>
+        <tr>
+          <td><code><%%= d.subscriber_key %></code></td>
+          <td><code><%%= d.event_name %></code></td>
+          <td><%%= d.attempts %></td>
+          <td><small><%%= d.last_error %></small></td>
+          <td><%%= d.updated_at.strftime("%Y-%m-%d %H:%M UTC") %></td>
+          <td><%%= button_to "Requeue", redeliver_admin_event_delivery_path(d), form: { style: "display:inline" } %></td>
+        </tr>
+      <%% end %>
+    </tbody>
+  </table>
+<%% else %>
+  <p>No dead deliveries. 🎉</p>
+<%% end %>
+
+<h2>Pending (next <%%= @pending.size %>)</h2>
+<%% if @pending.any? %>
+  <table>
+    <thead>
+      <tr><th>Subscriber</th><th>Event</th><th>Attempts</th><th>Next attempt</th></tr>
+    </thead>
+    <tbody>
+      <%% @pending.each do |d| %>
+        <tr>
+          <td><code><%%= d.subscriber_key %></code></td>
+          <td><code><%%= d.event_name %></code></td>
+          <td><%%= d.attempts %></td>
+          <td><%%= d.next_attempt_at ? d.next_attempt_at.strftime("%Y-%m-%d %H:%M UTC") : "now" %></td>
+        </tr>
+      <%% end %>
+    </tbody>
+  </table>
+<%% else %>
+  <p>Nothing pending.</p>
+<%% end %>
