@@ -98,9 +98,12 @@ number = higher priority.
 - ~~L-711 — Custom-field index ACL~~ — ✅ shipped (see Hardening above).
 
 ### P2 — AI layer (the on-brand differentiator; gate depth on L-709's signal)
-- **L-302 — MCP server** for live schema/entity/policy introspection. Mercato
-  shipped an AI harness + MCP; this is our most on-brand move. Build it after the
-  dogfood run shows which tools an agent actually reaches for.
+- ~~L-302 — MCP server~~ — ✅ shipped (v1, ahead of the dogfood signal at the
+  user's call): `Loam::Mcp` + `bin/rails loam:mcp:serve` (stdio) exposes
+  list_entities / describe_entity / query_entity (read, policy-aware) /
+  stage_write (proposes an update, staged for human approval, never committed).
+  Tools-only; the roadmap's gate was about DEPTH — the dogfood still informs
+  which tools to add next. See `docs/agents/mcp.md`.
 - ~~L-301 — `.loam/agents/` pack~~ — ✅ shipped: `.loam/agents/README.md` is the
   pack index/manifest tying together AGENTS.md, lessons, ADRs, deep-dives, the
   contract inventory, and the golden-task benchmark, with a load order.
