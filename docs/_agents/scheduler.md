@@ -1,3 +1,9 @@
+---
+title: Scheduler
+description: Per-tenant recurring cron/interval jobs, claimed atomically so no two workers double-fire one.
+nav_order: 6
+---
+
 # Scheduler (recurring jobs)
 
 

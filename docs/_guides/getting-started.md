@@ -1,3 +1,9 @@
+---
+title: Getting Started
+description: A hands-on walkthrough from an empty Rails app to a working multi-tenant, permissioned, audited feature.
+nav_order: 1
+---
+
 # Getting started with Loam
 
 This is a hands-on walkthrough: from an empty Rails app to a working
@@ -224,7 +230,7 @@ The agent reads `AGENTS.md`, runs the same `loam:entity` generator, adds the
 policy line and the event — and **can't** silently produce a cross-tenant leak,
 because the guardrail tests fail if it tries. You review a small, conventional
 diff instead of auditing bespoke security code. (This isn't a promise — it's
-measured; see the [benchmark](../ai/golden_tasks.md), where agents completed 10
+measured; see the [benchmark](https://github.com/DeliveristsIO/open-loam/blob/main/ai/golden_tasks.md), where agents completed 10
 such tasks with zero isolation violations, versus 1-in-10 on plain Rails.)
 
 ---
@@ -289,7 +295,7 @@ at rest and never leaks in the preview. This is the primitive the MCP server
   screens (such as scheduler and webhooks) remain English for now.
 - **Scheduler, dictionaries, saved views, real-time SSE, bulk CSV import/export,
   auto-OpenAPI, an observability seam** — the full list is the pillar table in the
-  [README](../README.md), and the visual
+  [README](https://github.com/DeliveristsIO/open-loam/blob/main/README.md), and the visual
   [architecture map](https://claude.ai/code/artifact/949311d3-5e14-4f07-a8ad-7b1bb5bd87ad)
   shows how they connect.
 
@@ -300,10 +306,10 @@ agent extends them the same way it extends anything else.
 
 ## Where to look next
 
-- [`AGENTS.md`](../lib/generators/loam/install/templates/AGENTS.md) — the full
+- [`AGENTS.md`](https://github.com/DeliveristsIO/open-loam/blob/main/lib/generators/loam/install/templates/AGENTS.md) — the full
   contract, and the best one-page description of "the one way to do each thing".
 - [**Architecture map**](https://claude.ai/code/artifact/949311d3-5e14-4f07-a8ad-7b1bb5bd87ad) — a visual tour of the modules and how they connect.
-- [Architecture](architecture.md) — how each pillar is built and why.
-- [Roadmap](../ROADMAP.md) — what's shipped and what's deliberately deferred.
-- [`demo/`](../demo) — a complete version of the app sketched above, with tests.
-- [Contributing](../CONTRIBUTING.md) — if you want to extend Loam itself.
+- [Architecture]({% link _guides/architecture.md %}) — how each pillar is built and why.
+- [Roadmap](https://github.com/DeliveristsIO/open-loam/blob/main/ROADMAP.md) — what's shipped and what's deliberately deferred.
+- [`demo/`](https://github.com/DeliveristsIO/open-loam/tree/main/demo) — a complete version of the app sketched above, with tests.
+- [Contributing](https://github.com/DeliveristsIO/open-loam/blob/main/CONTRIBUTING.md) — if you want to extend Loam itself.

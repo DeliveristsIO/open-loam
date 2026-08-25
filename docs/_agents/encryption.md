@@ -1,3 +1,9 @@
+---
+title: Encryption at Rest
+description: Per-tenant AES-256-GCM field encryption, the blind index for searchable fields, and key scoping.
+nav_order: 4
+---
+
 # Encryption at rest
 
 

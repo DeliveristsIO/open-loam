@@ -1,3 +1,9 @@
+---
+title: Confirm-Mode
+description: Staging a write as a PendingAction for manager approval instead of committing it directly.
+nav_order: 3
+---
+
 # Staging a write for approval (confirm-mode)
 
 

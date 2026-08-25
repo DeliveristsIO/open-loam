@@ -1,3 +1,9 @@
+---
+title: Bulk Import / Export
+description: Policy- and encryption-aware CSV export/import with column mapping, dry-run, and dedupe-by-key.
+nav_order: 9
+---
+
 # Bulk import / export
 
 

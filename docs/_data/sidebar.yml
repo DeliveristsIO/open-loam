@@ -1,0 +1,6 @@
+- title: Guides
+  collection: guides
+- title: Agent Deep-Dives
+  collection: agents
+- title: Architecture Decisions
+  collection: adr

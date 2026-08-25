@@ -1,3 +1,8 @@
+---
+title: Architecture Decisions
+permalink: /adr/
+---
+
 # Architecture Decision Records (L-708)
 
 An ADR captures **one decision**: the context, the choice, and its consequences.
@@ -37,14 +42,14 @@ kill-criterion or revisit condition if there is one.
 
 Before a non-trivial feature, write the spec **as an ADR** — the decision and its
 consequences — then implement against it. After, record what you learned in
-[`ai/lessons.md`](../../ai/lessons.md). The ADR is the intent; `lessons.md` is the
+[`ai/lessons.md`](https://github.com/DeliveristsIO/open-loam/blob/main/ai/lessons.md). The ADR is the intent; `lessons.md` is the
 hindsight. Both are inputs the next agent reads.
 
 ## Index
 
-- [0001 — Row-level tenancy](0001-row-level-tenancy.md)
-- [0002 — In-gem implementations before wrapping proven gems](0002-in-gem-implementations.md)
-- [0003 — A generated ERB admin, not a dependency](0003-generated-erb-admin.md)
-- [0004 — A byte-budgeted AGENTS.md as the agent contract](0004-agents-md-contract.md)
-- [0005 — Events as the decoupling seam; two subscriber tiers](0005-event-backbone-two-tiers.md)
-- [0006 — Evaluating Avo as an alternate admin backend](0006-avo-admin-evaluation.md)
+- [0001 — Row-level tenancy]({% link _adr/0001-row-level-tenancy.md %})
+- [0002 — In-gem implementations before wrapping proven gems]({% link _adr/0002-in-gem-implementations.md %})
+- [0003 — A generated ERB admin, not a dependency]({% link _adr/0003-generated-erb-admin.md %})
+- [0004 — A byte-budgeted AGENTS.md as the agent contract]({% link _adr/0004-agents-md-contract.md %})
+- [0005 — Events as the decoupling seam; two subscriber tiers]({% link _adr/0005-event-backbone-two-tiers.md %})
+- [0006 — Evaluating Avo as an alternate admin backend]({% link _adr/0006-avo-admin-evaluation.md %})

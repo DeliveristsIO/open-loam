@@ -1,3 +1,9 @@
+---
+title: Manifesto
+description: "The five beliefs behind Loam: convention as fertility, guardrails not guidelines, assemble don't reinvent."
+nav_order: 4
+---
+
 # The Loam manifesto
 
 **Convention is fertility.**

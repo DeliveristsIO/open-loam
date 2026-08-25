@@ -15,7 +15,7 @@ lib/generators/loam/    install + entity generators — the one interface
 test/                   generator harness (builds real Rails apps in tmp)
 demo/                   equipment-rental app built with the generators
 ai/                     golden-tasks benchmark + recorded runs
-docs/                   concept, architecture, manifesto
+docs/                   guides, agent deep-dives, ADRs (Jekyll site source)
 ```
 
 ## Getting set up

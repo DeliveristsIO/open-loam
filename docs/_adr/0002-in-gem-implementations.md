@@ -1,3 +1,9 @@
+---
+title: In-Gem Implementations Before Wrapping Proven Gems
+description: Why the prototype ships minimal in-gem implementations instead of wrapping acts_as_tenant/pundit/paper_trail first.
+nav_order: 2
+---
+
 # 0002. In-gem implementations before wrapping proven gems
 
 - Status: Accepted

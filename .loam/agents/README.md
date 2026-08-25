@@ -14,10 +14,10 @@ each piece.
    full. This is the single most important file.
 2. **[`ai/lessons.md`](../../ai/lessons.md)** — real gotchas found the hard way in
    this codebase, as claim + rule. Read before a non-trivial change.
-3. **[`docs/adr/`](../../docs/adr/)** — why the architecture is the way it is, and
+3. **[`docs/adr/`](../../docs/_adr/)** — why the architecture is the way it is, and
    the specs-as-ADRs convention: record a substantial decision as an ADR before
    implementing.
-4. **[`docs/agents/`](../../docs/agents/)** — deep-dives on the subsystems that
+4. **[`docs/agents/`](../../docs/_agents/)** — deep-dives on the subsystems that
    have sharp edges (encryption, SSO, scheduler, events, inbound webhooks, undo,
    bulk import/export, confirm-mode). Linked from `AGENTS.md` per topic.
 5. **[`BACKWARD_COMPATIBILITY.md`](../../BACKWARD_COMPATIBILITY.md)** — the frozen
@@ -60,7 +60,7 @@ as a failing test, not a subtle bug:
 |---|---|---|
 | Contract | `AGENTS.md` (app root) | the map + invariants |
 | Lessons | `ai/lessons.md` | gotchas, claim+rule |
-| Decisions | `docs/adr/` | why + the ADR convention |
-| Deep-dives | `docs/agents/` | subsystem sharp edges |
+| Decisions | `docs/_adr/` | why + the ADR convention |
+| Deep-dives | `docs/_agents/` | subsystem sharp edges |
 | Contracts | `BACKWARD_COMPATIBILITY.md` | frozen surfaces |
 | Benchmark | `ai/golden_tasks.md`, `ai/benchmark_runs/` | prove it |

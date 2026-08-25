@@ -1,3 +1,9 @@
+---
+title: Events as the Decoupling Seam; Two Subscriber Tiers
+description: Why the event bus has both an ephemeral and a durable subscriber tier.
+nav_order: 5
+---
+
 # 0005. Events as the decoupling seam; two subscriber tiers
 
 - Status: Accepted

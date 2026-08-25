@@ -1,3 +1,9 @@
+---
+title: MCP Server
+description: "The MCP server (L-302) that exposes Loam to an AI agent: read tenant-scoped data and propose writes for human approval."
+nav_order: 1
+---
+
 # MCP server — exposing Loam to an agent (L-302, tools-only v1)
 
 Loam ships an [MCP](https://modelcontextprotocol.io) server so an AI agent

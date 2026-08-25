@@ -1,3 +1,9 @@
+---
+title: Row-Level Tenancy
+description: Why tenancy is row-level (tenant_id + default_scope) rather than schema-per-tenant.
+nav_order: 1
+---
+
 # 0001. Row-level tenancy
 
 - Status: Accepted

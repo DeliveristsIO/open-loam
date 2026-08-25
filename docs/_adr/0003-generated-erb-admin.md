@@ -1,3 +1,9 @@
+---
+title: A Generated ERB Admin, Not a Dependency
+description: Why the admin surface is a generated ERB console rather than a third-party admin gem.
+nav_order: 3
+---
+
 # 0003. A generated ERB admin, not a dependency
 
 - Status: Accepted

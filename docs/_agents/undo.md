@@ -1,3 +1,9 @@
+---
+title: Undo / Redo
+description: "The audit trail as an undo stack (L-704): revert a change with one click, and undo an undo to redo."
+nav_order: 7
+---
+
 # Undo / redo on the audit trail (L-704)
 
 Every change already writes a `Loam::AuditRecord` with its changeset. `Loam::Undo`

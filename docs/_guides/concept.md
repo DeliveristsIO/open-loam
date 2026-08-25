@@ -1,3 +1,9 @@
+---
+title: Concept & Positioning
+description: What Loam is, who it's for, and where it sits relative to Bullet Train, Frappe/ERPNext, and Open Mercato.
+nav_order: 2
+---
+
 # Loam — concept & positioning
 
 ## The one-sentence pitch

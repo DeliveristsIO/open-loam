@@ -45,7 +45,7 @@ dogfood build (LOAM_PLAN.md Days 61–75, ticketed as **L-709**), not another
 module. **The remaining open tickets are deferred by design, not overlooked:**
 the gem-wrapping refactors (L-201…L-204) would replace the working, tested
 tenancy/policy/audit/event *spine* with third-party dependencies for no
-user-facing gain (ADR [0002](docs/adr/0002-in-gem-implementations.md) — do them
+user-facing gain (ADR [0002](docs/_adr/0002-in-gem-implementations.md) — do them
 only when a proven gem adds something the in-gem version lacks); the MCP server
 (L-302) is gated on the dogfood signal (which tools an agent actually reaches
 for); the reference-CRM second domain (L-501) is a deliberate build that folds
@@ -94,7 +94,7 @@ number = higher priority.
   the gem's own built-in admin screens (scheduler, webhooks, …) stay English.
 - ~~L-710 — Inbound webhook receiver~~ — ✅ shipped: public `/webhooks/:token`,
   HMAC over the raw body, `(source, delivery-id)` replay ledger, uniform 401,
-  published onto the event bus. See `docs/agents/inbound-webhooks.md`.
+  published onto the event bus. See `docs/_agents/inbound-webhooks.md`.
 - ~~L-711 — Custom-field index ACL~~ — ✅ shipped (see Hardening above).
 
 ### P2 — AI layer (the on-brand differentiator; gate depth on L-709's signal)
@@ -103,7 +103,7 @@ number = higher priority.
   list_entities / describe_entity / query_entity (read, policy-aware) /
   stage_write (proposes an update, staged for human approval, never committed).
   Tools-only; the roadmap's gate was about DEPTH — the dogfood still informs
-  which tools to add next. See `docs/agents/mcp.md`.
+  which tools to add next. See `docs/_agents/mcp.md`.
 - ~~L-301 — `.loam/agents/` pack~~ — ✅ shipped: `.loam/agents/README.md` is the
   pack index/manifest tying together AGENTS.md, lessons, ADRs, deep-dives, the
   contract inventory, and the golden-task benchmark, with a load order.
@@ -121,7 +121,7 @@ number = higher priority.
 - ~~L-707 — frozen contract inventory~~ — ✅ shipped: `BACKWARD_COMPATIBILITY.md`
   catalogues every frozen public surface (tenancy, events, generators, policy,
   encryption format, webhook signature, API, custom fields, audit/undo, …).
-- ~~L-708 — specs-as-ADRs + `lessons.md`~~ — ✅ shipped: `docs/adr/` (convention +
+- ~~L-708 — specs-as-ADRs + `lessons.md`~~ — ✅ shipped: `docs/_adr/` (convention +
   template + 5 seed ADRs) and `ai/lessons.md` (the framework's real gotchas),
   referenced from `AGENTS.md`.
 - ~~L-712 — observability seam~~ — ✅ shipped: `Loam::Telemetry.span` wraps the
@@ -135,7 +135,7 @@ number = higher priority.
 - ~~L-402 — extract inline admin CSS to a shared stylesheet~~ — ✅ shipped:
   `admin.css` + flash rendering in the layout.
 - ~~L-403 — spike: evaluate Avo as an alternate admin backend~~ — ✅ done:
-  [ADR 0006](docs/adr/0006-avo-admin-evaluation.md) — keep the generated admin
+  [ADR 0006](docs/_adr/0006-avo-admin-evaluation.md) — keep the generated admin
   (tenancy + field-policy stay structural); Avo stays an app-level option.
 
 ### P5 — Prove domain-agnosticism

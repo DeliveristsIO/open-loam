@@ -10,6 +10,12 @@
 .swarm/
 ruvector.db
 
+# Jekyll docs site build output
+docs/_site/
+docs/.jekyll-cache/
+docs/.bundle/
+docs/vendor/
+
 # demo app runtime artifacts
 demo/log/*
 demo/tmp/*

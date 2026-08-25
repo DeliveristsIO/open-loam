@@ -1,0 +1,14 @@
+- title: Guides
+  url: /getting-started/
+  collections:
+    - guides
+- title: Agents
+  url: /agents/
+  collections:
+    - agents
+- title: Decisions
+  url: /adr/
+  collections:
+    - adr
+- title: GitHub
+  url: https://github.com/DeliveristsIO/open-loam

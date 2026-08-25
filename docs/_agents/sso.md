@@ -1,3 +1,9 @@
+---
+title: Single Sign-On (SSO)
+description: "Per-tenant OIDC single sign-on: home-realm discovery, JIT provisioning, and IdP group-to-role mapping."
+nav_order: 5
+---
+
 # Single sign-on (SSO)
 
 

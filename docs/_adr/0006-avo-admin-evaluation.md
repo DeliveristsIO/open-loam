@@ -1,3 +1,9 @@
+---
+title: Evaluating Avo as an Alternate Admin Backend
+description: Why the generated admin stays the default and Avo remains an app-level option.
+nav_order: 6
+---
+
 # 0006. Evaluating Avo as an alternate admin backend
 
 - Status: Accepted
@@ -5,7 +11,7 @@
 
 ## Context
 
-ADR [0003](0003-generated-erb-admin.md) chose a **generated ERB admin** over an
+ADR [0003]({% link _adr/0003-generated-erb-admin.md %}) chose a **generated ERB admin** over an
 admin framework, deferring an Avo evaluation to this spike (backlog L-403). The
 question: should Loam's admin be (re)built on [Avo](https://avohq.io), or stay
 generated ERB?
