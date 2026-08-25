@@ -69,9 +69,13 @@ jobs:
           working-directory: docs
           bundler-cache: true
 
+      # Fails with a 404 until Pages is enabled in repo settings (Settings →
+      # Pages → Source: GitHub Actions) — continue-on-error so that's a soft
+      # skip, not a red build, until someone flips it on.
       - name: Set up Pages
         id: pages
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        continue-on-error: true
         uses: actions/configure-pages@v5
 
       - name: Build docs
@@ -85,15 +89,17 @@ jobs:
           PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
 
       - name: Upload Pages artifact
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.pages.outcome == 'success'
         uses: actions/upload-pages-artifact@v4
         with:
           path: docs/_site
+    outputs:
+      pages_ready: ${{ steps.pages.outcome == 'success' }}
 
   deploy_docs:
     name: Deploy docs
     needs: [docs]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.docs.outputs.pages_ready == 'true'
     runs-on: ubuntu-latest
     permissions:
       pages: write
