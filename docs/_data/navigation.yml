@@ -2,10 +2,18 @@
   url: /getting-started/
   collections:
     - guides
+- title: Foundation
+  url: /foundation/overview/
+  collections:
+    - foundation
 - title: Agents
   url: /agents/
   collections:
     - agents
+- title: Reference
+  url: /reference/configuration/
+  collections:
+    - reference
 - title: Decisions
   url: /adr/
   collections:

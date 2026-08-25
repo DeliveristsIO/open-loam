@@ -100,7 +100,7 @@ Loam.broadcast_events = [ "loam.notification.", "loam.progress." ]
 # IdP by email domain; a verified identity is JIT-provisioned or linked to an
 # existing User. The client_secret is encrypted at rest, so LOAM_MASTER_KEY must
 # be set (same key as the rest of Loam::Encryptable). SAML and SCIM are documented
-# seams (see docs/_guides/architecture.md). Nothing to register here for real OIDC.
+# seams (see docs/_foundation/overview.md). Nothing to register here for real OIDC.
 #
 # In tests, inject the offline fake so the flow never hits the network:
 #

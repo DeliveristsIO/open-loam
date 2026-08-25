@@ -190,7 +190,7 @@ initializer) is eligible, and each is filtered to the connected tenant AND
 audience (a payload `user_id` is the sole recipient) before it leaves the server.
 The bell already streams `loam.notification.created`; add a pattern to stream
 your own events to a live widget. Fan-out is single-process in the prototype
-(Redis/SolidCable is the seam — see docs/_guides/architecture.md).
+(Redis/SolidCable is the seam — see [How Loam works](https://github.com/DeliveristsIO/open-loam/blob/main/docs/_foundation/overview.md)).
 
 ## Response enrichers
 

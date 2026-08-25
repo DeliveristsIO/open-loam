@@ -1,12 +1,12 @@
 ---
 layout: home
-title: AI-native Rails business foundation
+title: A secure Rails foundation for humans and coding agents
 description: Loam pre-decides the 80% every business app shares — multi-tenancy, roles and field-level permissions, audit trails, a domain event bus, an admin surface — so humans and AI agents build the 20% that's the actual business.
 permalink: /
 hero:
   name: Loam
-  text: The fertile Rails foundation where AI agents grow business software
-  tagline: Multi-tenancy, roles and permissions, an event backbone, custom entities, audit trails, and an admin surface come already decided — as conventions, not choices you re-litigate on every project.
+  text: A secure Rails foundation for humans and coding agents
+  tagline: Tenant isolation, authorization, and audit hold by construction — not because a ticket happened to ask for them. Multi-tenancy, roles and field-level permissions, an event backbone, and an admin surface come already decided, so the diff is the business, not the foundation.
   code_panel:
     - title: Install
       link: /getting-started/
@@ -16,7 +16,7 @@ hero:
         bin/rails g loam:entity Equipment name:string daily_rate:decimal --domain rental
         ```
     - title: Tenant isolation
-      link: /agents/
+      link: /foundation/tenant-isolation/
       code: |
         ```ruby
         class Equipment < Loam::TenantRecord
@@ -27,7 +27,7 @@ hero:
         Equipment.count   # => raises Loam::MissingTenantError, no context
         ```
     - title: Field-level permissions
-      link: /getting-started/
+      link: /foundation/authorization/
       code: |
         ```ruby
         class EquipmentPolicy < Loam::Policy
@@ -50,23 +50,21 @@ hero:
         bin/rails loam:mcp:serve
         # list_entities / describe_entity / query_entity / stage_write
         ```
-    - title: Domain events
-      link: /agents/events/
+    - title: Golden tasks
+      link: /agents/golden-tasks/
       code: |
-        ```ruby
-        Loam::DurableEvents.register(
-          key: "notify_managers",
-          to: "rental.damage_report.approve",
-          call: ->(payload) { Loam::Notifications.notify_role(:manager, ...) }
-        )
+        ```text
+        Tenant isolation enforced (HTTP probe)
+          Loam + AI:    10/10
+          Vanilla + AI:  1/10
         ```
   actions:
     - theme: brand
       text: Get started
       link: /getting-started/
     - theme: alt
-      text: Architecture
-      link: /architecture/
+      text: How Loam works
+      link: /foundation/overview/
     - theme: alt
       text: View on GitHub
       link: https://github.com/DeliveristsIO/open-loam
@@ -74,20 +72,20 @@ hero:
 features:
   - icon: "🏢"
     title: Multi-tenancy, structurally
-    details: "Tenant isolation baked into every query, job, and event via [`Loam::TenantRecord`](/architecture/). A missing tenant context raises — it never silently widens a query."
+    details: "Tenant isolation baked into every query, job, and event via [`Loam::TenantRecord`](/foundation/tenant-isolation/). A missing tenant context raises — it never silently widens a query."
   - icon: "🔐"
-    title: Permissions & auth
-    details: "Roles, policies, and field-level write access declared once. Plus wildcard [feature-string permissions](/getting-started/) (`equipment.*`), deny-by-default."
+    title: Authorization, not just permissions
+    details: "Roles, [policies, and field-level write access](/foundation/authorization/) declared once. Plus wildcard [feature-string permissions](/getting-started/) (`equipment.*`), deny-by-default."
   - icon: "📡"
     title: A real event backbone
     details: "[Ephemeral and durable subscribers](/agents/events/) on one domain event bus — at-least-once delivery, dead-letter, redelivery sweep for the durable tier."
-  - icon: "🚦"
-    title: An AI approval gate
-    details: "An agent under [confirm-mode](/agents/confirm-mode/) stages a write instead of committing it; a manager approves before anything executes."
+  - icon: "🚧"
+    title: Guardrails, not guidelines
+    details: "[Structural tests](/agents/guardrails/) fail the build on a missing tenant scope, a stray `.unscoped`, or an oversized AGENTS.md — before a human has to catch it in review."
   - icon: "🤖"
-    title: MCP server included
-    details: "[Expose Loam to an agent](/agents/mcp/): tenant-scoped reads and staged, human-approved writes — the same gates the rest of the app obeys."
-  - icon: "🧾"
-    title: Audit, undo, encryption
-    details: "Every change recorded by default; the audit trail doubles as an [undo stack](/agents/undo/); [per-tenant AES-256-GCM encryption](/agents/encryption/) for regulated fields."
+    title: Built for coding agents
+    details: "[AGENTS.md is the contract](/agents/agent-contract/); [`loam:entity`](/reference/generators/) is the interface; an [MCP server](/agents/mcp/) exposes tenant-scoped, policy-aware reads and human-approved writes."
+  - icon: "📊"
+    title: Measured, not asserted
+    details: "The [golden-tasks benchmark](/agents/golden-tasks/) found tenant isolation held 10/10 on Loam apps versus 1/10 on hand-rolled vanilla Rails, same prompts, same model — internal results, disclosed as such."
 ---

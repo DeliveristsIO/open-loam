@@ -9,7 +9,7 @@ module Loam
   # group -> role mapping, and account linking to an existing User. SEAMS
   # (documented, not built): SAML (another protocol behind the same interface,
   # raises NotImplementedError until implemented) and SCIM 2.0 provisioning
-  # (see docs/_guides/architecture.md). See Loam::SsoProvider for the per-tenant config.
+  # (see docs/_foundation/overview.md). See Loam::SsoProvider for the per-tenant config.
   #
   # A protocol provider implements two methods:
   #   authorization_url(state:, login_hint: nil) -> the IdP URL to redirect to

@@ -244,7 +244,7 @@ repeatable economic advantage in real projects.
 
 - [README](README.md) — product capabilities and quick start
 - [Concept and positioning](docs/_guides/concept.md) — product thesis and market position
-- [Architecture](docs/_guides/architecture.md) — technical design and module boundaries
+- [Architecture](docs/_foundation/overview.md) — technical design and module boundaries
 - [Roadmap](ROADMAP.md) — shipped work, open priorities, and validation plan
 - [Backward-compatibility contract](BACKWARD_COMPATIBILITY.md) — stable public surfaces
 - [Getting started](docs/_guides/getting-started.md) — hands-on walkthrough

@@ -20,12 +20,18 @@ collections:
   guides:
     output: true
     permalink: "/:name/"
+  foundation:
+    output: true
+    permalink: "/foundation/:name/"
   agents:
     output: true
     permalink: "/agents/:name/"
   adr:
     output: true
     permalink: "/adr/:name/"
+  reference:
+    output: true
+    permalink: "/reference/:name/"
 
 defaults:
   - scope:
@@ -37,11 +43,19 @@ defaults:
     values:
       layout: default
   - scope:
+      type: foundation
+    values:
+      layout: default
+  - scope:
       type: agents
     values:
       layout: default
   - scope:
       type: adr
+    values:
+      layout: default
+  - scope:
+      type: reference
     values:
       layout: default
 
@@ -62,12 +76,37 @@ jekyll_vitepress:
       admin surface — decided, not re-litigated.
     full: true
     details: >-
-      Start with Getting Started, then Concept and Architecture for the design.
-      Agent Deep-Dives cover the subsystems with sharp edges, and Architecture
-      Decisions record why each call was made. Source is on
-      [GitHub](https://github.com/DeliveristsIO/open-loam).
+      Start with Getting Started, then the Foundation section (tenant isolation,
+      authorization, audit) for how Loam holds its guarantees. Agents covers the
+      contract, guardrails, and the golden-tasks benchmark AI coding agents are
+      measured against. Reference has configuration, generators, and the
+      backward-compatibility surface. Architecture Decisions record why each call
+      was made. Source is on [GitHub](https://github.com/DeliveristsIO/open-loam).
   branding:
     site_title: Loam
+  tokens:
+    light:
+      "--vp-c-brand-1": "#3f6b4f"
+      "--vp-c-brand-2": "#4f7f5f"
+      "--vp-c-brand-3": "#2f5540"
+      "--vp-c-brand-soft": "rgba(63, 107, 79, 0.14)"
+      "--vp-c-bg": "#faf7f0"
+      "--vp-c-bg-alt": "#f2ede1"
+      "--vp-c-bg-soft": "#f2ede1"
+      "--vp-home-hero-name-color": "transparent"
+      "--vp-home-hero-name-background": "-webkit-linear-gradient(120deg, #3f6b4f 30%, #8a6d4f)"
+      "--vp-home-hero-image-background-image": "linear-gradient(-45deg, #4f7f5f 50%, #8a6d4f 50%)"
+    dark:
+      "--vp-c-brand-1": "#8fbf9f"
+      "--vp-c-brand-2": "#a8d1b5"
+      "--vp-c-brand-3": "#6fa382"
+      "--vp-c-brand-soft": "rgba(143, 191, 159, 0.16)"
+      "--vp-c-bg": "#141815"
+      "--vp-c-bg-alt": "#191d19"
+      "--vp-c-bg-soft": "#1c211d"
+      "--vp-home-hero-name-color": "transparent"
+      "--vp-home-hero-name-background": "-webkit-linear-gradient(120deg, #8fbf9f 30%, #c9a877)"
+      "--vp-home-hero-image-background-image": "linear-gradient(-45deg, #a8d1b5 50%, #c9a877 50%)"
   syntax:
     light_theme: github
     dark_theme: github.dark

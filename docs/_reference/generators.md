@@ -1,0 +1,109 @@
+---
+title: Generators
+description: The two real Loam generators — loam:install and loam:entity — with their actual options.
+nav_order: 2
+permalink: /reference/generators/
+---
+
+# Generators
+
+Loam ships exactly two generators. There is no third — every entity, whether
+hand-authored or agent-authored, goes through `loam:entity`; there is no
+separate "quick model" path.
+
+## `loam:install`
+
+```bash
+bin/rails g loam:install
+```
+
+Installs the foundation into a host Rails app, in order
+(`lib/generators/loam/install/install_generator.rb`):
+
+1. **Migrations** for every Loam-owned table (tenants, memberships, audit
+   records, field definitions, notifications, API tokens, webhook endpoints,
+   comments, configs, MFA credentials, pending actions, perspectives, record
+   locks, business rules, search tokens, SSO providers, dictionaries,
+   progress jobs, scheduled jobs, dashboard widgets, translations, auth
+   attempts, custom field values, event deliveries, inbound webhooks).
+2. **ActiveStorage install** (attachments need it — generated entities
+   `include Loam::Attachable`; skipped with a warning if ActiveStorage isn't
+   available).
+3. **A minimal `User` model** with `has_secure_password`.
+4. **`config/initializers/loam.rb`** — see [Configuration]({% link _reference/configuration.md %}).
+5. **`AGENTS.md`** at the app root — the contract. See
+   [The agent contract]({% link _agents/agent-contract.md %}).
+6. **The full admin surface** — controllers, views, and the
+   `namespace :admin do … end` route block (sessions, MFA, sudo, pending
+   actions, perspectives, business rules, SSO providers, dictionaries,
+   progress jobs, scheduled jobs, event deliveries, inbound webhook sources,
+   history/undo, imports, field definitions, notifications, webhook
+   endpoints, API tokens, comments, configs, features, search, API docs) plus
+   the public `POST /webhooks/:token` inbound receiver.
+7. **`app/controllers/api/base_controller.rb`** — the JSON API base.
+8. **`test/loam_guardrails_test.rb`** — the structural guardrail suite. See
+   [Guardrails]({% link _agents/guardrails.md %}).
+9. **Test-helper wiring** — if `test/test_helper.rb` exists, injects
+   `require "loam/test_helpers"` and `include Loam::TestHelpers`. If the app
+   was generated with `--skip-test`, this step is skipped with instructions
+   to wire it manually.
+
+No options. Re-running is safe for template files (Thor's default
+overwrite/skip prompt applies) but not idempotent for migrations — it's a
+once-per-app command.
+
+## `loam:entity`
+
+```bash
+bin/rails g loam:entity Equipment name:string daily_rate:decimal status:string --domain rental
+```
+
+**The** interface for adding a business entity — for humans and AI agents
+alike (`lib/generators/loam/entity/entity_generator.rb`). One command
+produces a tenant-scoped, audited, evented model, its policy, admin + API
+controllers and views, and the isolation tests that prove the guardrails
+hold.
+
+### Arguments
+
+- `NAME` — the entity's class name (e.g. `Equipment`).
+- `field:type field:type ...` — standard Rails attribute syntax, same as
+  `rails g model`.
+
+### Options
+
+| Flag | Default | Effect |
+|---|---|---|
+| `--domain STRING` | `"app"` | Event domain prefix — publishes as `<domain>.<entity>.<happened>` (e.g. `--domain rental` → `rental.equipment.created`). |
+| `--encrypt field field` | `[]` | Encrypt these fields at rest, per tenant (`Loam::Encryptable`). |
+| `--encrypt-searchable field field` | `[]` | Encrypt **and** add a blind index for exact-match lookup (`find_by_<field>` still works). |
+
+### What it generates
+
+- `db/migrate/create_<table>.rb`
+- `app/models/<name>.rb`
+- `app/policies/<name>_policy.rb`
+- `app/controllers/admin/<plural>_controller.rb` + full CRUD views (index,
+  show, new, edit, `_form`, and a `deleted` recycle-bin view)
+- `app/controllers/api/<plural>_controller.rb`
+- `test/entities/<name>_test.rb` — the generated guardrail/isolation tests
+  (tenant invisibility, missing-context raise, cross-tenant write rejection,
+  audit-on-create, event-on-create, soft-delete/restore, policy denial for a
+  non-member) — see the template at
+  `lib/generators/loam/entity/templates/entity_test.rb`.
+- Routes: `resources :<plural>` injected into the existing `namespace :admin`
+  block (with `deleted`/`restore`/`export`/`bulk` member/collection routes)
+  and into `namespace :api` (JSON format). Re-running the generator is a
+  no-op for routes already present.
+
+Only `string`/`text` columns become `searchable_by` targets automatically
+(and only if not encrypted — ciphertext isn't LIKE-able). A generated form
+field's input helper is chosen from the column type (`check_box` for
+boolean, `date_field` for date, `number_field` for integer/decimal/references,
+etc.).
+
+## Related pages
+
+- [Configuration]({% link _reference/configuration.md %})
+- [Guardrails]({% link _agents/guardrails.md %})
+- [Getting started]({% link _guides/getting-started.md %})

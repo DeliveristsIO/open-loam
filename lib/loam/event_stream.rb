@@ -12,7 +12,7 @@ module Loam
   # The default in-process broadcaster only sees events published in THIS process
   # — fine for the single-process prototype; a multi-process deploy swaps in a
   # Redis/SolidCable-backed broadcaster with no controller change (see
-  # docs/_guides/architecture.md).
+  # docs/_foundation/overview.md).
   module EventStream
     class << self
       attr_writer :broadcaster

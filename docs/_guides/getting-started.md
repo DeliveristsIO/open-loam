@@ -309,7 +309,7 @@ agent extends them the same way it extends anything else.
 - [`AGENTS.md`](https://github.com/DeliveristsIO/open-loam/blob/main/lib/generators/loam/install/templates/AGENTS.md) — the full
   contract, and the best one-page description of "the one way to do each thing".
 - [**Architecture map**](https://claude.ai/code/artifact/949311d3-5e14-4f07-a8ad-7b1bb5bd87ad) — a visual tour of the modules and how they connect.
-- [Architecture]({% link _guides/architecture.md %}) — how each pillar is built and why.
+- [How Loam works]({% link _foundation/overview.md %}) — how each pillar is built and why.
 - [Roadmap](https://github.com/DeliveristsIO/open-loam/blob/main/ROADMAP.md) — what's shipped and what's deliberately deferred.
 - [`demo/`](https://github.com/DeliveristsIO/open-loam/tree/main/demo) — a complete version of the app sketched above, with tests.
 - [Contributing](https://github.com/DeliveristsIO/open-loam/blob/main/CONTRIBUTING.md) — if you want to extend Loam itself.

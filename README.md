@@ -141,7 +141,7 @@ whole thesis in miniature.
 that proves the conventions and the agent flow. Swapping the proven gems back in
 *behind the same `Loam::` conventions* is the roadmap, not a reversal. Custom
 fields use the portable Rails `json` column (not Postgres `jsonb`/GIN) because
-the demo runs on SQLite. See [docs/architecture.md](docs/_guides/architecture.md) for
+the demo runs on SQLite. See [How Loam works](docs/_foundation/overview.md) for
 the pillar-by-pillar breakdown and the decisions behind them.
 
 **Try it**
@@ -163,8 +163,10 @@ showing the real commands and exactly what you *didn't* have to write.
 - [Getting started](docs/_guides/getting-started.md) — hands-on, install to first feature
 - [Investor overview](INVESTOR_OVERVIEW.md) — plain-language product, use cases, evidence, business model, and risks
 - [Concept & positioning](docs/_guides/concept.md)
-- [Architecture](docs/_guides/architecture.md) — the diagrams above + how every pillar is built
-- [Agent deep-dives](docs/_agents/) — encryption, SSO, scheduler, events, inbound webhooks, bulk, confirm-mode
+- [How Loam works](docs/_foundation/overview.md) — the diagrams above + how every pillar is built
+- [Tenant isolation](docs/_foundation/tenant-isolation.md) & [Authorization](docs/_foundation/authorization.md) — the two flagship guarantees, in depth
+- [Agents](docs/_agents/) — the agent contract, guardrails, the golden-tasks benchmark, and subsystem deep-dives (encryption, SSO, scheduler, events, inbound webhooks, bulk, confirm-mode)
+- [Reference](docs/_reference/) — configuration, generators, backward compatibility
 - [Roadmap](ROADMAP.md) — ordered backlog, Mercato-informed
 - [Backward-compatibility contract](BACKWARD_COMPATIBILITY.md) — the frozen public surfaces
 - [Architecture decisions](docs/_adr/) & [lessons](ai/lessons.md) — why things are the way they are, and the gotchas
