@@ -1,10 +1,10 @@
 ---
 title: Events — Ephemeral vs Durable
-description: "The two-tier subscriber contract (L-706): in-process ephemeral subscribers and persisted, retried durable ones."
+description: "The two-tier subscriber contract: in-process ephemeral subscribers and persisted, retried durable ones."
 nav_order: 2
 ---
 
-# Events — ephemeral vs durable subscribers (the L-706 contract)
+# Events — ephemeral vs durable subscribers
 
 Loam has one domain event bus and **two ways to subscribe**. They are not
 interchangeable; picking the wrong one is a correctness bug, so the contract is

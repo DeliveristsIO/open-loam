@@ -1,10 +1,10 @@
 ---
 title: MCP Server
-description: "The MCP server (L-302) that exposes Loam to an AI agent: read tenant-scoped data and propose writes for human approval."
+description: "The MCP server that exposes Loam to an AI agent: read tenant-scoped data and propose writes for human approval."
 nav_order: 1
 ---
 
-# MCP server — exposing Loam to an agent (L-302, tools-only v1)
+# MCP server — exposing Loam to an agent (tools-only v1)
 
 Loam ships an [MCP](https://modelcontextprotocol.io) server so an AI agent
 (Claude Code, Cursor, Codex) can work **inside** a Loam app safely: discover the
@@ -42,8 +42,8 @@ Every gate is a Loam gate reused, not a new one:
   API-exposed `TenantRecord` descendants, never a bare `constantize`.
 - **Read ACL** — `query_entity` emits only `policy.readable?` columns and readable
   custom fields (encrypted values decrypted, blind-index columns dropped); a
-  **filter on a field the role can't read is refused** (the L-711 inference-oracle
-  guard, one layer up), and sort/filter fields are whitelisted (L-401/L-711).
+  **filter on a field the role can't read is refused** (the inference-oracle
+  guard, one layer up), and sort/filter fields are whitelisted.
 - **Writes can't commit** — `stage_write` only stages a `PendingAction` (the
   confirm-mode approval gate). It accepts only policy-writable columns, refuses
   the workflow column (that goes through a transition), and refuses

@@ -25,7 +25,7 @@ API is the contract; its internals are replaceable.
 ## Consequences
 - Fewer moving parts to reason about while proving the thesis; every pillar is
   readable in one place.
-- Swapping a proven gem back in *behind the same convention* is a later refactor
-  (backlog L-201…L-204), not a reversal — the contract does not change.
+- Swapping a proven gem back in *behind the same convention* is a later refactor,
+  not a reversal — the contract does not change.
 - Some features are intentionally minimal (single-process SSE, deterministic HKDF
   keys) with the scaling seam documented, not faked.

@@ -3,7 +3,7 @@ title: Architecture Decisions
 permalink: /adr/
 ---
 
-# Architecture Decision Records (L-708)
+# Architecture Decision Records
 
 An ADR captures **one decision**: the context, the choice, and its consequences.
 They exist so a decision is made once, on purpose, and stays legible to the next

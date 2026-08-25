@@ -1,0 +1,46 @@
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+  function currentMermaidTheme() {
+    return document.documentElement.classList.contains("dark") ? "dark" : "default";
+  }
+
+  function collectBlocks() {
+    // kramdown emits ```mermaid fences as <pre><code class="language-mermaid">.
+    // Mermaid's runner expects the diagram source in a plain container, so swap
+    // each <pre> for a <div class="mermaid"> holding the untouched text.
+    var codes = document.querySelectorAll("pre > code.language-mermaid");
+    var sources = [];
+    codes.forEach(function (code) {
+      var pre = code.parentElement;
+      var div = document.createElement("div");
+      div.className = "mermaid";
+      div.textContent = code.textContent;
+      sources.push(div.textContent);
+      pre.replaceWith(div);
+    });
+    return sources;
+  }
+
+  var sources = collectBlocks();
+
+  function render() {
+    var divs = document.querySelectorAll("div.mermaid");
+    if (!divs.length) return;
+    divs.forEach(function (div, i) {
+      div.removeAttribute("data-processed");
+      div.textContent = sources[i];
+    });
+    mermaid.initialize({ startOnLoad: false, theme: currentMermaidTheme() });
+    mermaid.run({ nodes: divs });
+  }
+
+  if (sources.length) {
+    render();
+    // Re-render on light/dark toggle so diagram colors match the page.
+    new MutationObserver(render).observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+  }
+</script>

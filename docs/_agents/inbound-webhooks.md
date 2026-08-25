@@ -1,10 +1,10 @@
 ---
 title: Inbound Webhooks
-description: The public, HMAC-verified, replay-safe webhook receiver (L-710) that republishes onto the event bus.
+description: The public, HMAC-verified, replay-safe webhook receiver that republishes onto the event bus.
 nav_order: 8
 ---
 
-# Inbound webhooks — receiving events from external systems (L-710)
+# Inbound webhooks — receiving events from external systems
 
 The inbound sibling of `Loam::Webhooks` (which delivers events *out*). An external
 system POSTs to `/webhooks/:token`; Loam verifies it, dedupes replays, records it,

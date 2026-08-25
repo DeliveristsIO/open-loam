@@ -12,7 +12,7 @@ nav_order: 6
 ## Context
 
 ADR [0003]({% link _adr/0003-generated-erb-admin.md %}) chose a **generated ERB admin** over an
-admin framework, deferring an Avo evaluation to this spike (backlog L-403). The
+admin framework, deferring an Avo evaluation to this spike. The
 question: should Loam's admin be (re)built on [Avo](https://avohq.io), or stay
 generated ERB?
 
@@ -80,7 +80,7 @@ neither ships nor blocks that.
 ## Consequences
 
 - Loam keeps owning its admin code and its look — the incremental polish path
-  (shared stylesheet L-402, richer filters/widgets) continues.
+  (shared stylesheet, richer filters/widgets) continues.
 - No new core dependency; tenancy/policy stay enforced in first-party code.
 - Teams that want Avo's richness for non-core screens can add it deliberately,
   eyes open to the two integration points above.

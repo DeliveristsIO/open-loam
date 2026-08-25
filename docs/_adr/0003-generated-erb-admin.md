@@ -24,5 +24,5 @@ ordinary, readable Rails the app owns.
 - Zero admin dependency; an agent reads and extends normal controllers/views.
 - More generated code to maintain in templates, and fewer batteries than a mature
   admin gem.
-- Avo stays an evaluated alternative behind the same generated surface (backlog
-  L-403); the decision is revisitable per real usage.
+- Avo stays an evaluated alternative behind the same generated surface; the
+  decision is revisitable per real usage.

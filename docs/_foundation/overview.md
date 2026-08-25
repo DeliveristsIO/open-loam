@@ -48,13 +48,13 @@ AGENTS.md                agent conventions + guardrails (byte-budgeted)
 
 A polished, shareable version of these diagrams (plus the full module
 catalogue) lives as an [**architecture map**](https://claude.ai/code/artifact/949311d3-5e14-4f07-a8ad-7b1bb5bd87ad).
-The two graphs below are Mermaid — they render inline on GitHub; on this site
-they show as source until a diagram renderer is wired in.
+The two graphs below are Mermaid — they also render inline on GitHub.
 
 **The module map** — two things sit at the center: `Loam::TenantRecord` (the
 ground every model stands on) and the event bus (how modules talk without
 knowing about each other). An arrow reads as "feeds" or "builds on".
 
+{% raw %}
 ```mermaid
 flowchart TB
   TR{{"Loam::TenantRecord · isolation"}}:::core
@@ -103,12 +103,14 @@ flowchart TB
   classDef n fill:#FFFFFF,stroke:#C3B49C,color:#2A241C;
   classDef f fill:#EAF3F1,stroke:#2F6F6A,color:#1D3F3B;
 ```
+{% endraw %}
 
 **The event backbone** — publishing is cheap and knows nothing about who
 listens. Subscribers come in two contracts: *ephemeral* (in-process,
 best-effort) and *durable* (persisted, retried, at-least-once). External
 systems join the same bus from both directions.
 
+{% raw %}
 ```mermaid
 flowchart LR
   EXT[["external system"]]:::ext -->|"POST /webhooks/:token · HMAC · replay-safe"| IN["Inbound webhook"]:::f
@@ -135,6 +137,7 @@ flowchart LR
   classDef ok fill:#DDEBD9,stroke:#4B7A43,color:#274023;
   classDef warn fill:#F3E0CE,stroke:#B26A2E,color:#5A3413;
 ```
+{% endraw %}
 
 ## The pillars, briefly
 
