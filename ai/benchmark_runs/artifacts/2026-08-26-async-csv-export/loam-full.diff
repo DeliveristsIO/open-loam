@@ -1,0 +1,553 @@
+diff --git a/ai/lessons.md b/ai/lessons.md
+new file mode 100644
+index 0000000..48b9b32
+--- /dev/null
++++ b/ai/lessons.md
+@@ -0,0 +1,26 @@
++# Lessons
++
++Hindsight from building features in this app. The ADRs under `docs/adr/` are the
++intent; this is what was actually learned doing it.
++
++## Async CSV export (docs/adr/0001-async-customer-csv-export.md)
++
++- **`Loam::ProgressJob#result` is the parking spot for a job's output**, not just
++  a summary. Using it for the export CSV meant no migration and no new entity,
++  and it inherits tenant scoping — the download action is a plain `find`, and a
++  foreign id is a 404 for free.
++- **Reach for `Loam::Export.csv` even when the spec names three columns.** It
++  carries the policy read-filter, the `[encrypted]` redaction and
++  `Loam::Csv.safe`. A hand-written three-column CSV silently drops all three.
++- **`Loam::Export.csv` batches with `find_each`**, which discards any order on
++  the relation and logs a warning. Pass it an unordered scope (`by_status`
++  alone); the index's `.ordered` is for the screen, not the file.
++- **Watch substring assertions on seed data.** `active@acme.test` is a substring
++  of `inactive@acme.test`, so `assert_no_match` on a raw CSV body passes when the
++  filter is broken. Parse the CSV and compare values instead.
++- **Minitest 6 (Rails 8.1) ships no `stub`/`mock`** — `require "minitest/mock"`
++  raises LoadError. Swap a seam by hand with `define_singleton_method` and
++  restore it in an `ensure`, rather than adding a gem.
++- **A member must be refused over HTTP, not just shown no button.** Both the
++  start and the download actions carry `require_role!(:manager)`, and the tests
++  assert 403 on the request itself.
+diff --git a/app/controllers/admin/customers_controller.rb b/app/controllers/admin/customers_controller.rb
+index becf589..4d56671 100644
+--- a/app/controllers/admin/customers_controller.rb
++++ b/app/controllers/admin/customers_controller.rb
+@@ -24,6 +24,42 @@ module Admin
+       @perspectives = Loam::Perspectives.visible_to("Customer", user: current_actor)
+       @records, @page, @has_next = paginate(index_scope)
+       @index_partial = params[:cf_field].present? && Loam::CustomFieldIndex.partial?  # incomplete-index warning (L-919)
++      @exports = recent_exports
++    end
++
++    # Start an asynchronous CSV of the CURRENT status filter. Manager-only, the
++    # same gate every other privileged bulk operation here uses (import, and the
++    # generator's own export) — and enforced server-side, so hiding the button
++    # from a member is presentation, not the control.
++    #
++    # The work is handed to CustomerExportJob rather than streamed from this
++    # request: a tenant with a large customer list would otherwise hold the
++    # connection open for the whole file. The manager watches it under Tasks and
++    # downloads it from this page when it finishes.
++    def export
++      require_role!(:manager)
++      authorize!(policy_for(Customer.new), :read?)
++      # permitted_status, not the raw param: the job is handed a value the model
++      # declares, so a crafted ?status= narrows nothing there either.
++      CustomerExportJob.perform_later(status: permitted_status, tenant_id: current_tenant.id, actor_id: current_actor.id)
++      redirect_to polymorphic_path([:admin, Customer], **current_index_params), notice: t("customers.export.started")
++    end
++
++    # Hand back a finished export's CSV. Loam::ProgressJob is a TenantRecord, so
++    # `find` already cannot reach another tenant's export — a foreign id is a 404,
++    # not a leak, and there is no signed URL to pass around.
++    def download_export
++      require_role!(:manager)
++      job = Loam::ProgressJob.find(params[:id])
++      # A ProgressJob that isn't one of ours is not this resource at all.
++      raise ActiveRecord::RecordNotFound unless job.key == CustomerExportJob::KEY
++
++      csv = job.result&.dig("csv")
++      if csv.blank?
++        redirect_to polymorphic_path([:admin, Customer]), alert: t("customers.export.not_ready")
++      else
++        send_data csv, filename: job.result["filename"].presence || "customers.csv", type: "text/csv"
++      end
+     end
+ 
+     # Datatable bulk actions on the selected ids — each is policy-checked per
+@@ -123,6 +159,14 @@ module Admin
+       @record = Customer.find(params[:id])
+     end
+ 
++    # The exports this manager can pick up, newest first. Tenant-scoped by
++    # Loam::TenantRecord, and only computed for the role allowed to start one.
++    def recent_exports
++      return [] unless current_role == :manager
++
++      Loam::ProgressJob.where(key: CustomerExportJob::KEY).recent.limit(5)
++    end
++
+     # The scope the index shows. It starts from `Customer.all`, which is already
+     # tenant-scoped by Loam::TenantRecord — every filter below narrows that, and
+     # none of them can widen it.
+diff --git a/app/jobs/customer_export_job.rb b/app/jobs/customer_export_job.rb
+new file mode 100644
+index 0000000..a5a5d2e
+--- /dev/null
++++ b/app/jobs/customer_export_job.rb
+@@ -0,0 +1,45 @@
++# Builds the customers CSV in the background, advancing a Loam::ProgressJob so the
++# manager watches it under Tasks (L-915) — the same shape as ImportJob, which is
++# the app's other long-running bulk operation. Carries tenant + actor explicitly,
++# like every Loam job: a job runs with no request context, so the tenant it must
++# read has to be re-established rather than inherited.
++#
++# The finished file is parked on the ProgressJob's `result` (the column exists for
++# exactly this — "structured result for a finished job"), so downloading it later
++# is a tenant-scoped row lookup and never an unguarded blob URL.
++class CustomerExportJob < ApplicationJob
++  queue_as :default
++
++  # Marks the ProgressJob rows this feature owns, so the customers page can list
++  # its own exports without picking up imports or reindexes.
++  KEY = "export:Customer".freeze
++
++  def perform(status:, tenant_id:, actor_id:)
++    tenant = Loam::Tenant.find(tenant_id)
++    actor = User.find_by(id: actor_id)
++
++    Loam.as_tenant(tenant, actor: actor) do
++      # Already tenant-scoped by Loam::TenantRecord; by_status narrows that scope
++      # and, with a blank status, narrows nothing. No order: Loam::Export batches
++      # with find_each, which forces its own.
++      scope = Customer.by_status(status)
++      progress = Loam::Progress.start(name: "Export customers", total: scope.count, key: KEY)
++
++      begin
++        # Policy- and encryption-aware, with CSV formula injection neutralized —
++        # the one way this app turns a relation into a CSV.
++        csv = Loam::Export.csv(scope, actor: actor)
++        progress.update_columns(result: { "csv" => csv, "filename" => filename(status), "status" => status })
++        progress.complete!
++      rescue StandardError => error
++        progress.fail!(error.message)
++      end
++    end
++  end
++
++  private
++
++  def filename(status)
++    "customers-#{status.presence || 'all'}-#{Date.current}.csv"
++  end
++end
+diff --git a/app/views/admin/customers/index.html.erb b/app/views/admin/customers/index.html.erb
+index af641f0..f8db40b 100644
+--- a/app/views/admin/customers/index.html.erb
++++ b/app/views/admin/customers/index.html.erb
+@@ -8,10 +8,33 @@
+   <%= link_to t("loam.actions.new", name: Customer.model_name.human), new_polymorphic_path([:admin, Customer]) %>
+   <%= link_to t("loam.actions.deleted", name: Customer.model_name.human(count: 2)), polymorphic_path([:deleted, :admin, Customer]) %>
+   <% if current_role == :manager %>
++    <%# Starting an export is a POST: it enqueues work, so it must not be a link
++        a crawler (or a prefetch) can fire. The gate is in the controller —
++        hiding the button from a member is only the tidy half of it. %>
++    <%= button_to t("loam.actions.export_csv"), export_admin_customers_path(status: @status), form: { style: "display:inline" } %>
+     <%= link_to t("loam.actions.import_csv"), new_admin_import_path(entity_type: "Customer") %>
+   <% end %>
+ </p>
+ 
++<%# Finished exports, newest first (Loam::ProgressJob rows this page owns). The
++    list is tenant-scoped by the model, and @exports is empty for a member. %>
++<% if @exports.present? %>
++  <section class="customer-exports">
++    <h2><%= t("customers.export.recent") %></h2>
++    <ul>
++      <% @exports.each do |job| %>
++        <li id="<%= dom_id(job) %>">
++          <%= job.started_at&.to_fs(:short) %> —
++          <%= t("customers.export.status.#{job.status}", default: job.status) %>
++          <% if job.result&.dig("csv").present? %>
++            <%= link_to t("customers.export.download"), download_export_admin_customers_path(id: job.id) %>
++          <% end %>
++        </li>
++      <% end %>
++    </ul>
++  </section>
++<% end %>
++
+ <nav class="status-filters">
+   <%# @status is the filter the controller actually accepted, not the raw param. %>
+   <%= link_to "All", customers_path, class: ("active" if @status.blank?) %>
+diff --git a/config/locales/en.yml b/config/locales/en.yml
+index 6c349ae..90da8e7 100644
+--- a/config/locales/en.yml
++++ b/config/locales/en.yml
+@@ -29,3 +29,16 @@
+ 
+ en:
+   hello: "Hello world"
++  # The customers page's own strings. Loam's chrome (Export CSV, Import CSV, the
++  # table) comes from the gem's loam.* keys; only what this app adds lives here.
++  customers:
++    export:
++      started: "Export started — it will appear under Recent exports when it finishes."
++      recent: "Recent exports"
++      download: "Download CSV"
++      not_ready: "That export is not finished yet."
++      status:
++        running: "in progress"
++        completed: "ready"
++        failed: "failed"
++        cancelled: "cancelled"
+diff --git a/config/routes.rb b/config/routes.rb
+index ef4e64f..0b7bf94 100644
+--- a/config/routes.rb
++++ b/config/routes.rb
+@@ -4,6 +4,8 @@ Rails.application.routes.draw do
+       get :deleted, on: :collection
+       patch :restore, on: :member
+       post :bulk, on: :collection    # datatable bulk actions
++      post :export, on: :collection          # start the background CSV export
++      get :download_export, on: :collection  # pick up a finished export
+     end
+     root "dashboard#index"
+     resource :session, only: %i[new create destroy] do
+diff --git a/docs/adr/0001-async-customer-csv-export.md b/docs/adr/0001-async-customer-csv-export.md
+new file mode 100644
+index 0000000..907ec09
+--- /dev/null
++++ b/docs/adr/0001-async-customer-csv-export.md
+@@ -0,0 +1,51 @@
++# 0001. Asynchronous customer CSV export
++
++- Status: Accepted
++- Date: 2026-08-26
++
++## Context
++Managers need the customers matching the page's status filter as a CSV. Loam
++already ships `Loam::Export.csv` (policy-aware, encrypted columns redacted,
++formula injection neutralized by `Loam::Csv.safe`) and the entity generator wires
++it to a synchronous, manager-only `export` action. This app's customers page had
++no export at all, and the requirement is explicitly asynchronous: generate in a
++background job, download when it finishes.
++
++Three questions had to be answered: where the CSV lives between "generated" and
++"downloaded", what makes the CSV, and who may do either.
++
++## Decision
++- **Generation** is `CustomerExportJob`, shaped like the existing `ImportJob`: it
++  is handed `tenant_id` / `actor_id` and re-establishes both with
++  `Loam.as_tenant`, because a job inherits no request context.
++- **Progress and storage** are one row: `Loam::Progress.start(..., key: "export:Customer")`
++  reports the task under `/admin/progress_jobs`, and the finished CSV is written
++  to that `Loam::ProgressJob`'s `result` column — which exists for exactly this
++  ("structured result for a finished job", the same place `ImportJob` puts its
++  summary). No migration, no new table, no new entity.
++- **The CSV** is `Loam::Export.csv`, not a hand-rolled three-column writer. It
++  contains name, email and status plus the entity's other readable columns,
++  which is what the generator's own export produces. Hand-rolling would have
++  meant re-implementing the policy filter, the encryption redaction and the
++  formula-injection defense, or silently dropping them.
++- **Download** is `Admin::CustomersController#download_export`, which finds the
++  `Loam::ProgressJob` by id. `Loam::ProgressJob` is a `Loam::TenantRecord`, so
++  another tenant's export is a 404 rather than a leak.
++- **Permission** is `require_role!(:manager)` on both actions — the same gate the
++  generator puts on export and `Admin::ImportsController` puts on import.
++  Hiding the button from a member is presentation; the refusal is server-side.
++
++## Consequences
++- Zero schema change, and the diff is one job, two controller actions, two
++  routes, a view block and locale keys.
++- Tenant isolation and the role gate are properties of the model and the
++  controller, not of anything an agent has to remember at the call site.
++- The whole CSV is held in memory and then in a JSON column, which is the same
++  prototype-scale tradeoff `Loam::Export` already documents. Revisit when an
++  export outgrows a row: the replacement is streaming the job's output into an
++  ActiveStorage blob owned by a record whose policy gates it — never a bare
++  signed URL, per AGENTS.md.
++- Rejected: a generated `CustomerExport` entity (drags an admin CRUD screen, a
++  JSON API and OpenAPI surface behind task output that is not business data),
++  and attaching the file to the gem's `Loam::ProgressJob` (would mean editing
++  the framework).
+diff --git a/test/integration/customers_export_test.rb b/test/integration/customers_export_test.rb
+new file mode 100644
+index 0000000..33bb404
+--- /dev/null
++++ b/test/integration/customers_export_test.rb
+@@ -0,0 +1,180 @@
++require "test_helper"
++
++# The asynchronous CSV export on the customers page, seen through each role in
++# each tenant. Two things are being proved beyond "it produces a file": a member
++# is refused over HTTP (not merely shown no button), and a finished export is
++# unreachable from another tenant — the file is a tenant-scoped row, not a URL
++# that works for whoever holds it.
++class CustomersExportTest < ActionDispatch::IntegrationTest
++  setup { setup_ops_desk_data }
++
++  test "a manager starts an export and is sent back to the filtered page" do
++    sign_in_as @alice
++
++    assert_enqueued_with(job: CustomerExportJob, args: [ { status: "active", tenant_id: @acme.id, actor_id: @alice.id } ]) do
++      post export_admin_customers_path(status: "active")
++    end
++
++    assert_redirected_to admin_customers_path(status: "active")
++  end
++
++  test "an unrecognized status filter is dropped before it reaches the job" do
++    sign_in_as @alice
++
++    assert_enqueued_with(job: CustomerExportJob, args: [ { status: nil, tenant_id: @acme.id, actor_id: @alice.id } ]) do
++      post export_admin_customers_path(status: "bogus")
++    end
++  end
++
++  test "a member may not start an export" do
++    sign_in_as @bob
++
++    assert_no_enqueued_jobs(only: CustomerExportJob) do
++      post export_admin_customers_path(status: "active")
++    end
++
++    assert_response :forbidden
++  end
++
++  test "a signed-out visitor may not start an export" do
++    assert_no_enqueued_jobs(only: CustomerExportJob) do
++      post export_admin_customers_path
++    end
++
++    assert_redirected_to new_admin_session_path
++  end
++
++  test "the finished CSV carries the filtered customers, and only this tenant's" do
++    sign_in_as @alice
++    perform_enqueued_jobs { post export_admin_customers_path(status: "active") }
++
++    get download_export_admin_customers_path(id: completed_export.id)
++
++    assert_response :success
++    assert_equal "text/csv", response.media_type
++
++    table = CSV.parse(response.body, headers: true)
++    assert_includes table.headers, "name"
++    assert_includes table.headers, "email"
++    assert_includes table.headers, "status"
++    # Parsed rows, not a substring match on the body: "active@acme.test" is a
++    # substring of "inactive@acme.test", so a regex would pass either way.
++    assert_equal [ @acme_active.email ], table.map { |row| row["email"] },
++      "the export must carry the filtered rows of this tenant and nothing else"
++    assert_equal [ @acme_active.name ], table.map { |row| row["name"] }
++    assert_equal [ "active" ], table.map { |row| row["status"] }
++  end
++
++  test "an unfiltered export carries every customer of this tenant" do
++    sign_in_as @alice
++    perform_enqueued_jobs { post export_admin_customers_path }
++
++    get download_export_admin_customers_path(id: completed_export.id)
++
++    assert_response :success
++    assert_equal [ @acme_active.email, @acme_inactive.email ].sort, exported_emails.sort
++  end
++
++  test "the download is offered as a file, not rendered inline" do
++    sign_in_as @alice
++    perform_enqueued_jobs { post export_admin_customers_path(status: "inactive") }
++
++    get download_export_admin_customers_path(id: completed_export.id)
++
++    assert_match(/attachment/, response.headers["Content-Disposition"])
++    assert_match(/customers-inactive-#{Date.current}\.csv/, response.headers["Content-Disposition"])
++  end
++
++  test "a member may not download an export a manager produced" do
++    sign_in_as @alice
++    perform_enqueued_jobs { post export_admin_customers_path }
++    export = completed_export
++    sign_out
++
++    sign_in_as @bob
++    get download_export_admin_customers_path(id: export.id)
++
++    assert_response :forbidden
++  end
++
++  test "another tenant's manager cannot download this tenant's export" do
++    sign_in_as @alice
++    perform_enqueued_jobs { post export_admin_customers_path }
++    export = completed_export
++    sign_out
++
++    sign_in_as @eve
++    get download_export_admin_customers_path(id: export.id)
++
++    assert_response :not_found
++  end
++
++  test "a progress job that is not a customer export is not downloadable here" do
++    other = with_tenant(@acme, actor: @alice) { Loam::Progress.start(name: "Something else", total: 1) }
++    sign_in_as @alice
++
++    get download_export_admin_customers_path(id: other.id)
++
++    assert_response :not_found
++  end
++
++  test "an export that has not finished sends the manager back, not a broken file" do
++    sign_in_as @alice
++    post export_admin_customers_path # enqueued, never performed
++    running = with_tenant(@acme) { Loam::ProgressJob.create!(name: "Export customers", key: CustomerExportJob::KEY, total: 2, started_at: Time.current) }
++
++    get download_export_admin_customers_path(id: running.id)
++
++    assert_redirected_to admin_customers_path
++  end
++
++  test "a manager sees the export button and a finished export to download" do
++    sign_in_as @alice
++    perform_enqueued_jobs { post export_admin_customers_path }
++
++    get customers_path
++
++    assert_response :success
++    assert_select "form[action=?]", export_admin_customers_path
++    assert_select "a[href=?]", download_export_admin_customers_path(id: completed_export.id)
++  end
++
++  test "a member is offered neither the export button nor a download" do
++    sign_in_as @alice
++    perform_enqueued_jobs { post export_admin_customers_path }
++    export = completed_export
++    sign_out
++
++    sign_in_as @bob
++    get customers_path
++
++    assert_response :success
++    assert_select "form[action=?]", export_admin_customers_path, false
++    assert_select "a[href=?]", download_export_admin_customers_path(id: export.id), false
++  end
++
++  test "a manager does not see another tenant's exports listed" do
++    sign_in_as @alice
++    perform_enqueued_jobs { post export_admin_customers_path }
++    acme_export = completed_export
++    sign_out
++
++    sign_in_as @eve
++    get customers_path
++
++    assert_response :success
++    assert_select "a[href=?]", download_export_admin_customers_path(id: acme_export.id), false
++  end
++
++  private
++
++  # The export this request produced. Read from inside the tenant, because
++  # Loam::ProgressJob is tenant-scoped like everything else.
++  def completed_export(tenant = @acme)
++    with_tenant(tenant) { Loam::ProgressJob.where(key: CustomerExportJob::KEY).recent.first }
++  end
++
++  def exported_emails
++    CSV.parse(response.body, headers: true).map { |row| row["email"] }
++  end
++end
+diff --git a/test/jobs/customer_export_job_test.rb b/test/jobs/customer_export_job_test.rb
+new file mode 100644
+index 0000000..df43c6e
+--- /dev/null
++++ b/test/jobs/customer_export_job_test.rb
+@@ -0,0 +1,87 @@
++require "test_helper"
++
++# The job itself, away from the HTTP layer: it must re-establish the tenant it
++# was handed (a job inherits no request context), report itself under Tasks, and
++# park a downloadable CSV on the finished Loam::ProgressJob.
++class CustomerExportJobTest < ActiveSupport::TestCase
++  setup { setup_ops_desk_data }
++
++  test "it exports the tenant it was given, not the one that happened to be current" do
++    CustomerExportJob.perform_now(status: nil, tenant_id: @globex.id, actor_id: @eve.id)
++
++    assert_equal [ @globex_secret.email ], exported_emails(@globex)
++  end
++
++  test "it leaves no tenant behind in Loam::Current" do
++    CustomerExportJob.perform_now(status: nil, tenant_id: @acme.id, actor_id: @alice.id)
++
++    assert_nil Loam::Current.tenant
++  end
++
++  test "the status filter narrows the exported rows" do
++    CustomerExportJob.perform_now(status: "inactive", tenant_id: @acme.id, actor_id: @alice.id)
++
++    # Compared as parsed values, not a substring match: "active@acme.test" is a
++    # substring of "inactive@acme.test", so a regex would pass either way.
++    assert_equal [ @acme_inactive.email ], exported_emails(@acme)
++  end
++
++  test "the CSV carries name, email and status" do
++    CustomerExportJob.perform_now(status: "active", tenant_id: @acme.id, actor_id: @alice.id)
++
++    table = CSV.parse(export_for(@acme).result["csv"], headers: true)
++
++    assert_includes table.headers, "name"
++    assert_includes table.headers, "email"
++    assert_includes table.headers, "status"
++    row = table.find { |r| r["email"] == @acme_active.email }
++    assert row, "the exported customer should be in the file"
++    assert_equal @acme_active.name, row["name"]
++    assert_equal "active", row["status"]
++  end
++
++  test "it reports itself as a finished task, attributed to the manager who asked" do
++    CustomerExportJob.perform_now(status: nil, tenant_id: @acme.id, actor_id: @alice.id)
++
++    job = export_for(@acme)
++
++    assert_equal "completed", job.status
++    assert_equal 100, job.percent
++    assert_equal 2, job.total
++    assert_equal @alice.id, job.actor_id
++    assert_equal "customers-all-#{Date.current}.csv", job.result["filename"]
++  end
++
++  test "a failure is recorded on the task instead of raising into the queue" do
++    failing_export do
++      CustomerExportJob.perform_now(status: nil, tenant_id: @acme.id, actor_id: @alice.id)
++    end
++
++    job = export_for(@acme)
++
++    assert_equal "failed", job.status
++    assert_equal "boom", job.error
++  end
++
++  private
++
++  # Loam::ProgressJob is tenant-scoped, so its rows are only readable from inside
++  # the tenant the job ran in.
++  def export_for(tenant)
++    with_tenant(tenant) { Loam::ProgressJob.where(key: CustomerExportJob::KEY).recent.first }
++  end
++
++  def exported_emails(tenant)
++    CSV.parse(export_for(tenant).result["csv"], headers: true).map { |row| row["email"] }
++  end
++
++  # Minitest 6 ships no stub/mock, so the seam is swapped by hand and restored in
++  # an ensure — the alternative is a gem this app does not need.
++  def failing_export
++    original = Loam::Export.method(:csv)
++    Loam::Export.define_singleton_method(:csv) { |*, **| raise "boom" }
++    yield
++  ensure
++    Loam::Export.define_singleton_method(:csv, original)
++  end
++end

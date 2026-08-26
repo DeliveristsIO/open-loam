@@ -145,6 +145,34 @@ being paid per task, not a virtue.
 - A third baseline — vanilla Rails built by a human, not an agent — is still
   unmeasured.
 
+## Run 3: asynchronous CSV export — correctness tie, less Loam plumbing
+
+An additional [single-task A/B run](https://github.com/DeliveristsIO/open-loam/blob/main/ai/benchmark_runs/2026-08-26-async-csv-export.md)
+started from two established, tenant-safe applications and asked both feature
+agents to add the same manager-only asynchronous Customer CSV export. A hidden
+behavioral evaluator exercised the real HTTP, job, and download paths with 76
+assertions, including cross-tenant export and download attacks.
+
+| | Loam + AI | Vanilla + AI |
+|---|---:|---:|
+| Hidden evaluator | PASS (76/76 assertions) | PASS (76/76 assertions) |
+| Files changed | 9 | 18 |
+| Insertions / deletions | +471 / -0 | +477 / -8 |
+| New model / migration / dependency | None | All three |
+
+This result is deliberately reported as a **correctness tie**, not a Loam win:
+both implementations were secure and complete. Loam's evidence here is reduced
+architectural surface. Its agent reused `Loam::ProgressJob`, `Loam::Export`,
+tenant context, and policy conventions instead of introducing a new export
+model and table. Raw insertions stayed nearly equal because both sides wrote
+large test suites and the Loam agent also wrote architecture documentation.
+
+The asymmetry is material: Loam's generator already shipped a synchronous CSV
+export, so the Loam agent extended existing machinery rather than starting from
+zero. The harness also did not record model identity or development time. The
+[full run report](https://github.com/DeliveristsIO/open-loam/blob/main/ai/benchmark_runs/2026-08-26-async-csv-export.md)
+publishes these caveats and both complete patches.
+
 ## What this does and doesn't show
 
 It shows that, under identical prompts and the same model, an agent working
