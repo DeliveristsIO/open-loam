@@ -1,0 +1,50 @@
+{
+  "ignored_warnings": [
+    {
+      "warning_type": "Remote Code Execution",
+      "fingerprint": "aa16da871e5b3fbc6c3b4d29501e17beffc99c42df11f720797ba1dc469ebf7d",
+      "check_name": "UnsafeReflection",
+      "message": "Unsafe reflection method `safe_constantize` called on parameter value",
+      "file": "app/controllers/admin/comments_controller.rb",
+      "line": 30,
+      "note": "safe_constantize's result is checked immediately after: `klass.is_a?(Class) && klass < Loam::TenantRecord && klass.include?(Loam::Commentable)`, raising Loam::NotAuthorizedError otherwise. Brakeman can't see the runtime allowlist check that follows; this is the same guarded pattern used by history_controller.rb and record_locks_controller.rb (see their ignore entries below)."
+    },
+    {
+      "warning_type": "Remote Code Execution",
+      "fingerprint": "753a397b8148afe64e899136b891bb9d9dbc37476f1c2ad7bc692693b3df5420",
+      "check_name": "UnsafeReflection",
+      "message": "Unsafe reflection method `safe_constantize` called on parameter value",
+      "file": "app/controllers/admin/history_controller.rb",
+      "line": 31,
+      "note": "safe_constantize's result is checked immediately after: `raise Loam::NotAuthorizedError unless klass.is_a?(Class) && klass < Loam::TenantRecord`. Only a real Loam entity class can ever be returned to the caller; anything else raises before it's used."
+    },
+    {
+      "warning_type": "Remote Code Execution",
+      "fingerprint": "fa5f4140a3cf5ca379a300dcd9a1f1f5a49c8915597028e6f1cdd53ee8957dd4",
+      "check_name": "UnsafeReflection",
+      "message": "Unsafe reflection method `safe_constantize` called on parameter value",
+      "file": "app/controllers/admin/record_locks_controller.rb",
+      "line": 10,
+      "note": "safe_constantize's result is checked immediately after: `raise Loam::NotAuthorizedError unless klass && klass < Loam::TenantRecord`, and the action itself is already gated to managers only (`before_action { require_role!(:manager) }`)."
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "fingerprint": "b358a12c7a3bc740ccce32e92deb7ad02639a780da36343d9a8a2095b53dd1b7",
+      "check_name": "PermitAttributes",
+      "message": "Potentially dangerous key allowed for mass assignment",
+      "file": "app/controllers/admin/perspectives_controller.rb",
+      "line": 81,
+      "note": "`:role` here is Loam::Perspective#role — which membership role a SAVED VIEW (filters/sort/columns) is shared with, not the current user's own role. `authorize_manage!` already restricts update to the view's owner (always) or a manager (for shared views); the model docs and controller comments confirm an owner reassigning their own view's sharing audience is the intended behavior, not a privilege escalation. Brakeman flags the attribute name `:role` heuristically regardless of what it actually controls."
+    },
+    {
+      "warning_type": "HTTP Verb Confusion",
+      "fingerprint": "f805fd34dbae23ef561a0fc6b8afa9000d6fd3ecc983e193b24fc178952d4c00",
+      "check_name": "VerbConfusion",
+      "message": "Potential HTTP verb confusion. `HEAD` is routed like `GET` but `request.get?` will return `false`",
+      "file": "app/controllers/admin/base_controller.rb",
+      "line": 180,
+      "note": "Only affects which URL a post-sudo-challenge redirect returns to (request.fullpath vs request.referer) — not an authorization check. A HEAD request taking the referer branch is a UX quirk (wrong redirect target), not a security issue; sudo re-authentication itself is unaffected either way."
+    }
+  ],
+  "updated": "2026-08-26 09:50:31 +0000"
+}

@@ -46,6 +46,12 @@ jobs:
           working-directory: demo
           bundler-cache: true
 
+      - name: Lint (Rubocop)
+        run: bin/rubocop
+
+      - name: Security scan (Brakeman)
+        run: bin/brakeman -q --ensure-ignore-notes --ensure-no-obsolete-ignore-entries
+
       - name: Prepare database
         run: bin/rails db:migrate db:seed
 
