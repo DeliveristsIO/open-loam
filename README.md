@@ -1,5 +1,11 @@
 # Loam 🌱
 
+**In short:** Loam is a Rails starter kit for business apps — multi-tenancy,
+permissions, audit trails, workflows, and an event bus already built in, so you
+skip months of plumbing and start on real features. It's also AI-native:
+convention-driven code that AI coding agents (Claude Code, Codex, etc.) can
+safely extend, with human-approval gates before any agent write takes effect.
+
 **The fertile Rails foundation where AI agents grow business software.**
 
 Loam is an opinionated, AI-native application foundation for Ruby on Rails.
