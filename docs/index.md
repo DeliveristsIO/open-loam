@@ -1,12 +1,12 @@
 ---
 layout: home
-title: A secure Rails foundation for humans and coding agents
-description: Loam pre-decides the 80% every business app shares — multi-tenancy, roles and field-level permissions, audit trails, a domain event bus, an admin surface — so humans and AI agents build the 20% that's the actual business.
+title: A Rails foundation for AI-built business apps
+description: Loam is a Rails starter kit for business apps — multi-tenancy, permissions, audit trails, and an event bus already built in, so you skip months of plumbing and start on real features. It's also AI-native, with human-approval gates before any agent write takes effect.
 permalink: /
 hero:
   name: Loam
-  text: A secure Rails foundation for humans and coding agents
-  tagline: Tenant isolation, authorization, and audit hold by construction — not because a ticket happened to ask for them. Multi-tenancy, roles and field-level permissions, an event backbone, and an admin surface come already decided, so the diff is the business, not the foundation.
+  text: A Rails foundation for AI-built business apps
+  tagline: Multi-tenancy, roles and permissions, audit trails, and an event bus — already built in, so you skip months of plumbing and build the actual business. AI agents can extend it safely too — every write they propose waits for human approval before it takes effect.
   code_panel:
     - title: Install
       link: /getting-started/
