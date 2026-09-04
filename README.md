@@ -8,16 +8,6 @@ safely extend, with human-approval gates before any agent write takes effect.
 
 **The fertile Rails foundation where AI agents grow business software.**
 
-Loam is an opinionated, AI-native application foundation for Ruby on Rails.
-Multi-tenancy, roles and permissions, an event backbone, custom entities, audit
-trails, and an admin surface come **already decided** — as conventions, not
-choices you re-litigate on every project. You bring the business; Loam is the
-soil it grows in.
-
-> Most app frameworks hand you a bag of seeds and an empty field. Loam hands you
-> ground that's already rich — tenancy, permissions, events, auditing — so the
-> first thing you plant is a *feature*, not plumbing.
-
 ---
 
 ## Why Loam exists
