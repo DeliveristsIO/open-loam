@@ -521,14 +521,13 @@ Companies that need custom systems
     ↓
 Deliverists
     ↓
-€20k–150k+ implementations
+client implementations
 ```
 
 Loam should make Deliverists:
 
 - faster
 - more repeatable
-- more profitable
 - easier to differentiate from a typical software house
 
 ---
@@ -551,8 +550,6 @@ Potential projects:
 - custom B2B platform
 
 The client receives custom software.
-
-Deliverists receives revenue.
 
 Loam receives production testing and reusable improvements.
 
@@ -577,17 +574,18 @@ Potential paid features:
 - architecture review
 - production support
 
-Possible pricing to test:
+Possible packaging to test:
 
-| Product | Pricing hypothesis |
-|---|---:|
+| Product | Shape |
+|---|---|
 | Loam Core | Free / MIT |
-| Loam Enterprise | €10k–25k / year |
-| Support | €1k–3k / month |
-| Implementation | €20k–150k+ |
-| Architecture / AI customization | project-based |
+| Loam Enterprise | Annual subscription |
+| Support | Retainer |
+| Implementation | Per project |
+| Architecture / AI customization | Per project |
 
-These should be treated as hypotheses and validated with customers.
+These are packaging hypotheses, not offers. Nothing here is priced until
+customer discovery says what the shape is worth.
 
 ---
 
@@ -693,7 +691,8 @@ If not:
 
 If not, Loam may still be valuable as an internal accelerator.
 
-That outcome can still make business sense if it materially increases Deliverists margins.
+That outcome can still make business sense if it materially improves how
+Deliverists delivers client work.
 
 ---
 

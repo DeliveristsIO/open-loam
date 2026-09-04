@@ -157,7 +157,7 @@ showing the real commands and exactly what you *didn't* have to write.
 
 - [**Architecture map**](https://claude.ai/code/artifact/949311d3-5e14-4f07-a8ad-7b1bb5bd87ad) — a visual tour: the module graph, a request lifecycle, the event flow
 - [Getting started](docs/_guides/getting-started.md) — hands-on, install to first feature
-- [Investor overview](INVESTOR_OVERVIEW.md) — plain-language product, use cases, evidence, business model, and risks
+- [Overview](OVERVIEW.md) — plain-language product, use cases, evidence, and risks
 - [Concept & positioning](docs/_guides/concept.md)
 - [How Loam works](docs/_foundation/overview.md) — the diagrams above + how every pillar is built
 - [Tenant isolation](docs/_foundation/tenant-isolation.md) & [Authorization](docs/_foundation/authorization.md) — the two flagship guarantees, in depth

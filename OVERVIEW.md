@@ -1,4 +1,4 @@
-# Loam — Investor Overview
+# Loam — Overview
 
 ## Executive summary
 
@@ -182,21 +182,16 @@ The project should still be evaluated as a prototype. Its breadth and tests show
 that the architecture is coherent; they do not yet prove customer demand,
 production reliability at scale, or a measurable reduction in delivery cost.
 
-## Business model under consideration
+## Direction
 
-The proposed model is open core:
+The intended shape is open core: Loam Core stays MIT-licensed and self-hostable,
+with room later for optional governance, compliance, and support offerings, a
+managed option for teams that would rather not operate it, and distributable
+domain packs.
 
-- Loam Core remains MIT-licensed and self-hostable, supporting adoption and
-  ecosystem growth.
-- Team and enterprise offerings can package advanced governance, compliance,
-  analytics, and support.
-- A managed offering can serve teams that want the foundation without operating
-  it themselves.
-- A marketplace can distribute paid domain packs, implementation recipes, and
-  specialized agent packs.
-
-This model is a direction, not a launched commercial offering. Pricing,
-packaging, and willingness to pay still require customer discovery.
+That is a direction, not a launched offering. Nothing about packaging or pricing
+is settled, and none of it will be until customer discovery has actually
+happened.
 
 ## Near-term plan
 
@@ -226,7 +221,7 @@ complete, it should be treated as a target rather than an achieved result.
 | Framework adoption friction | Stay compatible with normal Rails code and offer the core under the MIT license |
 | Commercial model is unproven | Conduct customer discovery and packaging tests before scaling enterprise development |
 
-## The investment case
+## The bet
 
 Loam is a bet that AI-assisted software delivery needs more than a capable model:
 it needs an application foundation designed to make correct implementation
@@ -234,11 +229,11 @@ predictable. If validated, Loam can help product teams and agencies deliver
 serious business software faster while retaining readable code, human control,
 and security boundaries.
 
-Investment at this stage would primarily fund validation: real deployments,
-measurement, customer discovery, production hardening, and the first reusable
-domain pack. The central question is no longer whether the foundation can be
-built—the prototype demonstrates that it can—but whether it produces a large,
-repeatable economic advantage in real projects.
+The open question is no longer whether the foundation can be built—the prototype
+demonstrates that it can. It is whether it produces a large, repeatable advantage
+on real projects. Answering that needs real deployments, measurement, customer
+discovery, production hardening, and the first reusable domain pack, in that
+order.
 
 ## Further reading
 
