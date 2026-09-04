@@ -104,7 +104,10 @@ exists on anyone's machine or in repo secrets.
 
 ```bash
 # 1. bump lib/loam/version.rb and add the release to CHANGELOG.md
-# 2. commit, then:
+# 2. refresh the demo's lockfile — it pins the path gem by version, and CI
+#    bundles frozen, so a stale lock fails the demo job with exit 16
+(cd demo && bundle install)
+# 3. commit lib/loam/version.rb, CHANGELOG.md and demo/Gemfile.lock, then:
 git tag -a v0.2.0 -m "Loam 0.2.0"
 git push --follow-tags
 ```
