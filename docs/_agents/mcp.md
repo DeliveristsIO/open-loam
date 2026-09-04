@@ -1,20 +1,20 @@
 ---
 title: MCP Server
-description: "The MCP server that exposes Loam to an AI agent: read tenant-scoped data and propose writes for human approval."
+description: "The MCP server that exposes OpenLoam to an AI agent: read tenant-scoped data and propose writes for human approval."
 nav_order: 1
 ---
 
-# MCP server — exposing Loam to an agent (tools-only v1)
+# MCP server — exposing OpenLoam to an agent (tools-only v1)
 
-Loam ships an [MCP](https://modelcontextprotocol.io) server so an AI agent
-(Claude Code, Cursor, Codex) can work **inside** a Loam app safely: discover the
+OpenLoam ships an [MCP](https://modelcontextprotocol.io) server so an AI agent
+(Claude Code, Cursor, Codex) can work **inside** a OpenLoam app safely: discover the
 domain, read tenant-scoped records, and **propose** writes that a human approves.
 It never commits a write itself.
 
 ## Run it
 
 ```
-LOAM_MCP_TOKEN=<a Loam API token>  bin/rails loam:mcp:serve
+OPEN_LOAM_MCP_TOKEN=<a OpenLoam API token>  bin/rails open_loam:mcp:serve
 ```
 
 Point your MCP client at that command. Transport is the MCP-spec **stdio**
@@ -30,14 +30,14 @@ token's user, in that tenant — *whatever that user may do, no more*.
 | `list_entities` | the tenant's business entities (the API-exposed ones) |
 | `describe_entity` | columns + types, custom fields, workflow (states/transitions), and which fields the current role may read/write |
 | `query_entity` | read records — tenant-scoped, **only readable fields**, whitelisted filters/sort, limit capped at 100 |
-| `stage_write` | **propose** an update — staged as a `Loam::PendingAction` for a human manager to approve; it does NOT take effect until approved |
+| `stage_write` | **propose** an update — staged as a `OpenLoam::PendingAction` for a human manager to approve; it does NOT take effect until approved |
 
 ## Why it's safe by construction
 
-Every gate is a Loam gate reused, not a new one:
+Every gate is a OpenLoam gate reused, not a new one:
 
 - **Tenant isolation** — the token establishes tenant + actor; every call runs in
-  `Loam.as_tenant`, and `Loam::Current` is reset between calls.
+  `OpenLoam.as_tenant`, and `OpenLoam::Current` is reset between calls.
 - **No arbitrary classes** — entity names resolve against an allowlist of
   API-exposed `TenantRecord` descendants, never a bare `constantize`.
 - **Read ACL** — `query_entity` emits only `policy.readable?` columns and readable

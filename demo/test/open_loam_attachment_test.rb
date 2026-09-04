@@ -2,20 +2,20 @@ require "test_helper"
 
 # Attachments: ActiveStorage files hanging off a tenant-scoped record.
 #
-# Read Loam::Attachable before extending this: blobs themselves live in global
-# ActiveStorage tables that Loam does not scope. What is scoped is the record —
+# Read OpenLoam::Attachable before extending this: blobs themselves live in global
+# ActiveStorage tables that OpenLoam does not scope. What is scoped is the record —
 # so reaching a file means first reaching the record that owns it, which is
 # where the policy applies.
-class LoamAttachmentTest < ActiveSupport::TestCase
+class OpenLoamAttachmentTest < ActiveSupport::TestCase
   include ActiveJob::TestHelper
 
   setup do
-    @warsaw = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-files")
-    @krakow = Loam::Tenant.create!(name: "Branch Krakow", slug: "krakow-files")
+    @warsaw = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-files")
+    @krakow = OpenLoam::Tenant.create!(name: "Branch Krakow", slug: "krakow-files")
     @anna = User.create!(name: "Anna", email: "anna@example.test", password: "password")
 
     with_tenant(@warsaw) do
-      Loam::Membership.create!(user: @anna, role: "manager")
+      OpenLoam::Membership.create!(user: @anna, role: "manager")
       @excavator = Equipment.create!(name: "Excavator", daily_rate: 950, status: "available")
     end
   end

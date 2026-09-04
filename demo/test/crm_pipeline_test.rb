@@ -1,19 +1,19 @@
 require "test_helper"
 
-# L-501: the reference CRM slice (Company + Lead) exercises the SAME Loam
+# L-501: the reference CRM slice (Company + Lead) exercises the SAME OpenLoam
 # primitives as the rental domain — tenant isolation, a role-gated workflow, an
-# event that becomes a notification, and field-level policy — proving Loam is
-# domain-agnostic. Built with the real `loam:entity` generator, then a workflow
+# event that becomes a notification, and field-level policy — proving OpenLoam is
+# domain-agnostic. Built with the real `open_loam:entity` generator, then a workflow
 # and a policy rule added.
 class CrmPipelineTest < ActiveSupport::TestCase
   setup do
-    @warsaw = Loam::Tenant.create!(name: "Warsaw", slug: "warsaw-crm")
-    @krakow = Loam::Tenant.create!(name: "Krakow", slug: "krakow-crm")
+    @warsaw = OpenLoam::Tenant.create!(name: "Warsaw", slug: "warsaw-crm")
+    @krakow = OpenLoam::Tenant.create!(name: "Krakow", slug: "krakow-crm")
     @manager = User.create!(name: "Mgr", email: "mgr-crm@example.test", password: "password")
     @rep = User.create!(name: "Rep", email: "rep-crm@example.test", password: "password")
     with_tenant(@warsaw) do
-      Loam::Membership.create!(user: @manager, role: "manager")
-      Loam::Membership.create!(user: @rep, role: "employee")
+      OpenLoam::Membership.create!(user: @manager, role: "manager")
+      OpenLoam::Membership.create!(user: @rep, role: "employee")
     end
   end
 
@@ -26,7 +26,7 @@ class CrmPipelineTest < ActiveSupport::TestCase
       assert_equal "qualified", lead.reload.state
 
       # An employee may not CLOSE the deal.
-      assert_raises(Loam::NotAuthorizedError) { lead.win! }
+      assert_raises(OpenLoam::NotAuthorizedError) { lead.win! }
       assert_equal "qualified", lead.reload.state
     end
   end
@@ -39,7 +39,7 @@ class CrmPipelineTest < ActiveSupport::TestCase
     with_tenant(@warsaw, actor: @manager) do
       Lead.find(lead_id).win!
       assert_equal "won", Lead.find(lead_id).reload.state
-      assert Loam::Notification.where(user_id: @manager.id).where("title LIKE ?", "Lead%won").exists?,
+      assert OpenLoam::Notification.where(user_id: @manager.id).where("title LIKE ?", "Lead%won").exists?,
              "the manager got a 'Lead won' notification"
     end
   end
@@ -55,7 +55,7 @@ class CrmPipelineTest < ActiveSupport::TestCase
   test "leads are tenant-isolated like everything else" do
     with_tenant(@warsaw, actor: @manager) { Lead.create!(source: "a", value: 1, state: "new") }
     with_tenant(@krakow) do
-      Loam::Membership.create!(user: @manager, role: "manager")
+      OpenLoam::Membership.create!(user: @manager, role: "manager")
       assert_equal 0, Lead.count, "a Warsaw lead is invisible in Krakow"
     end
   end

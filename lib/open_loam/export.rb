@@ -1,16 +1,16 @@
 require "csv"
 
-module Loam
+module OpenLoam
   # CSV export of a tenant-scoped relation, POLICY- and ENCRYPTION-aware:
   #
-  #   Loam::Export.csv(Equipment.all, actor: current_actor)
+  #   OpenLoam::Export.csv(Equipment.all, actor: current_actor)
   #
-  # * only fields the actor's role may READ are columns (Loam::Policy#readable?);
+  # * only fields the actor's role may READ are columns (OpenLoam::Policy#readable?);
   # * an ENCRYPTED column is NEVER exported in the clear — its cell is
   #   "[encrypted]" (the same redaction as the audit trail), so a bulk export can
   #   never become a plaintext dump of PII a role shouldn't see;
   # * declared custom fields are included (a dictionary field exports its stored
-  #   code, so the file round-trips back through Loam::Import);
+  #   code, so the file round-trips back through OpenLoam::Import);
   # * tenant isolation is free — the relation is already scoped.
   #
   # Prototype scale: builds the CSV in memory with the stdlib CSV. A very large
@@ -37,10 +37,10 @@ module Loam
     # redacted), then declared custom fields.
     def exportable_columns(model, actor)
       policy = policy_for(model, actor)
-      encrypted = model.respond_to?(:loam_encrypted_attributes) ? model.loam_encrypted_attributes : []
+      encrypted = model.respond_to?(:open_loam_encrypted_attributes) ? model.open_loam_encrypted_attributes : []
       # The blind-index columns behind searchable encrypted fields (e.g.
       # email_hash) are internal HMACs — never export them either.
-      blind = model.respond_to?(:loam_searchable_encrypted_attributes) ? model.loam_searchable_encrypted_attributes.map { |a| "#{a}_hash" } : []
+      blind = model.respond_to?(:open_loam_searchable_encrypted_attributes) ? model.open_loam_searchable_encrypted_attributes.map { |a| "#{a}_hash" } : []
 
       columns = model.column_names.reject { |c| SKIP_COLUMNS.include?(c) || blind.include?(c) || c == "custom_fields" }
                      .select { |c| policy.readable?(c) }
@@ -61,14 +61,14 @@ module Loam
               when :custom    then (record.custom_field(column[:name]) rescue nil)
               else record.public_send(column[:name])
               end
-      Loam::Csv.safe(value) # neutralize CSV formula injection (=, +, -, @, tab/CR)
+      OpenLoam::Csv.safe(value) # neutralize CSV formula injection (=, +, -, @, tab/CR)
     end
 
     def policy_for(model, actor)
       klass = "#{model.name}Policy".safe_constantize
       # A blank instance as the record: readable? keys off the role, but the
       # policy's custom-field checks read record.class.
-      (klass || Loam::Policy).new(actor, model.new)
+      (klass || OpenLoam::Policy).new(actor, model.new)
     end
   end
 end

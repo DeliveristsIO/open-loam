@@ -1,19 +1,19 @@
 require "rails/generators"
 require "rails/generators/active_record"
-require "generators/loam/primary_key_options"
+require "generators/open_loam/primary_key_options"
 
-module Loam
+module OpenLoam
   module Generators
-    # `rails g loam:entity Equipment name:string daily_rate:decimal --domain rental`
+    # `rails g open_loam:entity Equipment name:string daily_rate:decimal --domain rental`
     #
     # THE interface for adding a business entity — for humans and AI agents
     # alike. One command produces a tenant-scoped, audited, evented model, its
     # policy, an admin screen, and the isolation tests that prove the
-    # guardrails hold. No decisions about how tenancy/permissions work: Loam
+    # guardrails hold. No decisions about how tenancy/permissions work: OpenLoam
     # already decided.
     class EntityGenerator < Rails::Generators::NamedBase
       include ActiveRecord::Generators::Migration
-      include Loam::Generators::PrimaryKeyOptions
+      include OpenLoam::Generators::PrimaryKeyOptions
 
       source_root File.expand_path("templates", __dir__)
 
@@ -21,7 +21,7 @@ module Loam
       class_option :domain, type: :string, default: "app",
                             desc: "Event domain prefix (-> domain.entity.created)"
       class_option :encrypt, type: :array, default: [], banner: "field field",
-                             desc: "Encrypt these fields at rest, per tenant (Loam::Encryptable)"
+                             desc: "Encrypt these fields at rest, per tenant (OpenLoam::Encryptable)"
       class_option :encrypt_searchable, type: :array, default: [], banner: "field field",
                                         desc: "Encrypt + add a blind index for exact-match lookup"
 
@@ -59,7 +59,7 @@ module Loam
       end
 
       # `namespace:` makes Rails inject the route INTO the existing
-      # `namespace :admin do` block (the one loam:install wrote) instead of
+      # `namespace :admin do` block (the one open_loam:install wrote) instead of
       # stacking one admin block per entity, and falls back to creating the
       # block when there is none. Re-running the generator is a no-op: the
       # injection is `force: false`, so identical routing code is skipped.
@@ -70,7 +70,7 @@ module Loam
       # identical `resources :gadgets` lines would leave the second one out.
       #
       # The admin resource carries the soft-delete recycle bin: `deleted` lists
-      # `only_deleted`, `restore` brings one back (see Loam::SoftDeletable).
+      # `only_deleted`, `restore` brings one back (see OpenLoam::SoftDeletable).
       def add_route
         route <<~RUBY.strip, namespace: :admin
           resources :#{plural_file_name} do
@@ -101,7 +101,7 @@ module Loam
         attributes.map(&:name)
       end
 
-      # Only text-ish columns are worth a LIKE (see Loam::Searchable), so an
+      # Only text-ish columns are worth a LIKE (see OpenLoam::Searchable), so an
       # entity with none gets no `searchable_by` declaration and stays out of
       # the global search. Encrypted columns are excluded: ciphertext is
       # meaningless to LIKE, and declaring both would raise at class load.

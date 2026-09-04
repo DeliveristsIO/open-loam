@@ -1,4 +1,4 @@
-module Loam
+module OpenLoam
   module Sso
     # The real OIDC Authorization Code provider. Discovers the issuer's endpoints
     # from its .well-known document, sends the user to the authorization endpoint,
@@ -13,7 +13,7 @@ module Loam
     # JWKS verification for the prototype. Roadmap: full id_token + JWKS.
     #
     # NOT exercised by the test suite (a FakeProvider is injected via
-    # Loam::Sso.builder); live OIDC against a real IdP is verified manually.
+    # OpenLoam::Sso.builder); live OIDC against a real IdP is verified manually.
     class OidcProvider
       SCOPE = "openid email profile".freeze
 

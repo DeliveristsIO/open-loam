@@ -1,6 +1,6 @@
-# Contributing to Loam
+# Contributing to OpenLoam
 
-Loam is a foundation other people (and their AI agents) build businesses on, so
+OpenLoam is a foundation other people (and their AI agents) build businesses on, so
 the bar is consistency over cleverness: there should be **one obvious way** to
 do each thing, and a change is good when it makes that one way clearer. This
 guide is short on purpose.
@@ -8,10 +8,10 @@ guide is short on purpose.
 ## Repository layout
 
 ```
-lib/loam/               the gem: tenancy, policy, audit, events, custom fields,
+lib/open_loam/               the gem: tenancy, policy, audit, events, custom fields,
                         workflow, notifications, webhooks, comments, search, ...
-app/models/loam/        engine models (Tenant, Membership, AuditRecord, ...)
-lib/generators/loam/    install + entity generators — the one interface
+app/models/open_loam/        engine models (Tenant, Membership, AuditRecord, ...)
+lib/generators/open_loam/    install + entity generators — the one interface
 test/                   generator harness (builds real Rails apps in tmp)
 demo/                   equipment-rental app built with the generators
 ai/                     golden-tasks benchmark + recorded runs
@@ -38,11 +38,11 @@ cd demo && bundle install && bin/rails db:migrate db:seed && bin/rails test
 ## The two test suites — both must stay green
 
 1. **`rake test`** at the repo root — the generator harness. It generates a
-   fresh Rails app in a temp dir, runs `loam:install` + `loam:entity`, and
+   fresh Rails app in a temp dir, runs `open_loam:install` + `open_loam:entity`, and
    asserts the generated app's own suite passes. If you touch anything under
    `lib/generators/` or the templates, run this.
 2. **`cd demo && bin/rails test`** — the demo app, which uses the generators the
-   way a real project does. If you touch `lib/loam/` behavior, run this.
+   way a real project does. If you touch `lib/open_loam/` behavior, run this.
 
 A change to a generator template also has to be reflected in the demo's already
 -generated copy (the demo doesn't re-run generators). The harness will catch a
@@ -51,16 +51,16 @@ broken template; a stale demo copy it won't — sync it yourself.
 ## Invariants you must not break
 
 These are the promises the whole project rests on. They're enforced by
-`test/loam_guardrails_test.rb` in every generated app, so breaking one shows up
+`test/open_loam_guardrails_test.rb` in every generated app, so breaking one shows up
 as a failing test, not a review comment:
 
-- **Every business model inherits `Loam::TenantRecord`.** Never
+- **Every business model inherits `OpenLoam::TenantRecord`.** Never
   `ApplicationRecord` for tenant data.
 - **Never `.unscoped` on a tenant-scoped model** in app code. The only blessed
-  cross-tenant lookups live in gem code (`Loam::ApiToken.authenticate`,
-  `Loam::Membership.tenants_for`) and are commented as such.
-- **Never rescue `Loam::MissingTenantError`** — it means a missing
-  `Loam.as_tenant` context upstream; fix that instead.
+  cross-tenant lookups live in gem code (`OpenLoam::ApiToken.authenticate`,
+  `OpenLoam::Membership.tenants_for`) and are commented as such.
+- **Never rescue `OpenLoam::MissingTenantError`** — it means a missing
+  `OpenLoam.as_tenant` context upstream; fix that instead.
 - **Every controller action checks a policy; forms use
   `policy.permitted_fields`** — no hand-rolled `params.permit` lists.
 - **Event names are `domain.thing.happened`** (three+ dot-separated segments).
@@ -71,7 +71,7 @@ as a failing test, not a review comment:
 
 Prefer extending the generators over one-off code, because the generator output
 *is* the product — it's what an agent and a reviewer read. A new pillar usually
-means: a concern in `lib/loam/`, wiring in the `install`/`entity` generator
+means: a concern in `lib/open_loam/`, wiring in the `install`/`entity` generator
 templates, the demo synced, tests in both suites, and a row in the generated
 `AGENTS.md` (mind the byte budget). Keep every file under 500 lines and match
 the surrounding comment style: comments state a constraint the code can't show,
@@ -79,7 +79,7 @@ not narration.
 
 ## For AI agents
 
-If you are an agent working in a Loam **app**, your contract is that app's
+If you are an agent working in a OpenLoam **app**, your contract is that app's
 `AGENTS.md` — follow it exactly; the guardrail tests are the referee. If you are
 changing the **framework** (this repo), this file is your contract, and the
 golden-tasks benchmark in `ai/` is how the framework's agent-legibility is
@@ -105,9 +105,9 @@ exists on anyone's machine or in repo secrets.
 ```bash
 rake bump[0.2.0]     # version constant + demo/Gemfile.lock, together
 # add the 0.2.0 entry to CHANGELOG.md, then:
-git add lib/loam/version.rb CHANGELOG.md demo/Gemfile.lock
+git add lib/open_loam/version.rb CHANGELOG.md demo/Gemfile.lock
 git commit -m "chore(release): 0.2.0"
-git tag -a v0.2.0 -m "Loam 0.2.0"
+git tag -a v0.2.0 -m "OpenLoam 0.2.0"
 git push --follow-tags
 ```
 

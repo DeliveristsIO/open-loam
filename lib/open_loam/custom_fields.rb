@@ -1,35 +1,35 @@
-module Loam
+module OpenLoam
   # Runtime, migration-free fields — stored in the `custom_fields` json
   # column every generated entity table carries. Included automatically by
-  # `rails g loam:entity`. Shape is declared at runtime via a
-  # Loam::FieldDefinition (typically through the admin "Field definitions"
+  # `rails g open_loam:entity`. Shape is declared at runtime via a
+  # OpenLoam::FieldDefinition (typically through the admin "Field definitions"
   # screen), not in code — that's what makes it migration-free.
   #
   #   equipment.custom_field(:serial_number)                # => "SN-123" (cast)
   #   equipment.set_custom_field(:serial_number, "SN-123")
   #
-  # Reading/writing a name with no matching Loam::FieldDefinition for this
-  # tenant + entity raises Loam::UnknownCustomFieldError immediately — the
-  # same "fail loudly at the access site" philosophy as Loam.tenant!.
+  # Reading/writing a name with no matching OpenLoam::FieldDefinition for this
+  # tenant + entity raises OpenLoam::UnknownCustomFieldError immediately — the
+  # same "fail loudly at the access site" philosophy as OpenLoam.tenant!.
   module CustomFields
     extend ActiveSupport::Concern
 
     included do
-      # Keep the read-model index (Loam::CustomFieldIndex) current so custom-field
+      # Keep the read-model index (OpenLoam::CustomFieldIndex) current so custom-field
       # filter/sort is index-backed. Re-project only when the custom_fields column
       # actually changed (a soft-delete touches only deleted_at, so the rows stay
       # and the base scope hides the record — the L-912 posture). A no-op for a
-      # model with no custom_fields column. Guarded by respond_to? so Loam::
+      # model with no custom_fields column. Guarded by respond_to? so OpenLoam::
       # CustomFields stays includable in a plain class for a DSL-only test.
       if respond_to?(:after_save)
-        after_save    :loam_reindex_custom_fields, if: :loam_custom_fields_dirty?
-        after_destroy :loam_deindex_custom_fields
+        after_save    :open_loam_reindex_custom_fields, if: :open_loam_custom_fields_dirty?
+        after_destroy :open_loam_deindex_custom_fields
       end
     end
 
     class_methods do
       def custom_field_definitions
-        Loam::FieldDefinition.where(entity_type: name)
+        OpenLoam::FieldDefinition.where(entity_type: name)
       end
     end
 
@@ -53,15 +53,15 @@ module Loam
       value = custom_field(name)
       return value unless definition.field_type == "dictionary"
 
-      Loam::Dictionaries.label_for(definition.dictionary_key, value)
+      OpenLoam::Dictionaries.label_for(definition.dictionary_key, value)
     end
 
     private
 
-    def loam_reindex_custom_fields = Loam::CustomFieldIndex.project(self)
-    def loam_deindex_custom_fields = Loam::CustomFieldIndex.remove(self)
+    def open_loam_reindex_custom_fields = OpenLoam::CustomFieldIndex.project(self)
+    def open_loam_deindex_custom_fields = OpenLoam::CustomFieldIndex.remove(self)
 
-    def loam_custom_fields_dirty?
+    def open_loam_custom_fields_dirty?
       return false unless self.class.respond_to?(:custom_field_definitions)
 
       # On create every column counts as changed; on update, only re-project when
@@ -71,8 +71,8 @@ module Loam
 
     def custom_field_definition!(name)
       custom_field_definitions_by_name.fetch(name.to_s) do
-        raise UnknownCustomFieldError, "No Loam::FieldDefinition named #{name.inspect} for #{self.class.name} " \
-                                       "(tenant #{Loam.tenant&.id.inspect})"
+        raise UnknownCustomFieldError, "No OpenLoam::FieldDefinition named #{name.inspect} for #{self.class.name} " \
+                                       "(tenant #{OpenLoam.tenant&.id.inspect})"
       end
     end
 

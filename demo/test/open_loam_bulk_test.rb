@@ -1,12 +1,12 @@
 require "test_helper"
 
-# Loam::Bulk: datatable bulk actions — policy-checked per record, tenant-scoped.
-class LoamBulkTest < ActiveSupport::TestCase
+# OpenLoam::Bulk: datatable bulk actions — policy-checked per record, tenant-scoped.
+class OpenLoamBulkTest < ActiveSupport::TestCase
   setup do
-    @warsaw = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-bulk")
-    @krakow = Loam::Tenant.create!(name: "Branch Krakow", slug: "krakow-bulk")
+    @warsaw = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-bulk")
+    @krakow = OpenLoam::Tenant.create!(name: "Branch Krakow", slug: "krakow-bulk")
     @mgr = User.create!(name: "M", email: "m@example.test", password: "password")
-    [ @warsaw, @krakow ].each { |t| with_tenant(t) { Loam::Membership.create!(user: @mgr, role: "manager") } }
+    [ @warsaw, @krakow ].each { |t| with_tenant(t) { OpenLoam::Membership.create!(user: @mgr, role: "manager") } }
   end
 
   test "bulk soft-delete removes only the selected records" do
@@ -15,7 +15,7 @@ class LoamBulkTest < ActiveSupport::TestCase
       b = Equipment.create!(name: "B", daily_rate: 1, status: "available")
       keep = Equipment.create!(name: "Keep", daily_rate: 1, status: "available")
 
-      count = Loam::Bulk.soft_delete(Equipment, [ a.id, b.id ])
+      count = OpenLoam::Bulk.soft_delete(Equipment, [ a.id, b.id ])
 
       assert_equal 2, count
       assert_equal [ keep.id ], Equipment.pluck(:id), "only the unselected survives"
@@ -28,12 +28,12 @@ class LoamBulkTest < ActiveSupport::TestCase
       a = Equipment.create!(name: "A", daily_rate: 1, status: "available")
       b = Equipment.create!(name: "B", daily_rate: 1, status: "available")
 
-      count = Loam::Bulk.set_field(Equipment, [ a.id, b.id ], field: "status", value: "retired")
+      count = OpenLoam::Bulk.set_field(Equipment, [ a.id, b.id ], field: "status", value: "retired")
       assert_equal 2, count
       assert_equal %w[retired retired], Equipment.where(id: [ a.id, b.id ]).pluck(:status)
 
       # A plumbing/non-column field is refused (no write, zero affected).
-      assert_equal 0, Loam::Bulk.set_field(Equipment, [ a.id ], field: "tenant_id", value: 999)
+      assert_equal 0, OpenLoam::Bulk.set_field(Equipment, [ a.id ], field: "tenant_id", value: 999)
       assert_equal @warsaw.id, a.reload.tenant_id
     end
   end
@@ -42,7 +42,7 @@ class LoamBulkTest < ActiveSupport::TestCase
     krakow_rig = with_tenant(@krakow, actor: @mgr) { Equipment.create!(name: "KrakowRig", daily_rate: 1, status: "available") }
 
     with_tenant(@warsaw, actor: @mgr) do
-      count = Loam::Bulk.soft_delete(Equipment, [ krakow_rig.id ])
+      count = OpenLoam::Bulk.soft_delete(Equipment, [ krakow_rig.id ])
       assert_equal 0, count, "a Krakow id is simply not in the Warsaw scope"
     end
     assert_equal false, with_tenant(@krakow, actor: @mgr) { krakow_rig.reload.deleted? }, "the Krakow record is untouched"
@@ -53,7 +53,7 @@ class LoamBulkTest < ActiveSupport::TestCase
       a = Equipment.create!(name: "Alpha", daily_rate: 1, status: "available")
       Equipment.create!(name: "Beta", daily_rate: 1, status: "available")
 
-      csv = Loam::Export.csv(Loam::Bulk.selected(Equipment, [ a.id ]), actor: @mgr)
+      csv = OpenLoam::Export.csv(OpenLoam::Bulk.selected(Equipment, [ a.id ]), actor: @mgr)
       assert_match "Alpha", csv
       refute_match "Beta", csv
     end
@@ -65,9 +65,9 @@ class AdminEquipmentBulkTest < ActionDispatch::IntegrationTest
   include ActiveJob::TestHelper
 
   setup do
-    @tenant = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-eq-bulk")
+    @tenant = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-eq-bulk")
     @mgr = User.create!(name: "Anna", email: "anna@example.test", password: "password")
-    with_tenant(@tenant) { Loam::Membership.create!(user: @mgr, role: "manager") }
+    with_tenant(@tenant) { OpenLoam::Membership.create!(user: @mgr, role: "manager") }
     post admin_session_path, params: { email: "anna@example.test", password: "password" }
   end
 

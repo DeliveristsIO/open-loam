@@ -1,4 +1,4 @@
-module Loam
+module OpenLoam
   module Encryption
     # AES-256-GCM sealing. GCM is *authenticated* encryption: the 16-byte auth
     # tag turns tampering — or decrypting with the wrong key — into a loud
@@ -13,7 +13,7 @@ module Loam
     # v2 binds Additional Authenticated Data (the field's tenant+table+column) into
     # the auth tag, so a ciphertext moved to a DIFFERENT column/table/tenant fails
     # the tag on read — it can't be transplanted. Old "v1:" rows (no AAD) keep
-    # decrypting, so upgrading is a lazy re-encrypt (loam:encryption:rotate writes
+    # decrypting, so upgrading is a lazy re-encrypt (open_loam:encryption:rotate writes
     # v2), never a data migration. The AAD is authenticated but NOT secret — it
     # never conceals anything, it only pins WHERE the ciphertext is allowed to live.
     module Cipher
@@ -37,7 +37,7 @@ module Loam
         "#{version}:" + [iv + tag + ciphertext].pack("m0")
       end
 
-      # Decrypt, or raise Loam::Encryption::DecryptionError. The wrong tenant's
+      # Decrypt, or raise OpenLoam::Encryption::DecryptionError. The wrong tenant's
       # key, a tampered blob, a truncated tag, a v2 blob read with the WRONG (or
       # missing) AAD, or plain garbage all fail the same loud way — never a
       # partial or silently-wrong plaintext. A v1 blob carries no AAD, so the

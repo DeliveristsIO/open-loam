@@ -1,19 +1,19 @@
-module Loam
-  # Staging and reviewing gated mutations (see Loam::PendingAction).
+module OpenLoam
+  # Staging and reviewing gated mutations (see OpenLoam::PendingAction).
   #
-  #   pending = Loam::PendingActions.stage(
+  #   pending = OpenLoam::PendingActions.stage(
   #     summary: "Raise the excavator's daily rate to 1100",
   #     on: equipment, action: :update, changes: { daily_rate: 1100 }
   #   )
   #   pending.preview            # => { "daily_rate" => { "from" => 950, "to" => 1100 } }
   #   pending.approve!(by: manager)   # role-gated; executes the change
   #
-  # `stage` NEVER touches the target — it only records the intent. Loam does not
+  # `stage` NEVER touches the target — it only records the intent. OpenLoam does not
   # intercept Active Record globally (that would be fragile and out of scope);
   # this is the primitive a confirm-mode write path calls instead of saving.
   module PendingActions
     class << self
-      def stage(summary:, on:, action:, changes: {}, idempotency_key: nil, actor: Loam::Current.actor)
+      def stage(summary:, on:, action:, changes: {}, idempotency_key: nil, actor: OpenLoam::Current.actor)
         target_type, target_id = resolve_target(on)
         changes = changes.transform_keys(&:to_s)
         key = idempotency_key || compute_key(target_type, target_id, action, changes)
@@ -21,10 +21,10 @@ module Loam
         # The same proposal staged twice collapses to one row — but only a still
         # PENDING one. A rejected or executed proposal with this key may be
         # re-staged as a fresh pending row (the partial index allows the coexist).
-        existing = Loam::PendingAction.pending.find_by(idempotency_key: key)
+        existing = OpenLoam::PendingAction.pending.find_by(idempotency_key: key)
         return existing if existing
 
-        Loam::PendingAction.create!(
+        OpenLoam::PendingAction.create!(
           actor_id: actor&.id,
           action_type: action.to_s,
           target_type: target_type,
@@ -35,7 +35,7 @@ module Loam
         )
       rescue ActiveRecord::RecordNotUnique
         # Lost a concurrent double-stage race — return the pending row that won.
-        Loam::PendingAction.pending.find_by!(idempotency_key: key)
+        OpenLoam::PendingAction.pending.find_by!(idempotency_key: key)
       end
 
       private
@@ -53,7 +53,7 @@ module Loam
       # the same key; a reordered hash is treated as a different proposal.
       def compute_key(target_type, target_id, action, changes)
         payload = [ target_type, target_id, action, changes.to_json ].join("|")
-        Loam::Encryption.blind_index_scoped(payload, "tenant/#{Loam.tenant!.id}")
+        OpenLoam::Encryption.blind_index_scoped(payload, "tenant/#{OpenLoam.tenant!.id}")
       end
     end
   end

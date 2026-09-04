@@ -1,4 +1,4 @@
-module Loam
+module OpenLoam
   module Search
     # The driver contract. Subclass and override the class methods.
     #
@@ -10,10 +10,10 @@ module Loam
     #
     #   index(record) / remove(record)
     #     Maintain the driver's index as records are saved and destroyed. Called
-    #     from Loam::Searchable's after_save / after_destroy.
+    #     from OpenLoam::Searchable's after_save / after_destroy.
     #
     #   reindex(model)
-    #     Rebuild the index for a model (used by `loam:search:reindex` and seeds).
+    #     Rebuild the index for a model (used by `open_loam:search:reindex` and seeds).
     #
     # A driver that needs no index (LIKE) leaves index/remove/reindex as no-ops.
     class Driver

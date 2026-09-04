@@ -1,7 +1,7 @@
 <h1>Overrides</h1>
 
 <p>Registry entries this app disables or replaces (declared in
-<code>config/initializers/loam.rb</code> via <code>Loam::Overrides</code>) —
+<code>config/initializers/open_loam.rb</code> via <code>OpenLoam::Overrides</code>) —
 customization without forking. Structural pieces (views, controllers, routes)
 are overridden the Rails way (path shadowing), not here.</p>
 
@@ -18,7 +18,7 @@ are overridden the Rails way (path shadowing), not here.</p>
         <tr>
           <td><code><%= registry %></code></td>
           <td><code><%= key %></code></td>
-          <td><%= value == Loam::Overrides::DISABLED ? "disabled" : "replaced" %></td>
+          <td><%= value == OpenLoam::Overrides::DISABLED ? "disabled" : "replaced" %></td>
         </tr>
       <% end %>
     <% end %>

@@ -1,9 +1,9 @@
-module Loam
+module OpenLoam
   # One row per change: who (actor), what (auditable + action + changeset),
   # when (created_at), in which tenant (tenant_id, via TenantRecord).
   # Append-only by convention; not itself audited or evented.
-  class AuditRecord < Loam::TenantRecord
-    self.table_name = "loam_audit_records"
+  class AuditRecord < OpenLoam::TenantRecord
+    self.table_name = "open_loam_audit_records"
 
     belongs_to :actor, class_name: "User", optional: true
 

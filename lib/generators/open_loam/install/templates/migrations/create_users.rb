@@ -1,6 +1,6 @@
 class CreateUsers < ActiveRecord::Migration[<%= ActiveRecord::VERSION::STRING.to_f %>]
   def change
-    create_table :users<%= loam_id_option %> do |t|
+    create_table :users<%= open_loam_id_option %> do |t|
       t.string :name, null: false
       t.string :email, null: false
       t.string :password_digest, null: false

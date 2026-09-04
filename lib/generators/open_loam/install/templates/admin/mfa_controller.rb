@@ -15,7 +15,7 @@ module Admin
     before_action :require_sudo!, only: %i[create destroy], if: :active_mfa?
 
     def show
-      @credential = Loam::MfaCredential.active_for(current_actor)
+      @credential = OpenLoam::MfaCredential.active_for(current_actor)
     end
 
     # READ-ONLY: mint a candidate secret into the (encrypted cookie) session and
@@ -28,7 +28,7 @@ module Admin
     # recovery codes once. The active secret is replaced only on success.
     def create
       secret = session[:mfa_enrollment_secret]
-      credential = Loam::MfaCredential.find_or_initialize_by(user_id: current_actor.id)
+      credential = OpenLoam::MfaCredential.find_or_initialize_by(user_id: current_actor.id)
       @recovery_codes = secret && credential.activate_with!(secret, params[:code])
 
       if @recovery_codes
@@ -42,7 +42,7 @@ module Admin
     end
 
     def destroy
-      Loam::MfaCredential.where(user_id: current_actor.id).delete_all
+      OpenLoam::MfaCredential.where(user_id: current_actor.id).delete_all
       session.delete(:mfa_enrollment_secret)
       redirect_to admin_mfa_path, notice: "Two-factor authentication disabled."
     end
@@ -50,12 +50,12 @@ module Admin
     private
 
     def set_enrollment_secret
-      @secret = (session[:mfa_enrollment_secret] ||= Loam::Totp.generate_secret)
-      @provisioning_uri = Loam::Totp.provisioning_uri(@secret, account: current_actor.email, issuer: ISSUER)
+      @secret = (session[:mfa_enrollment_secret] ||= OpenLoam::Totp.generate_secret)
+      @provisioning_uri = OpenLoam::Totp.provisioning_uri(@secret, account: current_actor.email, issuer: ISSUER)
     end
 
     def active_mfa?
-      Loam::MfaCredential.active_for(current_actor).present?
+      OpenLoam::MfaCredential.active_for(current_actor).present?
     end
   end
 end

@@ -4,13 +4,13 @@ require "test_helper"
 # guardrail tests): only managers may change prices or delete equipment.
 class EquipmentPolicyTest < ActiveSupport::TestCase
   setup do
-    @tenant = Loam::Tenant.create!(name: "Branch A", slug: "branch-a")
+    @tenant = OpenLoam::Tenant.create!(name: "Branch A", slug: "branch-a")
     @manager = User.create!(name: "Manager", email: "manager@example.test", password: "password")
     @employee = User.create!(name: "Employee", email: "employee@example.test", password: "password")
 
     with_tenant(@tenant) do
-      Loam::Membership.create!(user: @manager, role: "manager")
-      Loam::Membership.create!(user: @employee, role: "employee")
+      OpenLoam::Membership.create!(user: @manager, role: "manager")
+      OpenLoam::Membership.create!(user: @employee, role: "employee")
       @excavator = Equipment.create!(name: "Excavator", daily_rate: 500.0, status: "available")
     end
   end

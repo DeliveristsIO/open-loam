@@ -1,7 +1,7 @@
-class CreateLoamScheduledJobs < ActiveRecord::Migration[8.1]
+class CreateOpenLoamScheduledJobs < ActiveRecord::Migration[8.1]
   def change
-    create_table :loam_scheduled_jobs do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }
+    create_table :open_loam_scheduled_jobs do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :open_loam_tenants }
       t.string :key, null: false                        # unique per tenant
       t.string :name, null: false
       t.string :job_class, null: false                  # a whitelisted ActiveJob class name
@@ -14,8 +14,8 @@ class CreateLoamScheduledJobs < ActiveRecord::Migration[8.1]
       t.boolean :active, null: false, default: true
       t.timestamps
     end
-    add_index :loam_scheduled_jobs, %i[tenant_id key], unique: true
+    add_index :open_loam_scheduled_jobs, %i[tenant_id key], unique: true
     # The tick scans by due-and-unlocked across all tenants.
-    add_index :loam_scheduled_jobs, %i[active next_run_at locked_until]
+    add_index :open_loam_scheduled_jobs, %i[active next_run_at locked_until]
   end
 end

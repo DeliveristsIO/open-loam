@@ -1,25 +1,25 @@
 require "test_helper"
 
-# L-713: Loam's own UI strings are i18n-friendly. The gem ships a `loam.*` base
+# L-713: OpenLoam's own UI strings are i18n-friendly. The gem ships a `open_loam.*` base
 # locale (English); an app overrides per locale; the admin switcher drives BOTH
-# the content overlay (Loam::Translatable) and the chrome (Rails i18n).
-class LoamI18nTest < ActiveSupport::TestCase
-  test "the gem's base loam.* strings are on the load path" do
-    assert_equal "Dashboard", I18n.t("loam.nav.dashboard", locale: :en)
-    assert_equal "Sign out", I18n.t("loam.chrome.sign_out", locale: :en)
+# the content overlay (OpenLoam::Translatable) and the chrome (Rails i18n).
+class OpenLoamI18nTest < ActiveSupport::TestCase
+  test "the gem's base open_loam.* strings are on the load path" do
+    assert_equal "Dashboard", I18n.t("open_loam.nav.dashboard", locale: :en)
+    assert_equal "Sign out", I18n.t("open_loam.chrome.sign_out", locale: :en)
   end
 
   test "an app locale file overrides the base per locale" do
-    assert_equal "Pulpit", I18n.t("loam.nav.dashboard", locale: :pl)
-    assert_equal "Wyloguj", I18n.t("loam.chrome.sign_out", locale: :pl)
+    assert_equal "Pulpit", I18n.t("open_loam.nav.dashboard", locale: :pl)
+    assert_equal "Wyloguj", I18n.t("open_loam.chrome.sign_out", locale: :pl)
   end
 end
 
-class LoamI18nSwitcherTest < ActionDispatch::IntegrationTest
+class OpenLoamI18nSwitcherTest < ActionDispatch::IntegrationTest
   setup do
-    @tenant = Loam::Tenant.create!(name: "Branch", slug: "warsaw-i18n")
+    @tenant = OpenLoam::Tenant.create!(name: "Branch", slug: "warsaw-i18n")
     @anna = User.create!(name: "Anna", email: "anna-i18n@example.test", password: "password")
-    with_tenant(@tenant) { Loam::Membership.create!(user: @anna, role: "manager") }
+    with_tenant(@tenant) { OpenLoam::Membership.create!(user: @anna, role: "manager") }
 
     post admin_session_path, params: { email: "anna-i18n@example.test", password: "password" }
     post select_tenant_admin_session_path, params: { tenant_id: @tenant.id }

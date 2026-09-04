@@ -1,13 +1,13 @@
-module Loam
-  # Disable or replace an entry in one of Loam's OWN keyed registries from an
+module OpenLoam
+  # Disable or replace an entry in one of OpenLoam's OWN keyed registries from an
   # initializer — customization without forking the gem, and without
   # monkeypatching. This is deliberately SMALL: Rails already handles structural
   # overriding (shadow a view/controller by path, prepend a module). Overrides
   # only covers the in-gem keyed registries, where path-shadowing doesn't reach:
   #
-  #   Loam::Overrides.disable(:widgets, "open_progress")            # drop a built-in widget
-  #   Loam::Overrides.replace(:widgets, "audit_recent") { |actor| { kind: "count", value: 0 } }
-  #   Loam::Overrides.disable(:broadcast_events, "loam.progress.")  # stop pushing an event over SSE
+  #   OpenLoam::Overrides.disable(:widgets, "open_progress")            # drop a built-in widget
+  #   OpenLoam::Overrides.replace(:widgets, "audit_recent") { |actor| { kind: "count", value: 0 } }
+  #   OpenLoam::Overrides.disable(:broadcast_events, "open_loam.progress.")  # stop pushing an event over SSE
   #
   # THE VALUE-ADD over raw monkeypatching: a stale override (a typo, or an entry
   # that no longer exists) is caught at boot by `check!` and warned about, so a
@@ -81,7 +81,7 @@ module Loam
       def check!
         found = stale
         found.each do |registry, key|
-          message = "[loam] stale override: #{registry} has no entry #{key.inspect} to disable/replace — the override is doing nothing."
+          message = "[open_loam] stale override: #{registry} has no entry #{key.inspect} to disable/replace — the override is doing nothing."
           logger ? logger.warn(message) : warn(message)
         end
         found
@@ -96,9 +96,9 @@ module Loam
       # The live keys of an introspectable registry, or nil when we can't tell.
       def known_keys(registry)
         case registry.to_sym
-        when :widgets then Loam::Widgets.keys
-        when :broadcast_events then Loam.broadcast_events
-        when :scheduler then defined?(Loam::Scheduler) ? Loam::Scheduler.registered.map { |d| d[:key] } : nil
+        when :widgets then OpenLoam::Widgets.keys
+        when :broadcast_events then OpenLoam.broadcast_events
+        when :scheduler then defined?(OpenLoam::Scheduler) ? OpenLoam::Scheduler.registered.map { |d| d[:key] } : nil
         end
       end
 

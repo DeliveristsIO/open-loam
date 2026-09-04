@@ -1,4 +1,4 @@
-<% policy = Loam::Policy.for(@record) %>
+<% policy = OpenLoam::Policy.for(@record) %>
 
 <%# Optimistic-locking conflict: what the user typed vs what is now saved. %>
 <% if @conflict.present? %>
@@ -44,7 +44,7 @@
   <% else %>
     <p>
       <%= f.label :name %>: <%= @record.name %>
-      <em><%= t("loam.form.read_only") %></em>
+      <em><%= t("open_loam.form.read_only") %></em>
     </p>
   <% end %>
   <% if policy.writable?(:daily_rate) %>
@@ -55,7 +55,7 @@
   <% else %>
     <p>
       <%= f.label :daily_rate %>: <%= @record.daily_rate %>
-      <em><%= t("loam.form.read_only") %></em>
+      <em><%= t("open_loam.form.read_only") %></em>
     </p>
   <% end %>
   <% if policy.writable?(:status) %>
@@ -66,15 +66,15 @@
   <% else %>
     <p>
       <%= f.label :status %>: <%= @record.status %>
-      <em><%= t("loam.form.read_only") %></em>
+      <em><%= t("open_loam.form.read_only") %></em>
     </p>
   <% end %>
 
-  <%= render "loam/custom_fields/fields", record: @record, policy: policy, mode: :edit %>
+  <%= render "open_loam/custom_fields/fields", record: @record, policy: policy, mode: :edit %>
 
   <% if policy.update? %>
     <p>
-      <%= f.label :files, t("loam.form.attach_files") %><br>
+      <%= f.label :files, t("open_loam.form.attach_files") %><br>
       <%= f.file_field :files, multiple: true %>
     </p>
   <% end %>

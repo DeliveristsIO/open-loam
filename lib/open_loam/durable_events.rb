@@ -1,15 +1,15 @@
-module Loam
-  # Durable (persistent) event subscribers — the twin of Loam::Events.subscribe,
+module OpenLoam
+  # Durable (persistent) event subscribers — the twin of OpenLoam::Events.subscribe,
   # and the formal contract L-706 pins down.
   #
   # THE CONTRACT
-  #   * Ephemeral — Loam::Events.subscribe(&block): runs INLINE in the publisher's
+  #   * Ephemeral — OpenLoam::Events.subscribe(&block): runs INLINE in the publisher's
   #     thread, synchronously, best-effort. An exception in the block PROPAGATES
   #     into whatever published the event. No persistence, no retry. Right for
   #     cheap in-process fan-out (the webhook dispatcher enqueues its own jobs
   #     this way).
-  #   * Persistent — Loam::DurableEvents.register(...): publishing commits a
-  #     Loam::EventDelivery row in the event's tenant, then hands the handler to a
+  #   * Persistent — OpenLoam::DurableEvents.register(...): publishing commits a
+  #     OpenLoam::EventDelivery row in the event's tenant, then hands the handler to a
   #     background job. The handler's exception is CONTAINED in the job; delivery
   #     is retried with backoff and, past MAX_ATTEMPTS, parked as `dead` for an
   #     operator (Admin::EventDeliveriesController).
@@ -29,10 +29,10 @@ module Loam
     MAX_ATTEMPTS = 5
     # Backoff (seconds) indexed by attempt number; the last value is the cap.
     BACKOFF = [ 0, 60, 300, 1800, 7200 ].freeze
-    SWEEP_KEY = "loam_event_redelivery_sweep".freeze
+    SWEEP_KEY = "open_loam_event_redelivery_sweep".freeze
 
     class << self
-      # --- declarative registry (mirrors Loam::Scheduler.register) ---
+      # --- declarative registry (mirrors OpenLoam::Scheduler.register) ---
 
       # key:  a stable identifier stored on every delivery row it produces.
       # to:   an event name ("billing.invoice.paid") or a domain prefix
@@ -51,7 +51,7 @@ module Loam
       end
 
       def subscribers_for(event_name)
-        registered.select { |entry| Loam::Events.pattern_matches?(entry[:pattern], event_name) }
+        registered.select { |entry| OpenLoam::Events.pattern_matches?(entry[:pattern], event_name) }
       end
 
       def handler_for(key)
@@ -59,19 +59,19 @@ module Loam
         entry && resolve(entry[:handler])
       end
 
-      # --- wiring (mirrors Loam::Webhooks.subscribe!) ---
+      # --- wiring (mirrors OpenLoam::Webhooks.subscribe!) ---
 
-      # Wired once from Loam::Engine. Idempotent: subscribing twice would persist
+      # Wired once from OpenLoam::Engine. Idempotent: subscribing twice would persist
       # every event twice.
       def subscribe!
-        @subscription ||= Loam::Events.subscribe_all { |event_name, payload| capture(event_name, payload) }
+        @subscription ||= OpenLoam::Events.subscribe_all { |event_name, payload| capture(event_name, payload) }
       end
 
       # Persist a delivery row per matching durable subscriber, in the event's
       # tenant, then nudge a job per row. The ROW is the durable record; the job
       # is only the accelerator (the sweep redelivers rows whose job was lost).
       def capture(event_name, payload)
-        tenant = Loam::Tenant.find_by(id: payload[:tenant_id])
+        tenant = OpenLoam::Tenant.find_by(id: payload[:tenant_id])
         return if tenant.nil? # nil-tenant events are not durably delivered (as Webhooks.dispatch)
 
         matches = subscribers_for(event_name)
@@ -81,18 +81,18 @@ module Loam
         # scalars by convention, never records (same rule as the webhook path).
         deliverable = payload.transform_keys(&:to_s)
 
-        Loam.as_tenant(tenant) do
+        OpenLoam.as_tenant(tenant) do
           matches.each do |sub|
-            delivery = Loam::EventDelivery.create!(
+            delivery = OpenLoam::EventDelivery.create!(
               subscriber_key: sub[:key], event_name: event_name.to_s,
               payload: deliverable, status: "pending", attempts: 0
             )
-            Loam::EventDeliveryJob.perform_later(tenant.id, delivery.id)
+            OpenLoam::EventDeliveryJob.perform_later(tenant.id, delivery.id)
           end
         end
       end
 
-      # --- delivery (called by Loam::EventDeliveryJob) ---
+      # --- delivery (called by OpenLoam::EventDeliveryJob) ---
 
       # Run one delivery and advance the row's state. Manual, ROW-STATE retries —
       # deliberately NOT ActiveJob retry_on, which keeps retry state in the queue
@@ -102,7 +102,7 @@ module Loam
         return unless delivery.status == "pending"
         return if delivery.next_attempt_at && delivery.next_attempt_at > now # duplicate nudge, backoff not elapsed
 
-        Loam::Telemetry.span("durable_event_delivery",
+        OpenLoam::Telemetry.span("durable_event_delivery",
                              subscriber_key: delivery.subscriber_key, event_name: delivery.event_name) do
           run_delivery(delivery, now)
         end
@@ -136,8 +136,8 @@ module Loam
       # no cross-tenant scan is needed.
       def redeliver_stuck(now: Time.current, limit: 500)
         count = 0
-        Loam::EventDelivery.due(now).limit(limit).find_each do |delivery|
-          Loam::EventDeliveryJob.perform_later(delivery.tenant_id, delivery.id)
+        OpenLoam::EventDelivery.due(now).limit(limit).find_each do |delivery|
+          OpenLoam::EventDeliveryJob.perform_later(delivery.tenant_id, delivery.id)
           count += 1
         end
         count

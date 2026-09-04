@@ -1,9 +1,9 @@
 require "set"
 
-module Loam
+module OpenLoam
   # A small, dependency-free "next run" calculator for a standard 5-field cron
   # expression ("min hour dom month dow") plus an "interval:N" (every N seconds)
-  # form — same stdlib-only spirit as Loam::Totp / Loam::Base32. Timezone-aware;
+  # form — same stdlib-only spirit as OpenLoam::Totp / OpenLoam::Base32. Timezone-aware;
   # always returns UTC. Supports `*`, lists (`1,15`), ranges (`1-5`), and steps
   # (`*/15`, `0-30/10`), and the classic cron day-of-month / day-of-week OR quirk
   # (when BOTH are restricted, a match on either fires).

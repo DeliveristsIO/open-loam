@@ -9,46 +9,46 @@ class SchedSystemJob < ApplicationJob
   def perform; end
 end
 
-# Loam::Cron: the stdlib next-run calculator.
-class LoamCronTest < ActiveSupport::TestCase
+# OpenLoam::Cron: the stdlib next-run calculator.
+class OpenLoamCronTest < ActiveSupport::TestCase
   test "computes the next run for cron and interval expressions, timezone-aware" do
-    daily = Loam::Cron.next_after("0 7 * * *", from: Time.utc(2026, 1, 1, 8, 0), zone: "UTC")
+    daily = OpenLoam::Cron.next_after("0 7 * * *", from: Time.utc(2026, 1, 1, 8, 0), zone: "UTC")
     assert_equal Time.utc(2026, 1, 2, 7, 0), daily
 
-    quarter = Loam::Cron.next_after("*/15 * * * *", from: Time.utc(2026, 1, 1, 12, 7), zone: "UTC")
+    quarter = OpenLoam::Cron.next_after("*/15 * * * *", from: Time.utc(2026, 1, 1, 12, 7), zone: "UTC")
     assert_equal Time.utc(2026, 1, 1, 12, 15), quarter
 
-    monday = Loam::Cron.next_after("0 9 * * 1", from: Time.utc(2026, 1, 1, 0, 0), zone: "UTC")
+    monday = OpenLoam::Cron.next_after("0 9 * * 1", from: Time.utc(2026, 1, 1, 0, 0), zone: "UTC")
     assert_equal Time.utc(2026, 1, 5, 9, 0), monday, "next Monday 09:00"
 
-    interval = Loam::Cron.next_after("interval:3600", from: Time.utc(2026, 1, 1, 12, 0), zone: "UTC")
+    interval = OpenLoam::Cron.next_after("interval:3600", from: Time.utc(2026, 1, 1, 12, 0), zone: "UTC")
     assert_equal Time.utc(2026, 1, 1, 13, 0), interval
 
-    warsaw = Loam::Cron.next_after("0 7 * * *", from: Time.utc(2026, 1, 1, 0, 0), zone: "Europe/Warsaw")
+    warsaw = OpenLoam::Cron.next_after("0 7 * * *", from: Time.utc(2026, 1, 1, 0, 0), zone: "Europe/Warsaw")
     assert_equal Time.utc(2026, 1, 1, 6, 0), warsaw, "07:00 Warsaw (UTC+1 in winter) is 06:00 UTC"
   end
 
   test "rejects a malformed cron" do
-    assert_raises(ArgumentError) { Loam::Cron.next_after("nonsense", from: Time.current) }
-    assert_raises(ArgumentError) { Loam::Cron.next_after("0 7 * *", from: Time.current) }
+    assert_raises(ArgumentError) { OpenLoam::Cron.next_after("nonsense", from: Time.current) }
+    assert_raises(ArgumentError) { OpenLoam::Cron.next_after("0 7 * *", from: Time.current) }
   end
 end
 
-class LoamSchedulerTest < ActiveSupport::TestCase
+class OpenLoamSchedulerTest < ActiveSupport::TestCase
   include ActiveJob::TestHelper
 
   setup do
-    @allowed = Loam.schedulable_jobs
-    Loam.schedulable_jobs = %w[SchedTenantJob SchedSystemJob]  # allowlist the test jobs
-    @warsaw = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-sched")
-    @krakow = Loam::Tenant.create!(name: "Branch Krakow", slug: "krakow-sched")
+    @allowed = OpenLoam.schedulable_jobs
+    OpenLoam.schedulable_jobs = %w[SchedTenantJob SchedSystemJob]  # allowlist the test jobs
+    @warsaw = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-sched")
+    @krakow = OpenLoam::Tenant.create!(name: "Branch Krakow", slug: "krakow-sched")
   end
 
-  teardown { Loam.schedulable_jobs = @allowed }
+  teardown { OpenLoam.schedulable_jobs = @allowed }
 
   def make_job(tenant, key:, job_class: "SchedTenantJob", scope: "tenant", due: true, active: true)
     with_tenant(tenant) do
-      Loam::ScheduledJob.create!(
+      OpenLoam::ScheduledJob.create!(
         key: key, name: key, job_class: job_class, schedule: "0 3 * * *", scope: scope, active: active,
         next_run_at: due ? 1.minute.ago : 1.hour.from_now
       )
@@ -58,7 +58,7 @@ class LoamSchedulerTest < ActiveSupport::TestCase
   test "a job_class that is not a known ActiveJob is refused (code-execution guard)" do
     with_tenant(@warsaw) do
       %w[Kernel User String NotARealClass].each do |bad|
-        job = Loam::ScheduledJob.new(key: "x", name: "x", job_class: bad, schedule: "0 0 * * *", scope: "tenant")
+        job = OpenLoam::ScheduledJob.new(key: "x", name: "x", job_class: bad, schedule: "0 0 * * *", scope: "tenant")
         refute job.valid?, "#{bad} must be refused"
         assert job.errors[:job_class].any?
       end
@@ -70,7 +70,7 @@ class LoamSchedulerTest < ActiveSupport::TestCase
     make_job(@warsaw, key: "later", due: false)
 
     assert_enqueued_jobs 1, only: SchedTenantJob do
-      Loam::Scheduler.tick
+      OpenLoam::Scheduler.tick
     end
     assert with_tenant(@warsaw) { due.reload.next_run_at > Time.current }, "the fired job's next run advanced"
   end
@@ -79,7 +79,7 @@ class LoamSchedulerTest < ActiveSupport::TestCase
     make_job(@warsaw, key: "t", job_class: "SchedTenantJob", scope: "tenant")
     make_job(@warsaw, key: "s", job_class: "SchedSystemJob", scope: "system")
 
-    Loam::Scheduler.tick
+    OpenLoam::Scheduler.tick
 
     assert_enqueued_with(job: SchedTenantJob, args: [ { tenant_id: @warsaw.id } ])
     assert_enqueued_with(job: SchedSystemJob, args: [])
@@ -88,20 +88,20 @@ class LoamSchedulerTest < ActiveSupport::TestCase
   test "the atomic claim prevents a double-fire: a locked row is skipped, and a fired row is not due again" do
     make_job(@warsaw, key: "once")
 
-    assert_equal 1, Loam::Scheduler.tick, "fires once"
-    assert_equal 0, Loam::Scheduler.tick, "immediately after, next_run_at is in the future — not re-fired"
+    assert_equal 1, OpenLoam::Scheduler.tick, "fires once"
+    assert_equal 0, OpenLoam::Scheduler.tick, "immediately after, next_run_at is in the future — not re-fired"
 
     # A row claimed by another worker (locked, future lock) is skipped.
     locked = make_job(@krakow, key: "locked")
     with_tenant(@krakow) { locked.update_columns(locked_until: 10.minutes.from_now) }
-    assert_equal 0, Loam::Scheduler.tick, "a locked due row is skipped"
+    assert_equal 0, OpenLoam::Scheduler.tick, "a locked due row is skipped"
   end
 
   test "a Warsaw schedule never runs in Krakow" do
     make_job(@warsaw, key: "warsaw-only")
 
     assert_enqueued_jobs 1, only: SchedTenantJob do
-      Loam::Scheduler.tick
+      OpenLoam::Scheduler.tick
     end
     assert_enqueued_with(job: SchedTenantJob, args: [ { tenant_id: @warsaw.id } ])
     enqueued = enqueued_jobs.select { |j| j[:job] == SchedTenantJob }
@@ -115,7 +115,7 @@ class LoamSchedulerTest < ActiveSupport::TestCase
     with_tenant(@warsaw) { bad.update_column(:job_class, "NoLongerAClass") }
 
     fired = nil
-    assert_nothing_raised { fired = Loam::Scheduler.tick }
+    assert_nothing_raised { fired = OpenLoam::Scheduler.tick }
     assert_equal 1, fired, "only the good job fired"
     assert with_tenant(@warsaw) { good.reload.next_run_at > Time.current }, "the good job advanced"
     assert_nil with_tenant(@warsaw) { bad.reload.last_run_at }, "the bad job did not run"

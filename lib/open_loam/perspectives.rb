@@ -1,20 +1,20 @@
-module Loam
-  # Reading the saved views (Loam::Perspective) a user may see for an entity.
+module OpenLoam
+  # Reading the saved views (OpenLoam::Perspective) a user may see for an entity.
   #
-  #   Loam::Perspectives.visible_to("Equipment", user: current_actor)   # pick list
-  #   Loam::Perspectives.default_for("Equipment", user: current_actor)  # the applicable default
-  #   Loam::Perspectives.resolve("Equipment", user:, id: params[:perspective_id])
+  #   OpenLoam::Perspectives.visible_to("Equipment", user: current_actor)   # pick list
+  #   OpenLoam::Perspectives.default_for("Equipment", user: current_actor)  # the applicable default
+  #   OpenLoam::Perspectives.resolve("Equipment", user:, id: params[:perspective_id])
   #
-  # Every query is tenant-scoped by Loam::Perspective. The membership role used
+  # Every query is tenant-scoped by OpenLoam::Perspective. The membership role used
   # for role-shared views is the user's role in the CURRENT tenant.
   module Perspectives
     class << self
       # The views this user may see for an entity: their own private ones, the
       # role-shared ones matching their membership role, and the tenant-wide
       # ones. Default(s) first, then by name. Named `visible_to` rather than
-      # `for` so it does not read like Loam::Policy.for (which builds a policy).
+      # `for` so it does not read like OpenLoam::Policy.for (which builds a policy).
       def visible_to(entity_type, user:)
-        base = Loam::Perspective.where(entity_type: entity_type.to_s)
+        base = OpenLoam::Perspective.where(entity_type: entity_type.to_s)
         role = membership_role(user)
 
         # Build the OR chain on UNORDERED relations — `.or` refuses to combine
@@ -55,7 +55,7 @@ module Loam
       def membership_role(user)
         return nil unless user
 
-        Loam::Membership.find_by(user_id: user.id)&.role
+        OpenLoam::Membership.find_by(user_id: user.id)&.role
       end
     end
   end

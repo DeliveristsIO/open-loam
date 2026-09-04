@@ -1,19 +1,19 @@
 require "test_helper"
 
-# Generated guardrail tests for DamageReport. They prove the Loam
+# Generated guardrail tests for DamageReport. They prove the OpenLoam
 # invariants hold for THIS entity: tenant isolation, loud failure without
 # context, audit-by-default, lifecycle events, membership-gated policies.
 # Extend freely; never delete.
-class DamageReportLoamTest < ActiveSupport::TestCase
+class DamageReportOpenLoamTest < ActiveSupport::TestCase
   setup do
-    @tenant_a = Loam::Tenant.create!(name: "Tenant A", slug: "a-damage_report")
-    @tenant_b = Loam::Tenant.create!(name: "Tenant B", slug: "b-damage_report")
+    @tenant_a = OpenLoam::Tenant.create!(name: "Tenant A", slug: "a-damage_report")
+    @tenant_b = OpenLoam::Tenant.create!(name: "Tenant B", slug: "b-damage_report")
     @manager = User.create!(name: "Manager", email: "manager@example.test", password: "password")
     @employee = User.create!(name: "Employee", email: "employee@example.test", password: "password")
 
     with_tenant(@tenant_a) do
-      Loam::Membership.create!(user: @manager, role: "manager")
-      Loam::Membership.create!(user: @employee, role: "employee")
+      OpenLoam::Membership.create!(user: @manager, role: "manager")
+      OpenLoam::Membership.create!(user: @employee, role: "employee")
     end
   end
 
@@ -29,15 +29,15 @@ class DamageReportLoamTest < ActiveSupport::TestCase
   end
 
   test "guardrail: touching the model with no tenant context raises" do
-    assert_raises(Loam::MissingTenantError) { DamageReport.count }
-    assert_raises(Loam::MissingTenantError) { DamageReport.new }
+    assert_raises(OpenLoam::MissingTenantError) { DamageReport.count }
+    assert_raises(OpenLoam::MissingTenantError) { DamageReport.new }
   end
 
   test "guardrail: a record cannot be written into a foreign tenant" do
     record = with_tenant(@tenant_a) { DamageReport.create!(equipment_id: 1, description: "Sample description 0", approved: true) }
 
     with_tenant(@tenant_b) do
-      assert_raises(Loam::MissingTenantError) { record.update!(equipment_id: 2, description: "Sample description 1", approved: false) }
+      assert_raises(OpenLoam::MissingTenantError) { record.update!(equipment_id: 2, description: "Sample description 1", approved: false) }
     end
   end
 
@@ -45,7 +45,7 @@ class DamageReportLoamTest < ActiveSupport::TestCase
     with_tenant(@tenant_a, actor: @manager) do
       record = DamageReport.create!(equipment_id: 1, description: "Sample description 0", approved: true)
 
-      audit = Loam::AuditRecord.find_by(
+      audit = OpenLoam::AuditRecord.find_by(
         auditable_type: "DamageReport", auditable_id: record.id, action: "create"
       )
       assert audit, "expected an audit record for the create"
@@ -56,7 +56,7 @@ class DamageReportLoamTest < ActiveSupport::TestCase
 
   test "lifecycle events are published with the tenant stamped" do
     received = []
-    subscription = Loam::Events.subscribe("rental.damage_report.created") do |_name, payload|
+    subscription = OpenLoam::Events.subscribe("rental.damage_report.created") do |_name, payload|
       received << payload
     end
 
@@ -70,7 +70,7 @@ class DamageReportLoamTest < ActiveSupport::TestCase
 
   test "approving a report publishes billing.penalty.due" do
     received = []
-    subscription = Loam::Events.subscribe("billing.penalty.due") do |_name, payload|
+    subscription = OpenLoam::Events.subscribe("billing.penalty.due") do |_name, payload|
       received << payload
     end
 

@@ -6,13 +6,13 @@ require "test_helper"
 # These certify the DEFAULT LikeDriver specifically, so they pin it (the demo
 # opts into the TokenDriver in its initializer). The TokenDriver has its own
 # class below.
-class LoamSearchTest < ActiveSupport::TestCase
+class OpenLoamSearchTest < ActiveSupport::TestCase
   setup do
-    @previous_driver = Loam::Search.driver
-    Loam::Search.driver = Loam::Search::LikeDriver
+    @previous_driver = OpenLoam::Search.driver
+    OpenLoam::Search.driver = OpenLoam::Search::LikeDriver
 
-    @warsaw = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-search")
-    @krakow = Loam::Tenant.create!(name: "Branch Krakow", slug: "krakow-search")
+    @warsaw = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-search")
+    @krakow = OpenLoam::Tenant.create!(name: "Branch Krakow", slug: "krakow-search")
 
     with_tenant(@warsaw) do
       Equipment.create!(name: "Excavator CAT 320", daily_rate: 950, status: "available")
@@ -22,7 +22,7 @@ class LoamSearchTest < ActiveSupport::TestCase
     with_tenant(@krakow) { Equipment.create!(name: "Excavator CAT 400", daily_rate: 990, status: "available") }
   end
 
-  teardown { Loam::Search.driver = @previous_driver }
+  teardown { OpenLoam::Search.driver = @previous_driver }
 
   test "search matches a substring of any declared column" do
     with_tenant(@warsaw) do
@@ -70,25 +70,25 @@ class LoamSearchTest < ActiveSupport::TestCase
   end
 
   test "a model declares whether it is searchable at all" do
-    assert Equipment.loam_searchable?
-    assert_equal %w[name status], Equipment.loam_searchable_columns
-    assert_equal %w[description state], DamageReport.loam_searchable_columns
+    assert Equipment.open_loam_searchable?
+    assert_equal %w[name status], Equipment.open_loam_searchable_columns
+    assert_equal %w[description state], DamageReport.open_loam_searchable_columns
 
-    # Loam's own plumbing is not part of the app's search surface.
-    refute Loam::Notification.respond_to?(:loam_searchable?)
+    # OpenLoam's own plumbing is not part of the app's search surface.
+    refute OpenLoam::Notification.respond_to?(:open_loam_searchable?)
   end
 end
 
-# The TokenDriver: a portable word-level index (loam_search_tokens). Word-level,
+# The TokenDriver: a portable word-level index (open_loam_search_tokens). Word-level,
 # order-independent, AND semantics, tenant-scoped, index maintained on write —
 # and NEVER tokenizing an encrypted field's plaintext.
-class LoamTokenSearchTest < ActiveSupport::TestCase
+class OpenLoamTokenSearchTest < ActiveSupport::TestCase
   setup do
-    @previous_driver = Loam::Search.driver
-    Loam::Search.driver = Loam::Search::TokenDriver
+    @previous_driver = OpenLoam::Search.driver
+    OpenLoam::Search.driver = OpenLoam::Search::TokenDriver
 
-    @warsaw = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-token")
-    @krakow = Loam::Tenant.create!(name: "Branch Krakow", slug: "krakow-token")
+    @warsaw = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-token")
+    @krakow = OpenLoam::Tenant.create!(name: "Branch Krakow", slug: "krakow-token")
 
     with_tenant(@warsaw) do
       @excavator = Equipment.create!(name: "Excavator CAT 320", daily_rate: 950, status: "available")
@@ -97,7 +97,7 @@ class LoamTokenSearchTest < ActiveSupport::TestCase
     with_tenant(@krakow) { Equipment.create!(name: "Excavator CAT 400", daily_rate: 990, status: "available") }
   end
 
-  teardown { Loam::Search.driver = @previous_driver }
+  teardown { OpenLoam::Search.driver = @previous_driver }
 
   test "matches on whole words, order-independent (unlike a substring LIKE)" do
     with_tenant(@warsaw) do
@@ -140,19 +140,19 @@ class LoamTokenSearchTest < ActiveSupport::TestCase
 
   test "the index is maintained on destroy" do
     with_tenant(@warsaw) do
-      assert_operator Loam::SearchToken.where(searchable_type: "Equipment", searchable_id: @mixer.id).count, :>, 0
+      assert_operator OpenLoam::SearchToken.where(searchable_type: "Equipment", searchable_id: @mixer.id).count, :>, 0
       @mixer.destroy!
-      assert_equal 0, Loam::SearchToken.where(searchable_type: "Equipment", searchable_id: @mixer.id).count
+      assert_equal 0, OpenLoam::SearchToken.where(searchable_type: "Equipment", searchable_id: @mixer.id).count
       assert_empty Equipment.search("mixer").pluck(:name)
     end
   end
 
   test "reindex rebuilds a model's tokens from scratch" do
     with_tenant(@warsaw) do
-      Loam::SearchToken.where(searchable_type: "Equipment").delete_all
+      OpenLoam::SearchToken.where(searchable_type: "Equipment").delete_all
       assert_empty Equipment.search("excavator").pluck(:name), "no tokens, no matches"
 
-      Loam::Search.reindex(Equipment)
+      OpenLoam::Search.reindex(Equipment)
       assert_equal [ "Excavator CAT 320" ], Equipment.search("excavator").pluck(:name)
     end
   end
@@ -160,7 +160,7 @@ class LoamTokenSearchTest < ActiveSupport::TestCase
   test "an encrypted field's plaintext NEVER lands in the token index" do
     with_tenant(@warsaw) do
       customer = Customer.create!(name: "Acme Construction", email: "orders@acme.test", tax_id: "PL5260001246")
-      tokens = Loam::SearchToken.where(searchable_type: "Customer", searchable_id: customer.id).pluck(:token)
+      tokens = OpenLoam::SearchToken.where(searchable_type: "Customer", searchable_id: customer.id).pluck(:token)
 
       assert_equal %w[acme construction], tokens.sort, "only the searchable name is tokenized"
       refute tokens.any? { |t| t.include?("5260") }, "the encrypted tax_id must not be tokenized"
@@ -182,26 +182,26 @@ end
 
 # The seam itself: one Model.search call site, swapped driver, different match
 # behavior — proving a driver change touches NO caller.
-class LoamSearchDriverSeamTest < ActiveSupport::TestCase
+class OpenLoamSearchDriverSeamTest < ActiveSupport::TestCase
   setup do
-    @previous_driver = Loam::Search.driver
-    @warsaw = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-seam")
+    @previous_driver = OpenLoam::Search.driver
+    @warsaw = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-seam")
   end
 
-  teardown { Loam::Search.driver = @previous_driver }
+  teardown { OpenLoam::Search.driver = @previous_driver }
 
   test "the same search call site behaves per the active driver, unchanged" do
     with_tenant(@warsaw) do
-      Loam::Search.driver = Loam::Search::TokenDriver
+      OpenLoam::Search.driver = OpenLoam::Search::TokenDriver
       equipment = Equipment.create!(name: "Excavator CAT 320", daily_rate: 950, status: "available")
 
       # LIKE: substring, mid-word.
-      Loam::Search.driver = Loam::Search::LikeDriver
+      OpenLoam::Search.driver = OpenLoam::Search::LikeDriver
       assert_equal [ "Excavator CAT 320" ], Equipment.search("xcav").pluck(:name), "LIKE matches a substring"
 
       # Token: whole words only — a mid-word fragment does not match, but the
       # reordered words do. Same call site, no code change.
-      Loam::Search.driver = Loam::Search::TokenDriver
+      OpenLoam::Search.driver = OpenLoam::Search::TokenDriver
       assert_empty Equipment.search("xcav").pluck(:name), "the token driver is word-level, not substring"
       assert_equal [ "Excavator CAT 320" ], Equipment.search("320 excavator").pluck(:name)
     end

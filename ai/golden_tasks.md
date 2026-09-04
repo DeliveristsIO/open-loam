@@ -1,7 +1,7 @@
-# Loam Golden AI Tasks
+# OpenLoam Golden AI Tasks
 
-The permanent benchmark from [LOAM_PLAN.md](../LOAM_PLAN.md) (Days 31–45).
-Each task is given to a coding agent against a fresh Loam app (the generator
+The permanent benchmark from [OPEN_LOAM_PLAN.md](../OPEN_LOAM_PLAN.md) (Days 31–45).
+Each task is given to a coding agent against a fresh OpenLoam app (the generator
 harness knows how to build one — see `test/`). The agent gets AGENTS.md and the
 task text, nothing else. Run repeatedly; a task counts as passed only when the
 full suite (including guardrails) is green and no invariant was violated.
@@ -34,18 +34,18 @@ full suite (including guardrails) is green and no invariant was violated.
 Record results per run in `ai/benchmark_runs/` as dated markdown files
 (`YYYY-MM-DD-<agent>.md`): task, outcome, violations, interventions, wall time.
 Do not market speed claims until there are enough real measurements
-(LOAM_PLAN.md, "Loam AI Benchmark").
+(OPEN_LOAM_PLAN.md, "OpenLoam AI Benchmark").
 
 ## Scoring a run (L-303)
 
 After an agent implements a task in a fresh app, score it consistently:
 
 ```
-bin/rails "loam:eval[2]"                        # task 2 — tests only
-bin/rails "loam:eval[2,cross-tenant read in X]"  # note an invariant breach
+bin/rails "open_loam:eval[2]"                        # task 2 — tests only
+bin/rails "open_loam:eval[2,cross-tenant read in X]"  # note an invariant breach
 ```
 
-`Loam::Eval` parses the suite tally and applies the bar — **green suite AND no
+`OpenLoam::Eval` parses the suite tally and applies the bar — **green suite AND no
 invariant violated** — writing a machine-readable scorecard to
 `ai/benchmark_runs/` and exiting non-zero on failure (so it drops into CI). The
 agent loop is external; the scoring is what stays comparable across runs.

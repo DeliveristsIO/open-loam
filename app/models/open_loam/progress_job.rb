@@ -1,4 +1,4 @@
-module Loam
+module OpenLoam
   # Progress of a long-running job (a bulk import, a reindex, a report) so the
   # admin can watch it live instead of guessing. Tenant-scoped; a job started in
   # one tenant is only visible and streamable there.
@@ -7,11 +7,11 @@ module Loam
   # ticks) and the audit trail would fill with noise. The terminal status and
   # any error are captured on the row itself, which is the summary that matters.
   #
-  # Each meaningful change publishes `loam.progress.updated` (broadcastable → SSE)
-  # carrying only id/percent/status — no record contents. See Loam::Progress for
+  # Each meaningful change publishes `open_loam.progress.updated` (broadcastable → SSE)
+  # carrying only id/percent/status — no record contents. See OpenLoam::Progress for
   # the entry point.
-  class ProgressJob < Loam::TenantRecord
-    self.table_name = "loam_progress_jobs"
+  class ProgressJob < OpenLoam::TenantRecord
+    self.table_name = "open_loam_progress_jobs"
 
     STATUSES = %w[running completed failed cancelled].freeze
     STALE_AFTER = 5.minutes
@@ -93,11 +93,11 @@ module Loam
       self
     end
 
-    # Only ever id/percent/status leave the server (Loam::Events stamps tenant_id
+    # Only ever id/percent/status leave the server (OpenLoam::Events stamps tenant_id
     # for the SSE deliverable filter; the frame's safe_payload drops everything
     # else).
     def broadcast
-      Loam::Events.publish("loam.progress.updated", id: id, percent: percent, status: status)
+      OpenLoam::Events.publish("open_loam.progress.updated", id: id, percent: percent, status: status)
     end
   end
 end

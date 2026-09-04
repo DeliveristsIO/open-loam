@@ -1,13 +1,13 @@
-module Loam
+module OpenLoam
   # Base policy. One policy class per entity, one instance per (actor, record)
   # pair. Action checks (read?/create?/update?/destroy?) default to "any member
   # of the current tenant"; field-level write access is declared, not coded:
   #
-  #   class EquipmentPolicy < Loam::Policy
+  #   class EquipmentPolicy < OpenLoam::Policy
   #     field :daily_rate, writable: [:manager]
   #   end
   #
-  # Roles come from Loam::Membership (actor + current tenant -> role).
+  # Roles come from OpenLoam::Membership (actor + current tenant -> role).
   class Policy
     class << self
       def field_rules
@@ -22,7 +22,7 @@ module Loam
         policy_class = "#{record.class.name}Policy".safe_constantize
         raise Error, "No policy defined for #{record.class.name} (expected #{record.class.name}Policy)" unless policy_class
 
-        policy_class.new(Loam::Current.actor, record)
+        policy_class.new(OpenLoam::Current.actor, record)
       end
     end
 
@@ -36,7 +36,7 @@ module Loam
     def role
       return nil unless actor
 
-      @role ||= Loam::Membership.find_by(user_id: actor.id)&.role&.to_sym
+      @role ||= OpenLoam::Membership.find_by(user_id: actor.id)&.role&.to_sym
     end
 
     def member? = role.present?
@@ -73,7 +73,7 @@ module Loam
     end
 
     # Same semantics as the static `field writable:` declaration, but for a
-    # runtime Loam::FieldDefinition (see Loam::CustomFields): no
+    # runtime OpenLoam::FieldDefinition (see OpenLoam::CustomFields): no
     # writable_roles recorded means any member may write it.
     def custom_field_writable?(field_name)
       return false unless member?

@@ -1,15 +1,15 @@
 # Minimal actor model. Deliberately NOT tenant-scoped: a user can belong to
-# many tenants via Loam::Membership (role is per tenant). Swap in your real
-# auth (Devise, OmniAuth, SSO) later — Loam only needs an `id` and, for the
+# many tenants via OpenLoam::Membership (role is per tenant). Swap in your real
+# auth (Devise, OmniAuth, SSO) later — OpenLoam only needs an `id` and, for the
 # bundled admin login, something that answers `authenticate_by`.
 class User < ApplicationRecord
-  # Loam's foreign keys point at this table, so its key has to be generated
+  # OpenLoam's foreign keys point at this table, so its key has to be generated
   # the same way theirs are when the app does not use integer keys.
-  include Loam::GeneratedKey
+  include OpenLoam::GeneratedKey
 
   has_secure_password
 
-  has_many :loam_memberships, class_name: "Loam::Membership"
+  has_many :open_loam_memberships, class_name: "OpenLoam::Membership"
 
   validates :name, presence: true
   validates :email, presence: true, uniqueness: true

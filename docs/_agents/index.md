@@ -1,6 +1,6 @@
 ---
 title: Agents
-description: Why Loam is built for coding agents, the contract it gives them, and how well that measurably works.
+description: Why OpenLoam is built for coding agents, the contract it gives them, and how well that measurably works.
 permalink: /agents/
 ---
 
@@ -9,7 +9,7 @@ permalink: /agents/
 A coding agent works better on a repository that gives it: one obvious place
 for new code, an explicit architecture, generators instead of free-form file
 creation, executable constraints instead of prose it can skim past, and fast
-feedback when it gets something wrong. Loam is built so a model doesn't have
+feedback when it gets something wrong. OpenLoam is built so a model doesn't have
 to rediscover the application's tenancy and authorization model from scratch
 on every task — it reads `AGENTS.md` once, and the rest is enforced.
 
@@ -48,7 +48,7 @@ guardrails + tests  ──fail──> agent corrects, loop repeats
 its table lives here instead. Read the relevant page before touching that
 subsystem.
 
-- [MCP server]({% link _agents/mcp.md %}) — exposing Loam to an AI agent
+- [MCP server]({% link _agents/mcp.md %}) — exposing OpenLoam to an AI agent
 - [Events]({% link _agents/events.md %}) — ephemeral vs durable subscribers
 - [Confirm-mode]({% link _agents/confirm-mode.md %}) — staging a write for approval
 - [Encryption at rest]({% link _agents/encryption.md %})

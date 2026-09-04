@@ -11,52 +11,52 @@
     <%% end %>
     <%% if defined?(current_tenant) && current_tenant %>
       <div class="context">
-        <%%= t("loam.chrome.tenant") %>: <strong><%%= current_tenant.name %></strong> ·
-        <%%= t("loam.chrome.user") %>: <strong><%%= current_actor&.name %></strong> ·
-        <%%= button_to t("loam.chrome.sign_out"), admin_session_path, method: :delete, form: { style: "display:inline" } %>
+        <%%= t("open_loam.chrome.tenant") %>: <strong><%%= current_tenant.name %></strong> ·
+        <%%= t("open_loam.chrome.user") %>: <strong><%%= current_actor&.name %></strong> ·
+        <%%= button_to t("open_loam.chrome.sign_out"), admin_session_path, method: :delete, form: { style: "display:inline" } %>
       </div>
       <nav>
-        <%%= link_to t("loam.nav.dashboard"), admin_root_path %>
-        <%%= link_to admin_notifications_path do %><%%= t("loam.nav.notifications") %> (<span id="loam-notification-count"><%%= unread_notification_count %></span>)<%% end %>
-        <%%= link_to t("loam.nav.api_tokens"), admin_api_tokens_path %>
-        <%%= link_to t("loam.nav.security"), admin_mfa_path %>
-        <%%= link_to "#{t('loam.nav.approvals')} (#{pending_approval_count})", admin_pending_actions_path %>
-        <%%= link_to t("loam.nav.settings"), admin_configs_path %>
-        <%%= link_to t("loam.nav.features"), admin_features_path %>
-        <%%= link_to t("loam.nav.rules"), admin_business_rules_path %>
-        <%%= link_to t("loam.nav.sso"), admin_sso_providers_path %>
-        <%%= link_to t("loam.nav.dictionaries"), admin_dictionaries_path %>
-        <%%= link_to t("loam.nav.tasks"), admin_progress_jobs_path %>
-        <%%= link_to t("loam.nav.schedules"), admin_scheduled_jobs_path %>
-        <%%= link_to t("loam.nav.deliveries"), admin_event_deliveries_path %>
-        <%%= link_to t("loam.nav.inbound"), admin_inbound_webhook_sources_path %>
-        <%%= link_to t("loam.nav.api_docs"), admin_api_docs_path %>
-        <%%= link_to t("loam.nav.overrides"), admin_overrides_path %>
+        <%%= link_to t("open_loam.nav.dashboard"), admin_root_path %>
+        <%%= link_to admin_notifications_path do %><%%= t("open_loam.nav.notifications") %> (<span id="open-loam-notification-count"><%%= unread_notification_count %></span>)<%% end %>
+        <%%= link_to t("open_loam.nav.api_tokens"), admin_api_tokens_path %>
+        <%%= link_to t("open_loam.nav.security"), admin_mfa_path %>
+        <%%= link_to "#{t('open_loam.nav.approvals')} (#{pending_approval_count})", admin_pending_actions_path %>
+        <%%= link_to t("open_loam.nav.settings"), admin_configs_path %>
+        <%%= link_to t("open_loam.nav.features"), admin_features_path %>
+        <%%= link_to t("open_loam.nav.rules"), admin_business_rules_path %>
+        <%%= link_to t("open_loam.nav.sso"), admin_sso_providers_path %>
+        <%%= link_to t("open_loam.nav.dictionaries"), admin_dictionaries_path %>
+        <%%= link_to t("open_loam.nav.tasks"), admin_progress_jobs_path %>
+        <%%= link_to t("open_loam.nav.schedules"), admin_scheduled_jobs_path %>
+        <%%= link_to t("open_loam.nav.deliveries"), admin_event_deliveries_path %>
+        <%%= link_to t("open_loam.nav.inbound"), admin_inbound_webhook_sources_path %>
+        <%%= link_to t("open_loam.nav.api_docs"), admin_api_docs_path %>
+        <%%= link_to t("open_loam.nav.overrides"), admin_overrides_path %>
         <%%= form_with url: admin_search_path, method: :get, class: "search" do %>
-          <%%= text_field_tag :q, params[:q], placeholder: t("loam.chrome.search") %>
+          <%%= text_field_tag :q, params[:q], placeholder: t("open_loam.chrome.search") %>
         <%% end %>
-        <%%# Locale switcher (Loam::Translatable): overlays content onto the picked language. %>
-        <%% if Loam.locales.size > 1 %>
+        <%%# Locale switcher (OpenLoam::Translatable): overlays content onto the picked language. %>
+        <%% if OpenLoam.locales.size > 1 %>
           <span class="locale">
-            <%% Loam.locales.each do |loc| %><%%= link_to loc.upcase, "#{request.path}?locale=#{loc}", style: (loc == current_locale ? "font-weight:bold" : "") %> <%% end %>
+            <%% OpenLoam.locales.each do |loc| %><%%= link_to loc.upcase, "#{request.path}?locale=#{loc}", style: (loc == current_locale ? "font-weight:bold" : "") %> <%% end %>
           </span>
         <%% end %>
       </nav>
 
-      <%%# Live updates over SSE (Loam::EventStream). Degrades gracefully: if
+      <%%# Live updates over SSE (OpenLoam::EventStream). Degrades gracefully: if
           EventSource is unavailable or the stream drops, the per-page-load bell
           count above still works. %>
       <script>
         (function () {
           if (typeof EventSource === "undefined") return;
           var source = new EventSource("<%%= admin_events_stream_path %>");
-          source.addEventListener("loam.notification.created", function () {
-            var badge = document.getElementById("loam-notification-count");
+          source.addEventListener("open_loam.notification.created", function () {
+            var badge = document.getElementById("open-loam-notification-count");
             if (badge) badge.textContent = (parseInt(badge.textContent, 10) || 0) + 1;
           });
-          // Live task progress (Loam::ProgressJob): move the matching bar. The
+          // Live task progress (OpenLoam::ProgressJob): move the matching bar. The
           // frame carries only id/percent/status.
-          source.addEventListener("loam.progress.updated", function (e) {
+          source.addEventListener("open_loam.progress.updated", function (e) {
             var d = JSON.parse(e.data);
             var fill = document.getElementById("progress-fill-" + d.id);
             if (fill) fill.style.width = d.percent + "%";

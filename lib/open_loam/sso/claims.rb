@@ -1,4 +1,4 @@
-module Loam
+module OpenLoam
   module Sso
     # Normalized identity claims, protocol-independent. Every provider's
     # `exchange` returns one of these so the rest of the flow never knows whether

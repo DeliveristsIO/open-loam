@@ -1,17 +1,17 @@
 require "json"
 
-module Loam
+module OpenLoam
   # Auto-generates an OpenAPI 3.1 document for the app's JSON API by
-  # INTROSPECTING what Loam already knows — the generated `Api::<Plural>Controller`s,
+  # INTROSPECTING what OpenLoam already knows — the generated `Api::<Plural>Controller`s,
   # each entity's columns/types, its exposed `FIELDS`, its custom fields, and that
   # every endpoint is bearer-authenticated and tenant-scoped. No hand-written
   # annotations, no external gem.
   #
-  #   Loam::OpenApi.document   # => a Hash conforming to OpenAPI 3.1
-  #   Loam::OpenApi.markdown   # => a Markdown rendering
+  #   OpenLoam::OpenApi.document   # => a Hash conforming to OpenAPI 3.1
+  #   OpenLoam::OpenApi.markdown   # => a Markdown rendering
   #
   # The document describes the SHAPE of the API only — never tenant data. It is
-  # served at /admin/api_docs and exported by `bin/rails loam:openapi:export`.
+  # served at /admin/api_docs and exported by `bin/rails open_loam:openapi:export`.
   module OpenApi
     TYPE_MAP = {
       "string" => { "type" => "string" }, "text" => { "type" => "string" },
@@ -40,13 +40,13 @@ module Loam
       }
     end
 
-    # The Loam entities that have a generated JSON API controller. Anonymous
-    # subclasses (Class.new(Loam::TenantRecord), common in tests) have no name,
+    # The OpenLoam entities that have a generated JSON API controller. Anonymous
+    # subclasses (Class.new(OpenLoam::TenantRecord), common in tests) have no name,
     # so model_name would raise "Class name cannot be blank" — skip them: a
     # nameless class has no controller or route to document anyway.
     def api_entities
       Rails.application.eager_load! if defined?(Rails) && Rails.respond_to?(:application)
-      Loam::TenantRecord.descendants
+      OpenLoam::TenantRecord.descendants
                         .reject { |model| model.name.blank? }
                         .select { |model| controller_for(model) }
                         .sort_by(&:name)
@@ -59,17 +59,17 @@ module Loam
     end
 
     def info
-      name = defined?(Rails) ? Rails.application.class.module_parent_name : "Loam"
+      name = defined?(Rails) ? Rails.application.class.module_parent_name : "OpenLoam"
       {
         "title" => "#{name} API",
         "version" => "1.0.0",
-        "description" => "Auto-generated from the Loam entities. Bearer-token authenticated. #{TENANCY_NOTE}"
+        "description" => "Auto-generated from the OpenLoam entities. Bearer-token authenticated. #{TENANCY_NOTE}"
       }
     end
 
     def security_schemes
       { "bearerAuth" => { "type" => "http", "scheme" => "bearer",
-                          "description" => "A Loam::ApiToken — identifies one user in one tenant." } }
+                          "description" => "A OpenLoam::ApiToken — identifies one user in one tenant." } }
     end
 
     def schemas
@@ -89,7 +89,7 @@ module Loam
 
     # Request body: the writable, declared fields only — never id/tenant_id/
     # timestamps. Field-level write access is enforced per the token's role at
-    # runtime (Loam::Policy), which a structural schema can't express per-role;
+    # runtime (OpenLoam::Policy), which a structural schema can't express per-role;
     # noted in the description rather than emitting a schema per role.
     def input_schema(model)
       props = {}
@@ -143,9 +143,9 @@ module Loam
       return controller::FIELDS.map(&:to_s) if controller.const_defined?(:FIELDS)
 
       # No declared FIELDS: fall back to columns, but NEVER surface an encrypted
-      # column or its blind-index `_hash` (same exclusion as Loam::Export).
-      encrypted = model.respond_to?(:loam_encrypted_attributes) ? model.loam_encrypted_attributes : []
-      blind = model.respond_to?(:loam_searchable_encrypted_attributes) ? model.loam_searchable_encrypted_attributes.map { |a| "#{a}_hash" } : []
+      # column or its blind-index `_hash` (same exclusion as OpenLoam::Export).
+      encrypted = model.respond_to?(:open_loam_encrypted_attributes) ? model.open_loam_encrypted_attributes : []
+      blind = model.respond_to?(:open_loam_searchable_encrypted_attributes) ? model.open_loam_searchable_encrypted_attributes.map { |a| "#{a}_hash" } : []
       model.column_names - plumbing(model) - encrypted - blind
     end
 
@@ -161,7 +161,7 @@ module Loam
     end
 
     def custom_field_names(model)
-      return [] unless model.respond_to?(:custom_field_definitions) && Loam::Current.tenant
+      return [] unless model.respond_to?(:custom_field_definitions) && OpenLoam::Current.tenant
 
       model.custom_field_definitions.map(&:name)
     rescue StandardError

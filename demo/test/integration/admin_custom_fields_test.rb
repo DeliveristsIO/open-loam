@@ -7,12 +7,12 @@ require "test_helper"
 # golden-tasks benchmark run.
 class AdminCustomFieldsTest < ActionDispatch::IntegrationTest
   setup do
-    @tenant = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-custom-fields")
+    @tenant = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-custom-fields")
     @anna = User.create!(name: "Anna", email: "anna@example.test", password: "password")
 
     with_tenant(@tenant) do
-      Loam::Membership.create!(user: @anna, role: "manager")
-      Loam::FieldDefinition.create!(entity_type: "Equipment", name: "serial_number", field_type: "string")
+      OpenLoam::Membership.create!(user: @anna, role: "manager")
+      OpenLoam::FieldDefinition.create!(entity_type: "Equipment", name: "serial_number", field_type: "string")
       @excavator = Equipment.create!(name: "Excavator", daily_rate: 500.0, status: "available")
     end
 

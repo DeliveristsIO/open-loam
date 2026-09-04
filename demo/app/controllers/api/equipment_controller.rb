@@ -9,7 +9,7 @@ module Api
 
     def index
       records = Equipment.order(created_at: :desc).to_a
-      enriched = Loam::Enrichers.enrich_many(records)
+      enriched = OpenLoam::Enrichers.enrich_many(records)
       render json: records.map { |record| entity_json(record, enrichments: enriched[record.id]) }
     end
 

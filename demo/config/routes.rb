@@ -58,7 +58,7 @@ Rails.application.routes.draw do
     end
     # Manager take-over of an advisory edit lock (lockable_type + lockable_id params).
     delete "record_lock", to: "record_locks#destroy", as: :record_lock
-    get "events/stream", to: "events#stream", as: :events_stream  # SSE push (Loam::EventStream)
+    get "events/stream", to: "events#stream", as: :events_stream  # SSE push (OpenLoam::EventStream)
     resources :business_rules, only: %i[index new create edit update destroy]  # when/then rules
     resources :sso_providers, only: %i[index new create edit update destroy]   # per-tenant OIDC config
     resources :dictionaries, only: %i[index new create edit update destroy] do # managed lookup lists
@@ -97,14 +97,14 @@ Rails.application.routes.draw do
     post   "features/enable",  to: "features#enable",  as: :enable_feature
     post   "features/disable", to: "features#disable", as: :disable_feature
     delete "features",         to: "features#reset"
-    # A capability gated by a flag (Loam::Features.require_feature!) — a demo of
+    # A capability gated by a flag (OpenLoam::Features.require_feature!) — a demo of
     # the guard: off for Krakow (404), on for Warsaw once enabled in seeds.
     get "dashboard/beta", to: "dashboard#beta", as: :beta_dashboard
     get   "dashboard_widgets", to: "dashboard_widgets#index", as: :dashboard_widgets  # dashboard settings
     patch "dashboard_widgets", to: "dashboard_widgets#update"
     get "search", to: "search#index"
     get "api_docs", to: "api_docs#index", as: :api_docs  # OpenAPI explorer (+ .json)
-    get "overrides", to: "overrides#index", as: :overrides  # Loam::Overrides (read-only)
+    get "overrides", to: "overrides#index", as: :overrides  # OpenLoam::Overrides (read-only)
     get   "translations", to: "translations#index", as: :translations  # per-record content translations
     patch "translations", to: "translations#update"
   end

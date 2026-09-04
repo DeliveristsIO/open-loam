@@ -1,6 +1,6 @@
 ENV["RAILS_ENV"] ||= "test"
 require_relative "../config/environment"
-require "loam/test_helpers"
+require "open_loam/test_helpers"
 require "rails/test_help"
 
 # Minting 10 BCrypt-hashed recovery codes at the default cost adds seconds to
@@ -11,7 +11,7 @@ BCrypt::Engine.cost = BCrypt::Engine::MIN_COST
 
 module ActiveSupport
   class TestCase
-    include Loam::TestHelpers
+    include OpenLoam::TestHelpers
     # Run tests in parallel with specified workers
     parallelize(workers: :number_of_processors)
 

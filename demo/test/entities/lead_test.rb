@@ -1,19 +1,19 @@
 require "test_helper"
 
-# Generated guardrail tests for Lead. They prove the Loam
+# Generated guardrail tests for Lead. They prove the OpenLoam
 # invariants hold for THIS entity: tenant isolation, loud failure without
 # context, audit-by-default, lifecycle events, membership-gated policies.
 # Extend freely; never delete.
-class LeadLoamTest < ActiveSupport::TestCase
+class LeadOpenLoamTest < ActiveSupport::TestCase
   setup do
-    @tenant_a = Loam::Tenant.create!(name: "Tenant A", slug: "a-lead")
-    @tenant_b = Loam::Tenant.create!(name: "Tenant B", slug: "b-lead")
+    @tenant_a = OpenLoam::Tenant.create!(name: "Tenant A", slug: "a-lead")
+    @tenant_b = OpenLoam::Tenant.create!(name: "Tenant B", slug: "b-lead")
     @manager = User.create!(name: "Manager", email: "manager@example.test", password: "password")
     @employee = User.create!(name: "Employee", email: "employee@example.test", password: "password")
 
     with_tenant(@tenant_a) do
-      Loam::Membership.create!(user: @manager, role: "manager")
-      Loam::Membership.create!(user: @employee, role: "employee")
+      OpenLoam::Membership.create!(user: @manager, role: "manager")
+      OpenLoam::Membership.create!(user: @employee, role: "employee")
     end
   end
 
@@ -29,15 +29,15 @@ class LeadLoamTest < ActiveSupport::TestCase
   end
 
   test "guardrail: touching the model with no tenant context raises" do
-    assert_raises(Loam::MissingTenantError) { Lead.count }
-    assert_raises(Loam::MissingTenantError) { Lead.new }
+    assert_raises(OpenLoam::MissingTenantError) { Lead.count }
+    assert_raises(OpenLoam::MissingTenantError) { Lead.new }
   end
 
   test "guardrail: a record cannot be written into a foreign tenant" do
     record = with_tenant(@tenant_a) { Lead.create!(company_id: 1, source: "Sample source 0", value: 9.99, state: "new") }
 
     with_tenant(@tenant_b) do
-      assert_raises(Loam::MissingTenantError) { record.update!(company_id: 2, source: "Sample source 1", value: 10.99, state: "new") }
+      assert_raises(OpenLoam::MissingTenantError) { record.update!(company_id: 2, source: "Sample source 1", value: 10.99, state: "new") }
     end
   end
 
@@ -45,7 +45,7 @@ class LeadLoamTest < ActiveSupport::TestCase
     with_tenant(@tenant_a, actor: @manager) do
       record = Lead.create!(company_id: 1, source: "Sample source 0", value: 9.99, state: "new")
 
-      audit = Loam::AuditRecord.find_by(
+      audit = OpenLoam::AuditRecord.find_by(
         auditable_type: "Lead", auditable_id: record.id, action: "create"
       )
       assert audit, "expected an audit record for the create"
@@ -56,7 +56,7 @@ class LeadLoamTest < ActiveSupport::TestCase
 
   test "lifecycle events are published with the tenant stamped" do
     received = []
-    subscription = Loam::Events.subscribe("crm.lead.created") do |_name, payload|
+    subscription = OpenLoam::Events.subscribe("crm.lead.created") do |_name, payload|
       received << payload
     end
 
@@ -78,7 +78,7 @@ class LeadLoamTest < ActiveSupport::TestCase
     with_tenant(@tenant_a) do
       assert_equal 0, Lead.count, "a soft-deleted record is gone from ordinary queries"
       assert_equal 1, Lead.with_deleted.count, "but the row still exists"
-      assert Loam::AuditRecord.exists?(auditable_type: "Lead", auditable_id: record_id, action: "soft_delete")
+      assert OpenLoam::AuditRecord.exists?(auditable_type: "Lead", auditable_id: record_id, action: "soft_delete")
     end
 
     # with_deleted lifts the deleted_at filter but NOT the tenant filter.

@@ -1,10 +1,10 @@
 ---
 title: Concept & Positioning
-description: What Loam is, who it's for, and where it sits relative to Bullet Train, Frappe/ERPNext, and Open Mercato.
+description: What OpenLoam is, who it's for, and where it sits relative to Bullet Train, Frappe/ERPNext, and Open Mercato.
 nav_order: 2
 ---
 
-# Loam — concept & positioning
+# OpenLoam — concept & positioning
 
 ## The one-sentence pitch
 
@@ -38,9 +38,9 @@ admin — so humans and AI agents build the 20% that's the actual business.
 Mercato's insight, stated plainly: the value isn't features, it's **decisions
 you no longer have to make** — and decisions an agent no longer has to guess.
 
-## Where Loam sits
+## Where OpenLoam sits
 
-| | Loam | Open Mercato | Frappe / ERPNext | Bullet Train | Spree/Solidus |
+| | OpenLoam | Open Mercato | Frappe / ERPNext | Bullet Train | Spree/Solidus |
 |---|------|--------------|------------------|--------------|---------------|
 | Stack | **Rails** | TS / Next | Python | Rails | Rails |
 | Category | Foundation | Foundation | Foundation | SaaS starter | Commerce product |
@@ -52,7 +52,7 @@ you no longer have to make** — and decisions an agent no longer has to guess.
 | **AI-agent conventions** | ✅ **first-class** | ✅ | ❌ | ❌ | ❌ |
 | Domain | business / any | CRM/ERP/commerce | ERP | generic SaaS | commerce |
 
-**The gap Loam fills:** a Rails project that is *both* a real business foundation
+**The gap OpenLoam fills:** a Rails project that is *both* a real business foundation
 *and* built for AI agents to extend. Today those two properties live in different
 projects. (Research: no Rails project unifies them; the closest structural analog,
 Frappe/ERPNext, is Python.)
@@ -61,17 +61,17 @@ Frappe/ERPNext, is Python.)
 
 Convention-over-configuration makes Rails arguably the **most agent-legible**
 framework already — a well-built Rails app has one obvious place for everything.
-Loam pushes that legibility up a level: from "where does a controller go" to "how
+OpenLoam pushes that legibility up a level: from "where does a controller go" to "how
 is a tenant-scoped, permissioned, audited business domain built." The framework
-does half the work of making agents effective; Loam does the rest.
+does half the work of making agents effective; OpenLoam does the rest.
 
 ## Business model (open-core)
 
-Mirrors the foundations Loam stands on (Bullet Train, Rails itself):
+Mirrors the foundations OpenLoam stands on (Bullet Train, Rails itself):
 
-- **Loam Core** — MIT, self-host. The conventions, generators, agent pack. Free;
+- **OpenLoam Core** — MIT, self-host. The conventions, generators, agent pack. Free;
   the adoption funnel.
-- **Loam Team / Enterprise** — SSO, advanced RBAC/policy management, tenant
+- **OpenLoam Team / Enterprise** — SSO, advanced RBAC/policy management, tenant
   analytics, compliance/audit exports, priority support.
 - **Managed** — hosted single-tenant instances for teams who won't operate it.
 - **Marketplace** — domain packs (a CRM pack, a billing pack, an inventory pack)

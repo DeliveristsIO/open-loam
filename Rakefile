@@ -11,7 +11,7 @@ Rake::TestTask.new(:test) do |t|
   t.warning = false
 end
 
-desc "Run the Loam generator harness (static template checks + a real Rails app smoke test)"
+desc "Run the OpenLoam generator harness (static template checks + a real Rails app smoke test)"
 task default: :test
 
 # Cutting a release touches two files that must move together: the version
@@ -26,7 +26,7 @@ task :bump, [:version] do |_, args|
   abort "usage: rake bump[0.2.0]" if version.nil? || version.empty?
   abort "#{version.inspect} is not a MAJOR.MINOR.PATCH version" unless version.match?(/\A\d+\.\d+\.\d+\z/)
 
-  path = "lib/loam/version.rb"
+  path = "lib/open_loam/version.rb"
   source = File.read(path)
   current = source[/VERSION = "([^"]+)"/, 1]
   abort "already at #{version}" if current == version
@@ -45,8 +45,8 @@ task :bump, [:version] do |_, args|
 
     Next:
       1. add the #{version} entry to CHANGELOG.md
-      2. git add lib/loam/version.rb CHANGELOG.md demo/Gemfile.lock
+      2. git add lib/open_loam/version.rb CHANGELOG.md demo/Gemfile.lock
       3. git commit -m "chore(release): #{version}"
-      4. git tag -a v#{version} -m "Loam #{version}" && git push --follow-tags
+      4. git tag -a v#{version} -m "OpenLoam #{version}" && git push --follow-tags
   NEXT
 end

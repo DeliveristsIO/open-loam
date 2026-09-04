@@ -1,7 +1,7 @@
-module Loam
+module OpenLoam
   # Soft-delete: destroying a business record hides it instead of erasing it.
   # A recycle bin — for GDPR retention, for undo, for audits that still read
-  # cleanly after the fact. Loam is "safe by default", so a soft-deleted record
+  # cleanly after the fact. OpenLoam is "safe by default", so a soft-deleted record
   # is EXCLUDED from every ordinary query; seeing it is something you opt INTO,
   # never a filter you must remember to add.
   #
@@ -34,19 +34,19 @@ module Loam
     end
 
     def soft_delete
-      loam_toggle_deleted(deleted: true, bang: false)
+      open_loam_toggle_deleted(deleted: true, bang: false)
     end
 
     def soft_delete!
-      loam_toggle_deleted(deleted: true, bang: true)
+      open_loam_toggle_deleted(deleted: true, bang: true)
     end
 
     def restore
-      loam_toggle_deleted(deleted: false, bang: false)
+      open_loam_toggle_deleted(deleted: false, bang: false)
     end
 
     def restore!
-      loam_toggle_deleted(deleted: false, bang: true)
+      open_loam_toggle_deleted(deleted: false, bang: true)
     end
 
     private
@@ -55,18 +55,18 @@ module Loam
     # record to the state it is already in (a double-clicked button) is a no-op,
     # so the trail never fills with deleted_at -> deleted_at noise.
     #
-    # A soft-delete is an UPDATE, so Loam::Auditable's after_destroy never fires
+    # A soft-delete is an UPDATE, so OpenLoam::Auditable's after_destroy never fires
     # for it. Rather than write our own audit row we borrow Auditable's single
-    # audit path via `loam_audit_as`, which relabels this save's audit
+    # audit path via `open_loam_audit_as`, which relabels this save's audit
     # "soft_delete"/"restore" instead of the "update" it would otherwise record.
-    def loam_toggle_deleted(deleted:, bang:)
+    def open_loam_toggle_deleted(deleted:, bang:)
       return true if deleted == deleted?
 
       self.deleted_at = deleted ? Time.current : nil
       action = deleted ? "soft_delete" : "restore"
       write = -> { bang ? save! : save }
 
-      respond_to?(:loam_audit_as, true) ? loam_audit_as(action, &write) : write.call
+      respond_to?(:open_loam_audit_as, true) ? open_loam_audit_as(action, &write) : write.call
     end
   end
 end

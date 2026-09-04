@@ -1,21 +1,21 @@
-module Loam
+module OpenLoam
   # Feature-string permissions with wildcards (L-705) — a fine-grained capability
   # layer that sits UNDER the coarse role. Roles answer "manager or clerk";
   # permissions answer "may this role do `equipment.edit`" without inventing a new
-  # role for every distinction. Orthogonal to Loam::Policy (which gates field-level
-  # writes on a record) and to Loam::Features (a per-tenant capability switch).
+  # role for every distinction. Orthogonal to OpenLoam::Policy (which gates field-level
+  # writes on a record) and to OpenLoam::Features (a per-tenant capability switch).
   #
   # Declared once, in the initializer (like broadcast_events / scheduler defaults):
   #
-  #   Loam::Permissions.configure do
+  #   OpenLoam::Permissions.configure do
   #     role :admin,   allow: "*"                              # everything
   #     role :manager, allow: %w[equipment.* damage_report.* billing.read]
   #     role :clerk,   allow: %w[equipment.read damage_report.create]
   #   end
   #
-  #   Loam::Permissions.allow?(:clerk, "equipment.read")  # => true
-  #   Loam::Permissions.allow?(:clerk, "equipment.edit")  # => false
-  #   Loam.can?("equipment.edit")                          # for the current actor's role
+  #   OpenLoam::Permissions.allow?(:clerk, "equipment.read")  # => true
+  #   OpenLoam::Permissions.allow?(:clerk, "equipment.edit")  # => false
+  #   OpenLoam.can?("equipment.edit")                          # for the current actor's role
   #
   # DENY BY DEFAULT: a role with no matching grant (or no grants at all) is denied.
   #
@@ -72,7 +72,7 @@ module Loam
     # Tiny DSL so `configure { role ... }` reads well without a receiver.
     class DSL
       def role(name, allow:)
-        Loam::Permissions.role(name, allow: allow)
+        OpenLoam::Permissions.role(name, allow: allow)
       end
     end
   end

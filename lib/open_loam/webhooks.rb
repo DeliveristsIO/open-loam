@@ -1,12 +1,12 @@
-module Loam
+module OpenLoam
   # Domain events, delivered over HTTP to whoever asked for them.
   #
-  # One global subscriber listens to every Loam event and, in the tenant the
+  # One global subscriber listens to every OpenLoam event and, in the tenant the
   # event was published in, enqueues a delivery per matching active endpoint.
   # Matching happens at dispatch time rather than at subscribe time because
   # endpoints are data: a tenant can add one from the admin without a reboot.
   module Webhooks
-    # Wired once from Loam::Engine. Idempotent: subscribing twice would deliver
+    # Wired once from OpenLoam::Engine. Idempotent: subscribing twice would deliver
     # every event twice.
     def self.subscribe!
       @subscription ||= Events.subscribe_all { |event_name, payload| dispatch(event_name, payload) }
@@ -22,7 +22,7 @@ module Loam
       # and scalars by convention, never records.
       deliverable = payload.transform_keys(&:to_s)
 
-      Loam.as_tenant(tenant) do
+      OpenLoam.as_tenant(tenant) do
         WebhookEndpoint.active.each do |endpoint|
           next unless endpoint.matches?(event_name)
 

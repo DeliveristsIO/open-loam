@@ -4,8 +4,8 @@ First full run of the [golden tasks benchmark](../golden_tasks.md).
 
 ## Setup
 
-- Baseline: fresh Rails 8.1.3 app + `loam:install` + `loam:entity Company`
-  + `loam:entity PurchaseOrder` with a `Loam::Workflow`
+- Baseline: fresh Rails 8.1.3 app + `open_loam:install` + `open_loam:entity Company`
+  + `open_loam:entity PurchaseOrder` with a `OpenLoam::Workflow`
   (draft → submitted → approved, approve gated to `:manager`). Baseline suite:
   17 runs / 40 assertions, green.
 - 10 isolated copies of the baseline, one agent per copy. Each agent received
@@ -68,4 +68,4 @@ First full run of the [golden tasks benchmark](../golden_tasks.md).
 - Wall times are approximate (spawn-to-idle, waves of 5 sharing one machine).
 - No vanilla-Rails control group yet, so the +30–50% speed target is
   unmeasured. Next run: same tasks against a bare Rails app for the baseline
-  comparison LOAM_PLAN.md calls for.
+  comparison OPEN_LOAM_PLAN.md calls for.

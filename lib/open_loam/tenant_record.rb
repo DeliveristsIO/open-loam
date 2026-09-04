@@ -1,8 +1,8 @@
-module Loam
+module OpenLoam
   # Base class for every tenant-scoped model. Inheriting from it is what makes
-  # a model a "Loam entity":
+  # a model a "OpenLoam entity":
   #
-  #   * every query is scoped to Loam::Current.tenant via default_scope
+  #   * every query is scoped to OpenLoam::Current.tenant via default_scope
   #   * building/creating a record assigns the current tenant automatically
   #   * touching the model with NO tenant in context raises MissingTenantError
   #
@@ -12,24 +12,24 @@ module Loam
   class TenantRecord < ActiveRecord::Base
     self.abstract_class = true
 
-    # Generates the key when it is not an integer (see Loam::GeneratedKey).
-    include Loam::GeneratedKey
+    # Generates the key when it is not an integer (see OpenLoam::GeneratedKey).
+    include OpenLoam::GeneratedKey
 
-    belongs_to :tenant, class_name: "Loam::Tenant"
+    belongs_to :tenant, class_name: "OpenLoam::Tenant"
 
-    default_scope { where(tenant_id: Loam.tenant!.id) }
+    default_scope { where(tenant_id: OpenLoam.tenant!.id) }
 
     validates :tenant_id, presence: true
 
     before_validation on: :create do
-      self.tenant_id ||= Loam.tenant!.id
+      self.tenant_id ||= OpenLoam.tenant!.id
     end
 
     # Guardrail for writes: a record can never be saved into a foreign tenant.
     before_save do
-      if tenant_id != Loam.tenant!.id
+      if tenant_id != OpenLoam.tenant!.id
         raise MissingTenantError, "Attempted to write #{self.class.name} into tenant #{tenant_id} " \
-                                  "while Loam::Current.tenant is #{Loam.tenant!.id}"
+                                  "while OpenLoam::Current.tenant is #{OpenLoam.tenant!.id}"
       end
     end
   end

@@ -1,4 +1,4 @@
-title: Loam
+title: OpenLoam
 description: AI-native Rails business foundation — tenancy, policies, audit, events, admin — decided, not re-litigated.
 url: https://deliveristsio.github.io
 baseurl: "/open-loam"
@@ -64,26 +64,26 @@ jekyll_vitepress:
     page_type: TechArticle
     publisher:
       type: Organization
-      name: Loam
+      name: OpenLoam
       url: https://deliveristsio.github.io/open-loam
       same_as:
         - https://github.com/DeliveristsIO/open-loam
   llms:
-    title: Loam
+    title: OpenLoam
     description: >-
-      Documentation for Loam, the AI-native Rails business foundation: multi-tenancy,
+      Documentation for OpenLoam, the AI-native Rails business foundation: multi-tenancy,
       roles and field-level permissions, audit trails, a domain event bus, and an
       admin surface — decided, not re-litigated.
     full: true
     details: >-
       Start with Getting Started, then the Foundation section (tenant isolation,
-      authorization, audit) for how Loam holds its guarantees. Agents covers the
+      authorization, audit) for how OpenLoam holds its guarantees. Agents covers the
       contract, guardrails, and the golden-tasks benchmark AI coding agents are
       measured against. Reference has configuration, generators, and the
       backward-compatibility surface. Architecture Decisions record why each call
       was made. Source is on [GitHub](https://github.com/DeliveristsIO/open-loam).
   branding:
-    site_title: Loam
+    site_title: OpenLoam
   tokens:
     light:
       "--vp-c-brand-1": "#3f6b4f"

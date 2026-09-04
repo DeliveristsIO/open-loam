@@ -1,14 +1,14 @@
 require "csv"
 require "set"
 
-module Loam
+module OpenLoam
   # CSV import mapping engine — reusable, tenant-scoped, policy-safe.
   #
-  #   Loam::Import.preview(csv)                       # headers + first rows for the mapping UI
-  #   Loam::Import.run(csv, model:, mapping:, actor:, # map CSV header => field
+  #   OpenLoam::Import.preview(csv)                       # headers + first rows for the mapping UI
+  #   OpenLoam::Import.run(csv, model:, mapping:, actor:, # map CSV header => field
   #                    match_key: "name",             # update-or-create by a key (nil = create-only)
   #                    dry_run: true,                 # validate + report, commit nothing
-  #                    progress: progress_job)        # advance a Loam::ProgressJob per row
+  #                    progress: progress_job)        # advance a OpenLoam::ProgressJob per row
   #
   # Safety: the mapping may only target fields the actor's role can WRITE (real
   # columns + declared custom fields); tenant_id, plumbing, and non-permitted
@@ -27,14 +27,14 @@ module Loam
 
     module_function
 
-    # Resolve an entity_type string to a model — ONLY a Loam::TenantRecord
+    # Resolve an entity_type string to a model — ONLY a OpenLoam::TenantRecord
     # subclass (never an arbitrary constant), so an import target can't be
     # smuggled to a global model like User (same guard as the business-rules
     # engine).
     def allowed_model(entity_type)
       klass = entity_type.to_s.safe_constantize
-      unless klass.is_a?(Class) && klass < Loam::TenantRecord
-        raise Loam::Error, "import target #{entity_type.inspect} is not a Loam entity"
+      unless klass.is_a?(Class) && klass < OpenLoam::TenantRecord
+        raise OpenLoam::Error, "import target #{entity_type.inspect} is not a OpenLoam entity"
       end
 
       klass
@@ -79,7 +79,7 @@ module Loam
           is_new ? (result.created += 1) : (result.updated += 1)
         rescue StandardError => error
           # Store ONLY the row number + message — NEVER the raw cell values. The
-          # result is persisted (Loam::ProgressJob.result); a failed row into an
+          # result is persisted (OpenLoam::ProgressJob.result); a failed row into an
           # encrypted field would otherwise write PLAINTEXT PII at rest.
           result.failed += 1
           result.errors << { "row" => line, "message" => error.message }
@@ -103,7 +103,7 @@ module Loam
         out << (Array(headers) + [ "_error" ])
         result.errors.each do |error|
           original = data_rows[error["row"] - 2] || [] # row is 1-based incl. the header
-          out << original.map { |cell| Loam::Csv.safe(cell) } + [ error["message"] ]
+          out << original.map { |cell| OpenLoam::Csv.safe(cell) } + [ error["message"] ]
         end
       end
     end
@@ -115,7 +115,7 @@ module Loam
         next if target.to_s.blank?
         next if allowed.include?(target.to_s)
 
-        raise Loam::Error, "import mapping refuses #{target.inspect} — not a writable column or custom field"
+        raise OpenLoam::Error, "import mapping refuses #{target.inspect} — not a writable column or custom field"
       end
     end
 
@@ -155,14 +155,14 @@ module Loam
     def safe_parse(csv_string)
       CSV.parse(csv_string.to_s)
     rescue CSV::MalformedCSVError => error
-      raise Loam::Error, "could not parse CSV: #{error.message}"
+      raise OpenLoam::Error, "could not parse CSV: #{error.message}"
     end
 
     def policy_for(model, actor)
       klass = "#{model.name}Policy".safe_constantize
       # A blank instance as the record: readable?/writable? key off the role, but
       # custom_field_writable? reads record.class.custom_field_definitions.
-      (klass || Loam::Policy).new(actor, model.new)
+      (klass || OpenLoam::Policy).new(actor, model.new)
     end
   end
 end

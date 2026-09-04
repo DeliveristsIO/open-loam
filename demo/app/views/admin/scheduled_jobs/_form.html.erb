@@ -1,4 +1,4 @@
-<%# Loam::ScheduledJob is namespaced, so pin the URL + param scope. %>
+<%# OpenLoam::ScheduledJob is namespaced, so pin the URL + param scope. %>
 <%= form_with model: @job, scope: :scheduled_job,
       url: (@job.persisted? ? admin_scheduled_job_path(@job) : admin_scheduled_jobs_path) do |f| %>
   <% if @job.errors.any? %>

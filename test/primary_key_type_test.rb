@@ -9,16 +9,16 @@ require "test_helper"
 # Two things are asserted here, and the second matters as much as the first:
 # the generators follow a non-integer key, and an ordinary bigint app still
 # gets exactly the migrations it got before. A regression that silently added
-# `id:` to every table would reach every existing Loam app.
+# `id:` to every table would reach every existing OpenLoam app.
 class PrimaryKeyTypeTest < HarnessCase
   def test_generators_follow_a_string_key_app_and_records_get_keys
-    app = build_app(name: "loam_string_key_app")
+    app = build_app(name: "open_loam_string_key_app")
     set_primary_key_type(app, ":string")
 
-    step("rails g loam:install", "bin/rails g loam:install", app)
+    step("rails g open_loam:install", "bin/rails g open_loam:install", app)
 
     body = File.read(migration(app, "create_loam_audit_records"))
-    assert_match(/create_table :loam_audit_records, id: :string, limit: 36 do/, body,
+    assert_match(/create_table :open_loam_audit_records, id: :string, limit: 36 do/, body,
                  "the table itself still declares a bigint key:\n#{body}")
     assert_match(/t\.references :tenant,.*type: :string, limit: 36/, body,
                  "the tenant foreign key does not match the tenants table:\n#{body}")
@@ -28,19 +28,19 @@ class PrimaryKeyTypeTest < HarnessCase
                  "the polymorphic key column is still a bigint:\n#{body}")
 
     step("rails db:migrate", "bin/rails db:migrate", app)
-    step("rails g loam:entity Widget", "bin/rails g loam:entity Widget name:string", app)
+    step("rails g open_loam:entity Widget", "bin/rails g open_loam:entity Widget name:string", app)
 
     entity = File.read(migration(app, "create_widgets"))
     assert_match(/create_table :widgets, id: :string, limit: 36 do/, entity,
-                 "loam:entity ignored the app's key type:\n#{entity}")
+                 "open_loam:entity ignored the app's key type:\n#{entity}")
 
     step("rails db:migrate (entity)", "bin/rails db:migrate", app)
 
     # The migrations lining up is only half of it — a string key has no
-    # database default, so without Loam::GeneratedKey the insert sends NULL.
-    id = runner_value("create a tenant", %(Loam::Tenant.create!(name: "Acme", slug: "acme").id), app)
+    # database default, so without OpenLoam::GeneratedKey the insert sends NULL.
+    id = runner_value("create a tenant", %(OpenLoam::Tenant.create!(name: "Acme", slug: "acme").id), app)
     assert_match(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/, id,
-                 "Loam::Tenant.create! did not generate a key, got #{id.inspect}")
+                 "OpenLoam::Tenant.create! did not generate a key, got #{id.inspect}")
 
     # The generated suite includes the tenant-isolation guardrails, which are
     # the thing most likely to break if keys stop comparing the way they did.
@@ -48,8 +48,8 @@ class PrimaryKeyTypeTest < HarnessCase
   end
 
   def test_a_default_app_still_gets_bigint_migrations
-    app = build_app(name: "loam_bigint_key_app")
-    step("rails g loam:install", "bin/rails g loam:install", app)
+    app = build_app(name: "open_loam_bigint_key_app")
+    step("rails g open_loam:install", "bin/rails g open_loam:install", app)
 
     offenders = Dir[File.join(app, "db/migrate/*.rb")].select do |file|
       next false if File.basename(file).include?("active_storage")
@@ -58,7 +58,7 @@ class PrimaryKeyTypeTest < HarnessCase
     end
     assert_empty offenders.map { |f| File.basename(f) },
                  "an app that never asked for a key type got key options in its migrations — " \
-                 "this changes the schema of every existing Loam app"
+                 "this changes the schema of every existing OpenLoam app"
 
     step("rails db:migrate", "bin/rails db:migrate", app)
   end

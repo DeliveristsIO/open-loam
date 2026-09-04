@@ -15,34 +15,34 @@ module Admin
     end
 
     def index
-      @perspective = Loam::Perspectives.resolve("Equipment", user: current_actor, id: params[:perspective_id])
-      @perspectives = Loam::Perspectives.visible_to("Equipment", user: current_actor)
+      @perspective = OpenLoam::Perspectives.resolve("Equipment", user: current_actor, id: params[:perspective_id])
+      @perspectives = OpenLoam::Perspectives.visible_to("Equipment", user: current_actor)
       @records, @page, @has_next = paginate(index_scope)
-      @index_partial = params[:cf_field].present? && Loam::CustomFieldIndex.partial?  # incomplete-index warning (L-919)
+      @index_partial = params[:cf_field].present? && OpenLoam::CustomFieldIndex.partial?  # incomplete-index warning (L-919)
     end
 
     # CSV of the CURRENT filtered/perspective view — manager-only, policy- and
-    # encryption-aware (Loam::Export).
+    # encryption-aware (OpenLoam::Export).
     def export
       require_role!(:manager)
-      send_data Loam::Export.csv(index_scope, actor: current_actor),
+      send_data OpenLoam::Export.csv(index_scope, actor: current_actor),
                 filename: "equipment-#{Date.current}.csv", type: "text/csv"
     end
 
     # Datatable bulk actions on the selected ids — each is policy-checked per
-    # record and tenant-scoped (Loam::Bulk).
+    # record and tenant-scoped (OpenLoam::Bulk).
     def bulk
       ids = Array(params[:ids])
       case params[:bulk_action]
       when "soft_delete"
-        count = Loam::Bulk.soft_delete(Equipment, ids)
+        count = OpenLoam::Bulk.soft_delete(Equipment, ids)
         redirect_to admin_equipment_index_path, notice: "Deleted #{count} record(s)."
       when "set_status"
-        count = Loam::Bulk.set_field(Equipment, ids, field: "status", value: params[:value])
+        count = OpenLoam::Bulk.set_field(Equipment, ids, field: "status", value: params[:value])
         redirect_to admin_equipment_index_path, notice: "Updated #{count} record(s)."
       when "export"
         require_role!(:manager)  # same gate as the dedicated export action
-        send_data Loam::Export.csv(Loam::Bulk.selected(Equipment, ids), actor: current_actor),
+        send_data OpenLoam::Export.csv(OpenLoam::Bulk.selected(Equipment, ids), actor: current_actor),
                   filename: "equipment-selected.csv", type: "text/csv"
       else
         redirect_to admin_equipment_index_path, alert: "Unknown bulk action."
@@ -75,7 +75,7 @@ module Admin
       attach_files!(@record, policy)
 
       if @record.save
-        redirect_to [:admin, @record], notice: t("loam.flash.created", name: Equipment.model_name.human)
+        redirect_to [:admin, @record], notice: t("open_loam.flash.created", name: Equipment.model_name.human)
       else
         render :new, status: :unprocessable_entity
       end
@@ -84,7 +84,7 @@ module Admin
     def edit
       authorize!(policy_for(@record), :update?)
       # Take the advisory lock (courtesy) or learn who holds it, for the banner.
-      @lock = Loam::RecordLocks.acquire(@record, by: current_actor) || Loam::RecordLocks.active_lock(@record)
+      @lock = OpenLoam::RecordLocks.acquire(@record, by: current_actor) || OpenLoam::RecordLocks.active_lock(@record)
     end
 
     def update
@@ -94,14 +94,14 @@ module Admin
       attach_files!(@record, policy)
 
       if @record.update(permitted_params(policy))
-        Loam::RecordLocks.release(@record, by: current_actor)
-        redirect_to [:admin, @record], notice: t("loam.flash.updated", name: Equipment.model_name.human)
+        OpenLoam::RecordLocks.release(@record, by: current_actor)
+        redirect_to [:admin, @record], notice: t("open_loam.flash.updated", name: Equipment.model_name.human)
       else
         render :edit, status: :unprocessable_entity
       end
     rescue ActiveRecord::StaleObjectError
       stale_conflict!(@record, FIELDS)
-      @lock = Loam::RecordLocks.acquire(@record, by: current_actor) || Loam::RecordLocks.active_lock(@record)
+      @lock = OpenLoam::RecordLocks.acquire(@record, by: current_actor) || OpenLoam::RecordLocks.active_lock(@record)
       render :edit, status: :conflict
     end
 
@@ -110,16 +110,16 @@ module Admin
     def destroy
       authorize!(policy_for(@record), :destroy?)
       @record.soft_delete!
-      Loam::RecordLocks.release(@record, by: current_actor)
-      redirect_to [:admin, Equipment], notice: t("loam.flash.destroyed", name: Equipment.model_name.human)
+      OpenLoam::RecordLocks.release(@record, by: current_actor)
+      redirect_to [:admin, Equipment], notice: t("open_loam.flash.destroyed", name: Equipment.model_name.human)
     end
 
     # Stands in for an AI agent proposing a price change: instead of applying it,
-    # STAGE it as a Loam::PendingAction for a manager to approve. This is the
+    # STAGE it as a OpenLoam::PendingAction for a manager to approve. This is the
     # confirm-mode pattern an MCP tool would follow — nothing is mutated here.
     def propose_price
       set_record
-      Loam::PendingActions.stage(
+      OpenLoam::PendingActions.stage(
         summary: "Raise #{@record.name}'s daily rate to #{params[:daily_rate]}",
         on: @record,
         action: :update,
@@ -134,7 +134,7 @@ module Admin
       @record = Equipment.with_deleted.find(params[:id])
       authorize!(policy_for(@record), :update?)
       @record.restore!
-      redirect_to [:deleted, :admin, Equipment], notice: t("loam.flash.restored", name: Equipment.model_name.human)
+      redirect_to [:deleted, :admin, Equipment], notice: t("open_loam.flash.restored", name: Equipment.model_name.human)
     end
 
     private
@@ -147,7 +147,7 @@ module Admin
     # export so the CSV matches what the manager is looking at.
     def index_scope
       scope = Equipment.all
-      perspective = Loam::Perspectives.resolve("Equipment", user: current_actor, id: params[:perspective_id])
+      perspective = OpenLoam::Perspectives.resolve("Equipment", user: current_actor, id: params[:perspective_id])
       scope = perspective.apply(scope) if perspective
       scope = scope.search(params[:q])
       scope = apply_custom_field_filter(scope, Equipment)
@@ -171,13 +171,13 @@ module Admin
     end
 
     # A custom-field filter routed through the read-model index
-    # (Loam::CustomFieldIndex) instead of a JSON scan. An unknown field is
+    # (OpenLoam::CustomFieldIndex) instead of a JSON scan. An unknown field is
     # ignored rather than raising.
     def apply_custom_field_filter(scope, model)
       return scope if params[:cf_field].blank?
 
-      scope.merge(Loam::CustomFieldIndex.filter(model, params[:cf_field], params[:cf_op].presence || "eq", params[:cf_value]))
-    rescue Loam::Error
+      scope.merge(OpenLoam::CustomFieldIndex.filter(model, params[:cf_field], params[:cf_op].presence || "eq", params[:cf_value]))
+    rescue OpenLoam::Error
       scope
     end
 

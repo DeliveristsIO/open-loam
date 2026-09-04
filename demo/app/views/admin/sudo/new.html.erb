@@ -7,7 +7,7 @@
 <p>This action is sensitive, so please re-authenticate.</p>
 
 <%= form_with url: admin_sudo_path, method: :post do |f| %>
-  <% if Loam::MfaCredential.active_for(current_actor) %>
+  <% if OpenLoam::MfaCredential.active_for(current_actor) %>
     <p>
       <%= label_tag :code, "Authenticator code" %><br>
       <%= text_field_tag :code, nil, autofocus: true, autocomplete: "one-time-code", inputmode: "numeric" %>

@@ -6,7 +6,7 @@ nav_order: 7
 
 # Undo / redo on the audit trail
 
-Every change already writes a `Loam::AuditRecord` with its changeset. `Loam::Undo`
+Every change already writes a `OpenLoam::AuditRecord` with its changeset. `OpenLoam::Undo`
 turns that trail into an undo stack: undoing a change applies its inverse and
 records **itself** as an audit — so undoing an `undo` entry is redo. There is no
 separate command log and no separate redo action.
@@ -20,9 +20,9 @@ per entry. Undoing needs `update?` on the record (the same gate as editing it).
 Code:
 
 ```ruby
-audit = Loam::AuditRecord.where(auditable_type: "Equipment", auditable_id: id).order(:id).last
-Loam::Undo.undo(audit, policy: Loam::Policy.for(record))  # returns the record
-Loam::Undo.undoable?(audit)                                # for the button
+audit = OpenLoam::AuditRecord.where(auditable_type: "Equipment", auditable_id: id).order(:id).last
+OpenLoam::Undo.undo(audit, policy: OpenLoam::Policy.for(record))  # returns the record
+OpenLoam::Undo.undoable?(audit)                                # for the button
 ```
 
 ## What each action's inverse is
@@ -47,7 +47,7 @@ just wrote re-applies the change.
   the old value, so there is nothing to restore to. An update that touched *only*
   encrypted fields has nothing to undo.
 - **The workflow column** is never written directly (that is exactly what the
-  `Loam::Workflow` transition gate forbids). Undo a state change by performing the
+  `OpenLoam::Workflow` transition gate forbids). Undo a state change by performing the
   **reverse transition**, not here.
 - **Field-level policy:** pass `policy:` and a field the role may not write is
   skipped.

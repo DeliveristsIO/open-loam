@@ -1,7 +1,7 @@
-class CreateLoamSsoProviders < ActiveRecord::Migration[<%= ActiveRecord::VERSION::STRING.to_f %>]
+class CreateOpenLoamSsoProviders < ActiveRecord::Migration[<%= ActiveRecord::VERSION::STRING.to_f %>]
   def change
-    create_table :loam_sso_providers<%= loam_id_option %> do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }<%= loam_type_option %>
+    create_table :open_loam_sso_providers<%= open_loam_id_option %> do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :open_loam_tenants }<%= open_loam_type_option %>
       t.string :name, null: false
       t.string :protocol, null: false, default: "oidc"  # "oidc" shipped; "saml" is a seam
       t.string :issuer                                    # OIDC discovery base (.well-known)
@@ -9,26 +9,26 @@ class CreateLoamSsoProviders < ActiveRecord::Migration[<%= ActiveRecord::VERSION
       t.text :client_secret                               # ENCRYPTED at rest (tenant-scoped key)
       t.string :domain, null: false                       # email domain for home-realm discovery
       t.string :jit_role, null: false, default: "employee"  # role for JIT-provisioned users
-      t.json :group_role_map, null: false, default: {}    # IdP group -> Loam role (first match wins)
+      t.json :group_role_map, null: false, default: {}    # IdP group -> OpenLoam role (first match wins)
       t.boolean :active, null: false, default: true
       t.timestamps
     end
     # HRD resolves a provider by email domain, cross-tenant, before login — so the
     # domain is globally unique (one owning IdP per domain).
-    add_index :loam_sso_providers, :domain, unique: true
-    add_index :loam_sso_providers, %i[tenant_id active]
+    add_index :open_loam_sso_providers, :domain, unique: true
+    add_index :open_loam_sso_providers, %i[tenant_id active]
 
     # The durable link between an external identity (provider + subject) and a
     # local User — the primary lookup on callback (email can change at the IdP,
     # `sub` does not).
-    create_table :loam_sso_identities<%= loam_id_option %> do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }<%= loam_type_option %>
-      t.references :sso_provider, null: false, foreign_key: { to_table: :loam_sso_providers }<%= loam_type_option %>
-      t.<%= loam_key_column_type %> :user_id<%= loam_key_limit_option %>, null: false  # the local User this identity belongs to
+    create_table :open_loam_sso_identities<%= open_loam_id_option %> do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :open_loam_tenants }<%= open_loam_type_option %>
+      t.references :sso_provider, null: false, foreign_key: { to_table: :open_loam_sso_providers }<%= open_loam_type_option %>
+      t.<%= open_loam_key_column_type %> :user_id<%= open_loam_key_limit_option %>, null: false  # the local User this identity belongs to
       t.string :sub, null: false      # the IdP's stable subject identifier
       t.timestamps
     end
-    add_index :loam_sso_identities, %i[sso_provider_id sub], unique: true
-    add_index :loam_sso_identities, :user_id
+    add_index :open_loam_sso_identities, %i[sso_provider_id sub], unique: true
+    add_index :open_loam_sso_identities, :user_id
   end
 end

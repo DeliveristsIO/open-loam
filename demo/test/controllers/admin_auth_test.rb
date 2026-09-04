@@ -5,17 +5,17 @@ require "test_helper"
 # signing in proves who you are, not where you may go.
 class AdminAuthTest < ActionDispatch::IntegrationTest
   setup do
-    @warsaw = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-auth")
-    @krakow = Loam::Tenant.create!(name: "Branch Krakow", slug: "krakow-auth")
+    @warsaw = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-auth")
+    @krakow = OpenLoam::Tenant.create!(name: "Branch Krakow", slug: "krakow-auth")
     @anna = User.create!(name: "Anna", email: "anna@example.test", password: "password123")
     @tomek = User.create!(name: "Tomek", email: "tomek@example.test", password: "password123")
 
     # Anna is in both branches, Tomek in Warsaw only.
     with_tenant(@warsaw) do
-      Loam::Membership.create!(user: @anna, role: "manager")
-      Loam::Membership.create!(user: @tomek, role: "employee")
+      OpenLoam::Membership.create!(user: @anna, role: "manager")
+      OpenLoam::Membership.create!(user: @tomek, role: "employee")
     end
-    with_tenant(@krakow) { Loam::Membership.create!(user: @anna, role: "manager") }
+    with_tenant(@krakow) { OpenLoam::Membership.create!(user: @anna, role: "manager") }
   end
 
   test "an unauthenticated request to an admin screen is sent to the sign-in page" do
@@ -74,7 +74,7 @@ class AdminAuthTest < ActionDispatch::IntegrationTest
   end
 
   test "a tenant the user has no membership in cannot be entered" do
-    outsider_tenant = Loam::Tenant.create!(name: "Branch Gdansk", slug: "gdansk-auth")
+    outsider_tenant = OpenLoam::Tenant.create!(name: "Branch Gdansk", slug: "gdansk-auth")
 
     post admin_session_path, params: { email: "anna@example.test", password: "password123" }
     post select_tenant_admin_session_path, params: { tenant_id: outsider_tenant.id }
@@ -88,7 +88,7 @@ class AdminAuthTest < ActionDispatch::IntegrationTest
     get admin_root_path
     assert_response :success
 
-    with_tenant(@warsaw) { Loam::Membership.find_by(user_id: @tomek.id).destroy! }
+    with_tenant(@warsaw) { OpenLoam::Membership.find_by(user_id: @tomek.id).destroy! }
 
     get admin_root_path
     assert_redirected_to new_admin_session_path
@@ -113,11 +113,11 @@ class AdminAuthTest < ActionDispatch::IntegrationTest
     follow_redirect!
 
     assert_response :success
-    token = with_tenant(@warsaw) { Loam::ApiToken.find_by(user_id: @tomek.id) }
+    token = with_tenant(@warsaw) { OpenLoam::ApiToken.find_by(user_id: @tomek.id) }
     assert token, "the token belongs to the signed-in user in the current tenant"
     assert_match token.token, response.body, "the value is shown once, on the screen after creation"
 
     delete admin_api_token_path(token)
-    assert with_tenant(@warsaw) { Loam::ApiToken.where(user_id: @tomek.id).empty? }
+    assert with_tenant(@warsaw) { OpenLoam::ApiToken.where(user_id: @tomek.id).empty? }
   end
 end

@@ -1,4 +1,4 @@
-module Loam
+module OpenLoam
   # A saved view of an entity's admin index — which columns show, active filters,
   # sort, and page size — that a user can name, make their default, or share.
   #
@@ -7,15 +7,15 @@ module Loam
   #   * "role"    — everyone with the named membership role in the tenant.
   #   * "tenant"  — everyone in the tenant.
   # A private view is invisible to others by construction (see
-  # Loam::Perspectives.visible_to), not merely by a permission check.
+  # OpenLoam::Perspectives.visible_to), not merely by a permission check.
   #
   # Tenant-scoped like everything else, and audited. Optimistic-locked
   # (lock_version) so two people editing a shared view don't silently clobber
   # each other — the admin controller rescues ActiveRecord::StaleObjectError.
-  class Perspective < Loam::TenantRecord
-    self.table_name = "loam_perspectives"
+  class Perspective < OpenLoam::TenantRecord
+    self.table_name = "open_loam_perspectives"
 
-    include Loam::Auditable
+    include OpenLoam::Auditable
 
     VISIBILITIES = %w[private role tenant].freeze
 

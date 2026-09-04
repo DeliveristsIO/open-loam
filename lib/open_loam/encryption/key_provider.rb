@@ -1,8 +1,8 @@
-module Loam
+module OpenLoam
   module Encryption
     # The seam a real KMS plugs into. A provider turns (scope, purpose) into a
     # 32-byte data key; swap the default for a Vault/AWS-KMS-backed provider via
-    # `Loam::Encryption.key_provider = MyKmsProvider.new` and NO call site
+    # `OpenLoam::Encryption.key_provider = MyKmsProvider.new` and NO call site
     # changes — Cipher and Encryptable only ever ask for a key.
     #
     # `scope` is a namespaced owner string: "tenant/5" for an entity field,
@@ -29,7 +29,7 @@ module Loam
         raise ArgumentError, "scope is required to derive a key" if scope.nil? || scope.to_s.empty?
 
         OpenSSL::KDF.hkdf(
-          Loam::Encryption.master_key,
+          OpenLoam::Encryption.master_key,
           salt: SALT,
           # info binds the key to owner AND purpose. "tenant/5" here reproduces
           # the pre-scope format exactly, so existing ciphertext still decrypts.

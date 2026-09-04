@@ -1,6 +1,6 @@
 ---
 title: Guardrails
-description: How Loam turns its invariants into failing tests instead of prose an agent can skim past.
+description: How OpenLoam turns its invariants into failing tests instead of prose an agent can skim past.
 nav_order: 2
 permalink: /agents/guardrails/
 ---
@@ -24,14 +24,14 @@ structural violation? ──yes──> test fails, agent sees exactly what broke
 suite green — the invariant held
 ```
 
-This is what makes Loam *agent-native* rather than just well-documented: a
-model that skips `Loam::TenantRecord`, or a stray `.unscoped`, doesn't need a
+This is what makes OpenLoam *agent-native* rather than just well-documented: a
+model that skips `OpenLoam::TenantRecord`, or a stray `.unscoped`, doesn't need a
 human reviewer to catch it in code review. It fails in CI, with a message
 that names the offending file.
 
 ## Repo-wide guardrails
 
-Installed once by `loam:install` at `test/loam_guardrails_test.rb`, and
+Installed once by `open_loam:install` at `test/open_loam_guardrails_test.rb`, and
 apply to the whole app — not per-entity.
 
 ### Every business model is tenant-scoped
@@ -41,16 +41,16 @@ guarantee at the model-class level, not just per-query.
 **Triggers on:** any `ActiveRecord::Base` descendant that is not abstract,
 not framework plumbing (`ActiveStorage::`, `ActionText::`, `ActionMailbox::`,
 `SolidQueue::`, `SolidCache::`, `SolidCable::`), not on the explicit
-allowlist (`ApplicationRecord`, `User`, `Loam::Tenant`, `Loam::Config`,
-`Loam::MfaCredential`, `Loam::AuthAttempt`), and does not inherit
-`Loam::TenantRecord`.
+allowlist (`ApplicationRecord`, `User`, `OpenLoam::Tenant`, `OpenLoam::Config`,
+`OpenLoam::MfaCredential`, `OpenLoam::AuthAttempt`), and does not inherit
+`OpenLoam::TenantRecord`.
 **Example failure:**
 ```text
 These models are NOT tenant-scoped: Invoice.
-Business models must inherit Loam::TenantRecord (use `rails g loam:entity`).
+Business models must inherit OpenLoam::TenantRecord (use `rails g open_loam:entity`).
 ```
-**Fix:** generate the model with `loam:entity`, or change its superclass to
-`Loam::TenantRecord`. If it's intentionally global, add it to
+**Fix:** generate the model with `open_loam:entity`, or change its superclass to
+`OpenLoam::TenantRecord`. If it's intentionally global, add it to
 `TENANCY_ALLOWLIST` in the guardrail test itself — in review, on purpose,
 not by accident.
 
@@ -58,8 +58,8 @@ not by accident.
 
 **Protects:** the fail-loud behavior tenant isolation depends on.
 **Triggers on:** any query against a tenant-scoped model with
-`Loam::Current.tenant` unset.
-**Example failure:** the test asserts `Loam::MissingTenantError` is raised —
+`OpenLoam::Current.tenant` unset.
+**Example failure:** the test asserts `OpenLoam::MissingTenantError` is raised —
 if a future change made a query silently return `[]` or all rows instead,
 this test would fail (a green suite here is what proves the failure mode
 still fails loudly).
@@ -92,24 +92,24 @@ budget. See [The agent contract]({% link _agents/agent-contract.md %}).
 
 **Protects:** against a typo'd custom-field entity type silently pointing at
 nothing.
-**Triggers on:** a `Loam::FieldDefinition` row whose `entity_type` doesn't
-resolve to a real class that `include`s `Loam::CustomFields`.
+**Triggers on:** a `OpenLoam::FieldDefinition` row whose `entity_type` doesn't
+resolve to a real class that `include`s `OpenLoam::CustomFields`.
 **Fix:** fix the typo, or make sure the target model includes
-`Loam::CustomFields` (every generated entity does by default).
+`OpenLoam::CustomFields` (every generated entity does by default).
 
 ## Per-entity guardrails
 
-`loam:entity` generates `test/entities/<name>_test.rb` from
-[a template](https://github.com/DeliveristsIO/open-loam/blob/main/lib/generators/loam/entity/templates/entity_test.rb)
+`open_loam:entity` generates `test/entities/<name>_test.rb` from
+[a template](https://github.com/DeliveristsIO/open-loam/blob/main/lib/generators/open_loam/entity/templates/entity_test.rb)
 that proves the invariants hold for *that specific entity*, not just in the
 abstract:
 
 - **Records are invisible outside their tenant** — creating in tenant A and
   querying from tenant B returns zero, and `find` by id raises
   `ActiveRecord::RecordNotFound`.
-- **Touching the model with no tenant context raises** `Loam::MissingTenantError`.
+- **Touching the model with no tenant context raises** `OpenLoam::MissingTenantError`.
 - **A record cannot be written into a foreign tenant** — updating a
-  tenant-A record while tenant B is current raises `Loam::MissingTenantError`
+  tenant-A record while tenant B is current raises `OpenLoam::MissingTenantError`
   (from `TenantRecord`'s `before_save` check).
 - **Every change is audited** with the correct actor and changeset key.
 - **Lifecycle events are published with the tenant stamped** on the payload.

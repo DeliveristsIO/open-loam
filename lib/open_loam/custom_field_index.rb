@@ -1,12 +1,12 @@
-module Loam
-  # The read-model index for custom fields (Loam::CustomFieldValue) — a typed-EAV
+module OpenLoam
+  # The read-model index for custom fields (OpenLoam::CustomFieldValue) — a typed-EAV
   # projection that makes custom-field filter/sort/search index-backed.
   #
-  #   Loam::CustomFieldIndex.filter(DamageReport, "severity", "eq", "critical")  # a relation
-  #   Loam::CustomFieldIndex.order(DamageReport, "severity", :asc)
-  #   Loam::CustomFieldIndex.reindex(DamageReport)                               # rebuild
+  #   OpenLoam::CustomFieldIndex.filter(DamageReport, "severity", "eq", "critical")  # a relation
+  #   OpenLoam::CustomFieldIndex.order(DamageReport, "severity", :asc)
+  #   OpenLoam::CustomFieldIndex.reindex(DamageReport)                               # rebuild
   #
-  # SAFETY: `field_key` must name a real Loam::FieldDefinition (no arbitrary
+  # SAFETY: `field_key` must name a real OpenLoam::FieldDefinition (no arbitrary
   # keys); values are cast to the declared type; queries are tenant-scoped
   # throughout (index rows carry tenant_id, the model relation is default-scoped),
   # so a filter can't reach across tenants. Encrypted data lives in real columns,
@@ -16,7 +16,7 @@ module Loam
 
     module_function
 
-    # --- maintenance (called from Loam::CustomFields) ---
+    # --- maintenance (called from OpenLoam::CustomFields) ---
 
     # Re-project one record's custom fields (delete + insert). Soft-delete keeps
     # the rows (the filter's base scope hides the record anyway — the same
@@ -26,18 +26,18 @@ module Loam
       return unless model.respond_to?(:custom_field_definitions)
 
       type = index_type(model)
-      Loam::CustomFieldValue.where(indexable_type: type, indexable_id: record.id).delete_all
+      OpenLoam::CustomFieldValue.where(indexable_type: type, indexable_id: record.id).delete_all
 
       rows = model.custom_field_definitions.filter_map { |definition| row_for(record, definition, type) }
-      Loam::CustomFieldValue.insert_all(rows) if rows.any?
+      OpenLoam::CustomFieldValue.insert_all(rows) if rows.any?
     end
 
     def remove(record)
-      Loam::CustomFieldValue.where(indexable_type: index_type(record.class), indexable_id: record.id).delete_all
+      OpenLoam::CustomFieldValue.where(indexable_type: index_type(record.class), indexable_id: record.id).delete_all
     end
 
     def reindex(model)
-      Loam::CustomFieldValue.where(indexable_type: index_type(model)).delete_all
+      OpenLoam::CustomFieldValue.where(indexable_type: index_type(model)).delete_all
       model.find_each { |record| project(record) }
     end
 
@@ -47,7 +47,7 @@ module Loam
       field_key = field_key.to_s
       refuse_unknown_field!(model, field_key)
       refuse_unreadable_field!(model, field_key)
-      raise Loam::Error, "unknown custom-field op #{op.inspect}" unless OPS.include?(op.to_s)
+      raise OpenLoam::Error, "unknown custom-field op #{op.inspect}" unless OPS.include?(op.to_s)
 
       if covered?(model, field_key)
         self.partial = false
@@ -89,12 +89,12 @@ module Loam
         self.partial = true
         schedule_reindex(model)
       end
-      table = Loam::CustomFieldValue.table_name
+      table = OpenLoam::CustomFieldValue.table_name
       conn = model.connection
       join = "LEFT JOIN #{table} ON #{table}.indexable_type = #{conn.quote(index_type(model))} " \
              "AND #{table}.indexable_id = #{model.table_name}.id " \
              "AND #{table}.field_key = #{conn.quote(field_key.to_s)} " \
-             "AND #{table}.tenant_id = #{Loam.tenant!.id}"
+             "AND #{table}.tenant_id = #{OpenLoam.tenant!.id}"
       model.joins(join).order(Arel.sql("#{table}.value_text #{dir.to_s.casecmp('desc').zero? ? 'DESC' : 'ASC'}"))
     end
 
@@ -132,22 +132,22 @@ module Loam
     # Was the last filter/order served over an incomplete index? The admin surfaces
     # this as an honest "results may be incomplete, reindexing…".
     def partial?
-      Thread.current[:loam_index_partial] == true
+      Thread.current[:open_loam_index_partial] == true
     end
 
     def partial=(value)
-      Thread.current[:loam_index_partial] = value
+      Thread.current[:open_loam_index_partial] = value
     end
 
     # Enqueue a background reindex to heal a gap — DEDUPED so a hot gappy field
     # doesn't enqueue one per request. In-process dedup here (single-process
     # prototype); a DB/cache marker is the multi-process path.
     def schedule_reindex(model)
-      key = [ Loam.tenant!.id, model.base_class.name ]
+      key = [ OpenLoam.tenant!.id, model.base_class.name ]
       return if pending_reindex.include?(key)
 
       pending_reindex << key
-      Loam::CustomFieldReindexJob.perform_later(Loam.tenant!.id, model.base_class.name)
+      OpenLoam::CustomFieldReindexJob.perform_later(OpenLoam.tenant!.id, model.base_class.name)
     end
 
     def clear_pending(tenant_id, model_name)
@@ -188,7 +188,7 @@ module Loam
     # --- internals ---
 
     def base(model)
-      Loam::CustomFieldValue.where(indexable_type: index_type(model)) # tenant-scoped by default_scope
+      OpenLoam::CustomFieldValue.where(indexable_type: index_type(model)) # tenant-scoped by default_scope
     end
 
     def index_type(model_or_class)
@@ -235,7 +235,7 @@ module Loam
 
     def refuse_unknown_field!(model, field_key)
       known = model.respond_to?(:custom_field_definitions) && model.custom_field_definitions.exists?(name: field_key)
-      raise Loam::Error, "no custom field #{field_key.inspect} on #{model.name}" unless known
+      raise OpenLoam::Error, "no custom field #{field_key.inspect} on #{model.name}" unless known
     end
 
     # THE oracle guard: filtering or sorting on a custom field the current role
@@ -243,16 +243,16 @@ module Loam
     # records match. Enforced against the current actor's role; a system/background
     # context (no actor — reindex, a business rule) is trusted and not gated.
     def refuse_unreadable_field!(model, field_key)
-      actor = Loam::Current.actor
+      actor = OpenLoam::Current.actor
       return if actor.nil?
 
       definition = model.custom_field_definitions.find_by(name: field_key.to_s)
       return if definition.nil? # unknown field is refuse_unknown_field!'s job
 
-      role = Loam::Membership.find_by(user_id: actor.id)&.role
+      role = OpenLoam::Membership.find_by(user_id: actor.id)&.role
       return if definition.readable_by?(role)
 
-      raise Loam::FieldAccessError, "custom field #{field_key.inspect} is not readable by #{role.inspect}"
+      raise OpenLoam::FieldAccessError, "custom field #{field_key.inspect} is not readable by #{role.inspect}"
     end
 
     def sanitize_like(value)

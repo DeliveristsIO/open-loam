@@ -24,7 +24,7 @@ never reverted here.</p>
           <% end %>
         </td>
         <td>
-          <% if Loam::Undo.undoable?(audit) %>
+          <% if OpenLoam::Undo.undoable?(audit) %>
             <%= button_to "Undo", admin_undo_history_path(id: audit.id, type: @record.class.name, record_id: @record.id),
                           form: { style: "display:inline" } %>
           <% end %>

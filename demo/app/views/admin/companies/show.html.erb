@@ -1,17 +1,17 @@
-<% policy = Loam::Policy.for(@record) %>
+<% policy = OpenLoam::Policy.for(@record) %>
 
-<h1><%= t("loam.actions.show_title", name: Company.model_name.human, id: @record.id) %></h1>
+<h1><%= t("open_loam.actions.show_title", name: Company.model_name.human, id: @record.id) %></h1>
 
 <p><strong><%= Company.human_attribute_name("name") %>:</strong> <%= @record.name %></p>
 <p><strong><%= Company.human_attribute_name("industry") %>:</strong> <%= @record.industry %></p>
 <p><strong><%= Company.human_attribute_name("tier") %>:</strong> <%= @record.tier %></p>
 
-<%= render "loam/custom_fields/fields", record: @record, policy: policy, mode: :show %>
+<%= render "open_loam/custom_fields/fields", record: @record, policy: policy, mode: :show %>
 
-<%# Computed cross-module blocks (Loam::Enrichers) — no section when none registered. %>
-<% enrichments = Loam::Enrichers.enrich(@record) %>
+<%# Computed cross-module blocks (OpenLoam::Enrichers) — no section when none registered. %>
+<% enrichments = OpenLoam::Enrichers.enrich(@record) %>
 <% if enrichments.any? %>
-  <h2><%= t("loam.labels.enrichments") %></h2>
+  <h2><%= t("open_loam.labels.enrichments") %></h2>
   <dl>
     <% enrichments.each do |key, value| %>
       <dt><strong><%= key.humanize %></strong></dt>
@@ -21,16 +21,16 @@
 <% end %>
 
 <p>
-  <%= link_to t("loam.actions.edit"), edit_polymorphic_path([:admin, @record]) %>
+  <%= link_to t("open_loam.actions.edit"), edit_polymorphic_path([:admin, @record]) %>
   <%= link_to "History", admin_history_path(type: @record.class.name, record_id: @record.id) %>
-  <% if @record.class.respond_to?(:loam_translatable_attributes) && @record.class.loam_translatable_attributes.any? && current_role == :manager %>
-    <%= link_to t("loam.actions.translations"), admin_translations_path(translatable_type: @record.class.name, translatable_id: @record.id) %>
+  <% if @record.class.respond_to?(:open_loam_translatable_attributes) && @record.class.open_loam_translatable_attributes.any? && current_role == :manager %>
+    <%= link_to t("open_loam.actions.translations"), admin_translations_path(translatable_type: @record.class.name, translatable_id: @record.id) %>
   <% end %>
   <%# Delete soft-deletes: the record moves to the recycle bin, not oblivion. %>
-  <%= button_to t("loam.actions.destroy"), [:admin, @record], method: :delete if policy.destroy? %>
-  <%= link_to t("loam.actions.back"), [:admin, Company] %>
+  <%= button_to t("open_loam.actions.destroy"), [:admin, @record], method: :delete if policy.destroy? %>
+  <%= link_to t("open_loam.actions.back"), [:admin, Company] %>
 </p>
 
-<%= render "loam/attachments/attachments", record: @record %>
+<%= render "open_loam/attachments/attachments", record: @record %>
 
-<%= render "loam/comments/comments", record: @record %>
+<%= render "open_loam/comments/comments", record: @record %>

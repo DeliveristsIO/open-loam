@@ -1,15 +1,15 @@
-module Loam
-  # Advisory record locks (Loam::RecordLock) — a "who's editing this" courtesy
+module OpenLoam
+  # Advisory record locks (OpenLoam::RecordLock) — a "who's editing this" courtesy
   # for the multi-user admin.
   #
-  #   Loam::RecordLocks.acquire(record, by: current_actor)  # take/refresh, or nil if held
-  #   Loam::RecordLocks.holder(record)                      # the user holding it, or nil
-  #   Loam::RecordLocks.release(record, by: current_actor)  # give it up
-  #   Loam::RecordLocks.force_release(record)               # manager override
+  #   OpenLoam::RecordLocks.acquire(record, by: current_actor)  # take/refresh, or nil if held
+  #   OpenLoam::RecordLocks.holder(record)                      # the user holding it, or nil
+  #   OpenLoam::RecordLocks.release(record, by: current_actor)  # give it up
+  #   OpenLoam::RecordLocks.force_release(record)               # manager override
   #
   # THIS IS ADVISORY: a held lock warns, it does not hard-block — optimistic
   # locking (lock_version) is the actual guarantee that two edits can't clobber.
-  # Every query is tenant-scoped by Loam::RecordLock, so a lock is invisible and
+  # Every query is tenant-scoped by OpenLoam::RecordLock, so a lock is invisible and
   # unaffectable from another tenant.
   module RecordLocks
     DEFAULT_TTL = 5.minutes
@@ -25,7 +25,7 @@ module Loam
         lock = lock_row(record)
         return nil if lock && !lock.expired? && lock.locked_by_id != by.id
 
-        lock ||= Loam::RecordLock.new(lockable_type: type_of(record), lockable_id: record.id)
+        lock ||= OpenLoam::RecordLock.new(lockable_type: type_of(record), lockable_id: record.id)
         # A fresh session token when the lock is newly created or taken over from
         # an expired holder; kept as-is on a heartbeat by the same user.
         lock.token = SecureRandom.hex(16) if lock.new_record? || lock.locked_by_id != by.id
@@ -71,7 +71,7 @@ module Loam
       private
 
       def lock_row(record)
-        Loam::RecordLock.find_by(lockable_type: type_of(record), lockable_id: record.id)
+        OpenLoam::RecordLock.find_by(lockable_type: type_of(record), lockable_id: record.id)
       end
 
       def type_of(record)

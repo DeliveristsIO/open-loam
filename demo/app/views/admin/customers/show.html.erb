@@ -1,4 +1,4 @@
-<% policy = Loam::Policy.for(@record) %>
+<% policy = OpenLoam::Policy.for(@record) %>
 
 <h1>Customer #<%= @record.id %></h1>
 
@@ -6,7 +6,7 @@
 <p><strong>Email:</strong> <%= @record.email %></p>
 <p><strong>Tax:</strong> <%= @record.tax_id %></p>
 
-<%= render "loam/custom_fields/fields", record: @record, policy: policy, mode: :show %>
+<%= render "open_loam/custom_fields/fields", record: @record, policy: policy, mode: :show %>
 
 <p>
   <%= link_to "Edit", edit_polymorphic_path([:admin, @record]) %>
@@ -15,6 +15,6 @@
   <%= link_to "Back", [:admin, Customer] %>
 </p>
 
-<%= render "loam/attachments/attachments", record: @record %>
+<%= render "open_loam/attachments/attachments", record: @record %>
 
-<%= render "loam/comments/comments", record: @record %>
+<%= render "open_loam/comments/comments", record: @record %>

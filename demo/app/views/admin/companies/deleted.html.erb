@@ -1,13 +1,13 @@
-<h1><%= t("loam.actions.deleted_title", name: Company.model_name.human(count: 2)) %></h1>
+<h1><%= t("open_loam.actions.deleted_title", name: Company.model_name.human(count: 2)) %></h1>
 
-<p><%= link_to t("loam.actions.back"), [:admin, Company] %></p>
+<p><%= link_to t("open_loam.actions.back"), [:admin, Company] %></p>
 
 <%# No Show/Edit here: these rows are hidden by the default scope, so a plain
     find would 404. The one action a deleted record offers is Restore. %>
 <table>
   <thead>
     <tr>
-      <th><%= t("loam.labels.id") %></th>
+      <th><%= t("open_loam.labels.id") %></th>
       <th><%= Company.human_attribute_name("name") %></th>
       <th><%= Company.human_attribute_name("industry") %></th>
       <th><%= Company.human_attribute_name("tier") %></th>
@@ -23,7 +23,7 @@
         <td><%= record.industry %></td>
         <td><%= record.tier %></td>
         <td><%= record.deleted_at %></td>
-        <td><%= button_to t("loam.actions.restore"), [:restore, :admin, record], method: :patch %></td>
+        <td><%= button_to t("open_loam.actions.restore"), [:restore, :admin, record], method: :patch %></td>
       </tr>
     <% end %>
   </tbody>
@@ -32,10 +32,10 @@
 <%# Page links carry nothing but the page: the recycle bin has no filter box. %>
 <p>
   <% if @page > 1 %>
-    <%= link_to t("loam.pagination.previous"), polymorphic_path([:deleted, :admin, Company], page: @page - 1) %>
+    <%= link_to t("open_loam.pagination.previous"), polymorphic_path([:deleted, :admin, Company], page: @page - 1) %>
   <% end %>
-  <%= t("loam.pagination.page", page: @page) %>
+  <%= t("open_loam.pagination.page", page: @page) %>
   <% if @has_next %>
-    <%= link_to t("loam.pagination.next"), polymorphic_path([:deleted, :admin, Company], page: @page + 1) %>
+    <%= link_to t("open_loam.pagination.next"), polymorphic_path([:deleted, :admin, Company], page: @page + 1) %>
   <% end %>
 </p>

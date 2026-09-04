@@ -1,21 +1,21 @@
 require "test_helper"
 
-# Structural guardrails. These are not feature tests — they enforce Loam's
+# Structural guardrails. These are not feature tests — they enforce OpenLoam's
 # invariants on the codebase itself. If one of these fails, an agent (or a
 # human) stepped outside the conventions.
-class LoamGuardrailsTest < ActiveSupport::TestCase
-  # Models that are legitimately not tenant-scoped. Loam::Config holds both
+class OpenLoamGuardrailsTest < ActiveSupport::TestCase
+  # Models that are legitimately not tenant-scoped. OpenLoam::Config holds both
   # global (tenant_id NULL) and per-tenant override rows, so tenancy is a
-  # nullable column and resolution lives in vetted gem code (Loam::Configs).
-  # Loam::MfaCredential belongs to the person, who spans tenants — MFA is
+  # nullable column and resolution lives in vetted gem code (OpenLoam::Configs).
+  # OpenLoam::MfaCredential belongs to the person, who spans tenants — MFA is
   # verified at login before any tenant is chosen.
-  TENANCY_ALLOWLIST = %w[ApplicationRecord User Loam::Tenant Loam::Config Loam::MfaCredential Loam::AuthAttempt].freeze
+  TENANCY_ALLOWLIST = %w[ApplicationRecord User OpenLoam::Tenant OpenLoam::Config OpenLoam::MfaCredential OpenLoam::AuthAttempt].freeze
 
   # Rails' own engine models (storage, rich text, jobs) are framework
   # plumbing, not business data — they are out of scope for tenant linting.
   FRAMEWORK_NAMESPACES = %w[ActiveStorage:: ActionText:: ActionMailbox:: SolidQueue:: SolidCache:: SolidCable::].freeze
 
-  test "every app model is tenant-scoped (inherits Loam::TenantRecord)" do
+  test "every app model is tenant-scoped (inherits OpenLoam::TenantRecord)" do
     Rails.application.eager_load!
 
     offenders = ActiveRecord::Base.descendants.reject do |model|
@@ -23,20 +23,20 @@ class LoamGuardrailsTest < ActiveSupport::TestCase
         model.name.nil? ||
         TENANCY_ALLOWLIST.include?(model.name) ||
         FRAMEWORK_NAMESPACES.any? { |ns| model.name.start_with?(ns) } ||
-        model <= Loam::TenantRecord
+        model <= OpenLoam::TenantRecord
     end
 
     assert_empty offenders,
       "These models are NOT tenant-scoped: #{offenders.map(&:name).join(', ')}. " \
-      "Business models must inherit Loam::TenantRecord (use `rails g loam:entity`). " \
+      "Business models must inherit OpenLoam::TenantRecord (use `rails g open_loam:entity`). " \
       "If a model is intentionally global, add it to TENANCY_ALLOWLIST here — in review, on purpose."
   end
 
   test "touching a tenant-scoped model with no tenant context raises" do
-    Loam::Current.reset
+    OpenLoam::Current.reset
 
-    assert_raises(Loam::MissingTenantError) { Loam::AuditRecord.count }
-    assert_raises(Loam::MissingTenantError) { Loam::Membership.first }
+    assert_raises(OpenLoam::MissingTenantError) { OpenLoam::AuditRecord.count }
+    assert_raises(OpenLoam::MissingTenantError) { OpenLoam::Membership.first }
   end
 
   test "nobody uses .unscoped outside vetted framework code" do
@@ -64,16 +64,16 @@ class LoamGuardrailsTest < ActiveSupport::TestCase
       "docs/ and link it, rather than raising the budget."
   end
 
-  test "every Loam::FieldDefinition entity_type resolves to a class that uses Loam::CustomFields" do
+  test "every OpenLoam::FieldDefinition entity_type resolves to a class that uses OpenLoam::CustomFields" do
     Rails.application.eager_load!
 
-    offenders = Loam::FieldDefinition.unscoped.distinct.pluck(:entity_type).reject do |entity_type|
+    offenders = OpenLoam::FieldDefinition.unscoped.distinct.pluck(:entity_type).reject do |entity_type|
       klass = entity_type.safe_constantize
-      klass && klass.include?(Loam::CustomFields)
+      klass && klass.include?(OpenLoam::CustomFields)
     end
 
     assert_empty offenders,
-      "These Loam::FieldDefinition entity_type values don't resolve to a class that " \
-      "`include Loam::CustomFields`: #{offenders.join(', ')}. Likely a typo when the field was created."
+      "These OpenLoam::FieldDefinition entity_type values don't resolve to a class that " \
+      "`include OpenLoam::CustomFields`: #{offenders.join(', ')}. Likely a typo when the field was created."
   end
 end

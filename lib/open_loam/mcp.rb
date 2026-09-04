@@ -1,17 +1,17 @@
-module Loam
-  # An MCP (Model Context Protocol) server surface exposing Loam to an AI agent —
+module OpenLoam
+  # An MCP (Model Context Protocol) server surface exposing OpenLoam to an AI agent —
   # tools-only v1 (L-302). It lets an agent DISCOVER the domain (entities, schema,
   # policy, workflow) and READ tenant-scoped records, and PROPOSE writes that are
   # STAGED for human approval — never committed. Everything runs inside the
   # tenant + actor of the API token the server authenticated with; whatever that
   # user may do, no more. Approval authority stays with a human in the admin.
   #
-  # Two layers: the tool methods (pure, assume Loam::Current is established) and
+  # Two layers: the tool methods (pure, assume OpenLoam::Current is established) and
   # `handle_jsonrpc` (a pure JSON-RPC dispatcher for initialize / tools/list /
   # tools/call). The stdio transport (newline-delimited JSON-RPC) lives in
-  # Loam::Mcp::Server.
+  # OpenLoam::Mcp::Server.
   #
-  # SECURITY posture, reusing Loam's existing gates:
+  # SECURITY posture, reusing OpenLoam's existing gates:
   #   * entity names resolve against an allowlist (API-exposed TenantRecord
   #     descendants), never a bare constantize;
   #   * query filters/order are whitelisted to real columns (or a known custom
@@ -32,7 +32,7 @@ module Loam
     TOOLS = [
       {
         name: "list_entities",
-        description: "List the business entities available in this Loam tenant.",
+        description: "List the business entities available in this OpenLoam tenant.",
         inputSchema: { type: "object", properties: {}, additionalProperties: false }
       },
       {
@@ -72,7 +72,7 @@ module Loam
       },
       {
         name: "stage_write",
-        description: "PROPOSE an update to one record. It is staged as a Loam PendingAction for a human manager to approve — it does NOT take effect until approved. Only policy-writable columns are accepted; the workflow column is refused (use a transition).",
+        description: "PROPOSE an update to one record. It is staged as a OpenLoam PendingAction for a human manager to approve — it does NOT take effect until approved. Only policy-writable columns are accepted; the workflow column is refused (use a transition).",
         inputSchema: {
           type: "object",
           properties: {
@@ -91,9 +91,9 @@ module Loam
 
     def entities
       # Models are lazy-loaded (Zeitwerk), so `descendants` is only complete after
-      # an eager load — same as Loam::OpenApi's discovery.
+      # an eager load — same as OpenLoam::OpenApi's discovery.
       Rails.application.eager_load! if defined?(Rails) && Rails.respond_to?(:application)
-      Loam::TenantRecord.descendants
+      OpenLoam::TenantRecord.descendants
                         .reject { |model| model.name.blank? }
                         .select { |model| api_exposed?(model) }
                         .sort_by(&:name)
@@ -117,7 +117,7 @@ module Loam
 
     def describe_entity(entity:)
       model = resolve!(entity)
-      policy = Loam::Policy.for(model.new)
+      policy = OpenLoam::Policy.for(model.new)
 
       columns = model.columns.reject { |c| c.name.end_with?("_hash") }.map do |col|
         { name: col.name, type: col.sql_type_metadata.type.to_s,
@@ -134,8 +134,8 @@ module Loam
         []
       end
 
-      workflow = if model.respond_to?(:loam_workflow) && model.loam_workflow
-        wf = model.loam_workflow
+      workflow = if model.respond_to?(:open_loam_workflow) && model.open_loam_workflow
+        wf = model.open_loam_workflow
         { column: wf.column, states: wf.states,
           transitions: wf.transitions.values.map { |t| { name: t.name.to_s, from: t.from, to: t.to, roles: Array(t.roles).map(&:to_s) } } }
       end
@@ -145,7 +145,7 @@ module Loam
 
     def query_entity(entity:, filters: [], order: nil, dir: "asc", limit: MAX_LIMIT)
       model = resolve!(entity)
-      policy = Loam::Policy.for(model.new)
+      policy = OpenLoam::Policy.for(model.new)
       scope = apply_filters(model, model.all, filters, policy)
       scope = apply_order(model, scope, order, dir)
       capped = [ [ limit.to_i, 1 ].max, MAX_LIMIT ].min
@@ -157,8 +157,8 @@ module Loam
     def stage_write(entity:, id:, changes:)
       model = resolve!(entity)
       record = model.find(id) # tenant-scoped
-      policy = Loam::Policy.for(record)
-      workflow_column = model.respond_to?(:loam_workflow) ? model.loam_workflow&.column.to_s : nil
+      policy = OpenLoam::Policy.for(record)
+      workflow_column = model.respond_to?(:open_loam_workflow) ? model.open_loam_workflow&.column.to_s : nil
 
       clean = {}
       (changes || {}).each do |field, value|
@@ -177,7 +177,7 @@ module Loam
       end
       raise ToolError, "no writable changes" if clean.empty?
 
-      action = Loam::PendingActions.stage(
+      action = OpenLoam::PendingActions.stage(
         summary: "MCP proposal: update #{model.name}##{id}",
         on: record, action: :update, changes: clean
       )
@@ -206,14 +206,14 @@ module Loam
       when "initialize"
         ok(id, protocolVersion: request.dig("params", "protocolVersion") || PROTOCOL_VERSION,
                capabilities: { tools: {} },
-               serverInfo: { name: "loam", version: Loam::VERSION })
+               serverInfo: { name: "open_loam", version: OpenLoam::VERSION })
       when "tools/list"
         ok(id, tools: TOOLS)
       when "tools/call"
         begin
           data = call_tool(request.dig("params", "name"), request.dig("params", "arguments"))
           ok(id, content: [ { type: "text", text: JSON.generate(data) } ])
-        rescue ToolError, Loam::Error, ActiveRecord::RecordNotFound => error
+        rescue ToolError, OpenLoam::Error, ActiveRecord::RecordNotFound => error
           ok(id, isError: true, content: [ { type: "text", text: error.message } ])
         end
       when "notifications/initialized", "notifications/cancelled", nil
@@ -239,8 +239,8 @@ module Loam
           # CustomFieldIndex.filter carries its own L-711 read-ACL for the current
           # actor; surface its refusal as a clean tool error.
           begin
-            scope = scope.merge(Loam::CustomFieldIndex.filter(model, field, op, value))
-          rescue Loam::FieldAccessError => error
+            scope = scope.merge(OpenLoam::CustomFieldIndex.filter(model, field, op, value))
+          rescue OpenLoam::FieldAccessError => error
             raise ToolError, error.message
           end
         else
@@ -274,7 +274,7 @@ module Loam
 
     def serialize(record, policy)
       model = record.class
-      encrypted = model.respond_to?(:loam_encrypted_attributes) ? model.loam_encrypted_attributes.map(&:to_s) : []
+      encrypted = model.respond_to?(:open_loam_encrypted_attributes) ? model.open_loam_encrypted_attributes.map(&:to_s) : []
 
       json = {}
       policy.readable_fields(model.column_names).each do |col|

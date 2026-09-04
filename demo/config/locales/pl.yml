@@ -1,9 +1,9 @@
-# Demo Polish translations for Loam's chrome — overrides the gem's loam.en.yml
+# Demo Polish translations for OpenLoam's chrome — overrides the gem's open_loam.en.yml
 # base for the pl locale. Proves the switcher moves the UI, not just the data.
 # Entity/field names come from activerecord.* below (Rails-native).
 pl:
   # Entity + field names for the demo's Equipment (Rails-native i18n — this is how
-  # a generated entity localizes its own model/column labels, distinct from loam.*).
+  # a generated entity localizes its own model/column labels, distinct from open_loam.*).
   activerecord:
     models:
       equipment: "Sprzęt"
@@ -13,7 +13,7 @@ pl:
         daily_rate: "Stawka dzienna"
         status: "Status"
         deleted_at: "Usunięto o"
-  loam:
+  open_loam:
     chrome:
       tenant: "Najemca"
       user: "Użytkownik"

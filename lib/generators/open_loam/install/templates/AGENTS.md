@@ -1,13 +1,13 @@
-# AGENTS.md — how to extend this Loam app
+# AGENTS.md — how to extend this OpenLoam app
 
-This app is built on [Loam](https://github.com/DeliveristsIO/open-loam): a Rails
+This app is built on [OpenLoam](https://github.com/DeliveristsIO/open-loam): a Rails
 foundation where tenancy, permissions, audit, events, and admin are already
 decided. There is ONE way to do each thing. Follow it and your change is small,
 reviewable, and safe. Improvise and the guardrail tests will fail.
 
 Before a non-trivial change, record a substantial decision as an ADR (a
 `docs/adr/NNNN-*.md` — [the convention](https://github.com/DeliveristsIO/open-loam/blob/main/docs/_adr/index.md))
-and note what you learned in a `ai/lessons.md` afterward. Loam's own
+and note what you learned in a `ai/lessons.md` afterward. OpenLoam's own
 [lessons](https://github.com/DeliveristsIO/open-loam/blob/main/ai/lessons.md) list
 the gotchas in the framework itself.
 
@@ -15,73 +15,73 @@ the gotchas in the framework itself.
 
 | Thing | Lives in | Added by |
 |-------|----------|----------|
-| Business entity | `app/models/<name>.rb` | `bin/rails g loam:entity Name field:type ... --domain <domain>` |
+| Business entity | `app/models/<name>.rb` | `bin/rails g open_loam:entity Name field:type ... --domain <domain>` |
 | Permissions | `app/policies/<name>_policy.rb` | generated with the entity; edit to declare rules |
 | Admin screen | `app/controllers/admin/` + `app/views/admin/` | generated with the entity |
-| Domain events | published from models/services via `Loam::Events.publish` | ephemeral `Loam::Events.subscribe` (inline, best-effort) or durable `Loam::DurableEvents.register(key:, to:, call:)` (persisted, retried, at-least-once — handlers MUST be idempotent) in `config/initializers/loam.rb` ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/_agents/events.md)) |
-| Audit trail | automatic (`Loam::Auditable`) | nothing — it is on by default |
-| MCP server | `Loam::Mcp` + `bin/rails loam:mcp:serve` (stdio, auth via `LOAM_MCP_TOKEN`) | expose Loam to an agent: `list_entities` / `describe_entity` / `query_entity` (read, policy-aware, tenant-scoped) / `stage_write` (proposes an update — staged as a PendingAction for human approval, never committed); tools-only v1 ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/_agents/mcp.md)) |
-| Observability | `Loam::Telemetry.span(name, **attrs) { }`; default emits `loam.span.*` notifications | wrap work in a span (Loam already wraps scheduler tick / durable delivery / inbound ingest); plug a tracer via `Loam::Telemetry.backend = ->(name, attrs, work){ ... }` — no hard OTel dependency |
-| Feature permissions | `Loam::Permissions` (wildcard capability strings per role) | declare in the initializer (`role :manager, allow: %w[equipment.*]`); check with `Loam.can?("equipment.edit")`, `require_permission!("...")` in a controller, or the `can?` view helper; deny-by-default, `*` = all, trailing `.*` = prefix; orthogonal to roles/policies/features |
-| Undo / history | `Loam::Undo` over the audit trail; per-record History screen (`/admin/history`) | `Loam::Undo.undo(audit, policy:)` reverts a change and records itself (undo an `undo` = redo); only the latest change is undoable; encrypted fields + the workflow column are skipped (undo state via the reverse transition) ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/_agents/undo.md)) |
-| Delete / recycle bin | soft-delete via `Loam::SoftDeletable` | `record.soft_delete` hides it (excluded by default, still tenant-scoped, audited); `Model.only_deleted` + `record.restore` bring it back; `destroy` still hard-erases |
-| Settings / config | `Loam::Configs` (a `key` + JSON value, global or per-tenant) | `Loam::Configs.get("billing.currency")`; `set(k, v)` overrides for the current tenant, `set(k, v, scope: :global)` sets the app-wide row, `reset(k)` drops the override; declare defaults in the initializer; admin at `/admin/configs` |
-| Feature flags | `Loam::Features` (a capability on/off per tenant, over `Loam::Configs`) | `Loam::Features.on?(:beta)`; `enable(:beta)`/`disable(:beta)` override for the current tenant, `enable(:beta, scope: :global)` app-wide, `reset(:beta)` drops it; declare in `Loam.feature_defaults`; guard via `require_feature!`/`feature_on?`; admin at `/admin/features` |
-| Encryption at rest | `Loam::Encryptable` (`encrypts :field`, per-tenant AES-256-GCM) | generate with `--encrypt ssn --encrypt-searchable email`, or add `encrypts :ssn` / `encrypts :email, searchable: true` to the model; read/write is transparent, `find_by_email` matches the blind index; set `LOAM_MASTER_KEY`; NEVER `searchable_by` an encrypted field ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/_agents/encryption.md)) |
-| MFA & step-up | `Loam::MfaCredential` + `Loam::Totp` (per-user TOTP + recovery codes) | second factor at login, automatic once a user enrolls at `/admin/mfa`; gate a sensitive action with `require_sudo!` (re-auth within 5 min); require MFA per role via `security.mfa_required_roles`; failed password/TOTP/sudo attempts are rate-limited + locked out (Loam::AuthThrottle, per-identifier, enumeration-safe) |
-| AI approval gate | `Loam::PendingActions` + `Loam::PendingAction` (stage → manager approves → executes) | under confirm-mode, `Loam::PendingActions.stage(summary:, on:, action:, changes:)` records a write for review instead of committing; a manager approves at `/admin/pending_actions`; nothing mutates until then ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/_agents/confirm-mode.md)) |
-| Saved views | `Loam::Perspectives` + `Loam::Perspective` (private / role / tenant) | a named index view (filters/sort/columns) saved from the entity index; `Loam::Perspectives.visible_to(entity, user:)` / `default_for` / `resolve`; managed at `/admin/perspectives?entity_type=Name`; `perspective.apply(scope)` filters/sorts only whitelisted columns |
-| Concurrent-edit safety | `lock_version` (optimistic) + `Loam::RecordLocks` (advisory) | every generated entity has `lock_version`; a stale update re-renders a conflict diff, never a clobber; `RecordLocks.acquire/holder/release/force_release` warns "who's editing" with a TTL and manager take-over |
-| Real-time updates | `Loam::EventStream` (SSE push, default off) | declare patterns in `Loam.broadcast_events` (e.g. `"loam.notification."`); matching events, filtered to the connection's tenant + audience, stream to the browser at `/admin/events/stream`; the bell updates live |
-| Response enrichers | `Loam::Enrichers` (computed cross-module blocks) | `register(entity_type, key:, batch:)` in the initializer to attach a computed value onto another entity's response; shown on the admin show screen and under `enrichments` in the API; use `batch:` to avoid N+1 |
-| Business rules | `Loam::BusinessRules` + `Loam::BusinessRule` (admin-editable WHEN/THEN) | declare at `/admin/business_rules`: a `trigger` event pattern + a safe `{field, op, value}` condition + typed actions (notify / emit_event / set_field / block_transition); fires tenant-scoped in priority order on matching events; the run log shows why it acted |
-| Migration-free field | `custom_fields` jsonb column, read/written via `Loam::CustomFields` | a `Loam::FieldDefinition` row, created via the admin "Field definitions" screen (`/admin/field_definitions`) — never a migration; filter/sort is index-backed via `Loam::CustomFieldIndex.filter(model, key, op, value)` (the entity index takes `cf_field`/`cf_op`/`cf_value`); a gappy index still returns CORRECT results (JSON fallback) and self-heals in the background — `coverage(model, key)` / `loam:index:coverage` show completeness; a field's `readable_roles` gate filter/sort (a role that can't read a field can't use it as a filter oracle) |
-| States & approvals | a `workflow` block in the model (`Loam::Workflow`) | `include Loam::Workflow`; add a string column for the state |
-| Notifications | `Loam::Notification` rows, read at `/admin/notifications` | `Loam::Notifications.notify(user, title:)` / `notify_role(:manager, title:)`, normally from an event subscriber |
-| Search | `searchable_by :col, :col` in the model (`Loam::Searchable`) | declared with the entity for its string/text columns; `Model.search(q)` and the admin's global box at `/admin/search`. HOW it matches is a swappable driver (`Loam::Search.driver`): substring LIKE (default) or the portable word-level TokenDriver — call sites never change |
-| SSO (OIDC) | `Loam::Sso` + `Loam::SsoProvider` (per-tenant, admin-configured) | configure at `/admin/sso_providers` (issuer, client_id, client_secret, email domain, JIT role); a matching-domain email is routed to the IdP, verified, and JIT-provisioned/linked; the client_secret is encrypted (needs `LOAM_MASTER_KEY`); SAML/SCIM are seams ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/_agents/sso.md)) |
-| Dictionaries | `Loam::Dictionary` + `Loam::Dictionaries` (managed lookup lists) | curate at `/admin/dictionaries`; a `FieldDefinition` of type "dictionary" makes a custom field a select of its entries; read via `Loam::Dictionaries.entries`/`default`/`label_for` |
-| Task progress | `Loam::Progress` + `Loam::ProgressJob` (live over SSE) | `start(name:, total:)` then `advance`/`complete!`/`fail!`/`cancel!`; percent/ETA push to the `/admin/progress_jobs` bar live; broadcast throttled per-percent; `cancelled?` for a cooperative stop |
-| Scheduler | `Loam::Scheduler` + `Loam::ScheduledJob` (recurring cron/interval jobs) | `register(key:, job_class:, schedule:, scope:)` a schedule (or add one at `/admin/scheduled_jobs`); `loam:scheduler:tick` (system cron) fires due ones with an atomic no-double-fire claim; job_class must be a real ActiveJob ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/_agents/scheduler.md)) |
-| Override registry | `Loam::Overrides` (customization without forking) | `Loam::Overrides.disable(:widgets, "open_progress")` / `.replace(:widgets, key) { ... }` in the initializer to drop/swap a Loam registry entry (widgets, broadcast_events); `check!` warns about stale overrides at boot; VIEWS/CONTROLLERS/ROUTES use Rails path-shadowing, not this |
-| Content translations | `Loam::Translatable` + `Loam::Translation` | `translates :name` overlays `record.name` with the current locale's value (else the base column); `set_translation(field, locale, value)`; locale is request state (`Loam::Current.locale`, admin switcher over `Loam.locales`); NEVER `translates` an encrypted field (refused at load) — this is data, not Rails i18n |
-| UI strings (i18n) | Rails i18n; the gem ships a `loam.*` base locale, the switcher sets `I18n.locale` too | in a view write `t("loam.nav.…")` / `t("something")`, NOT a bare English literal; add the key to `config/locales/*.yml`; translate a locale by adding `config/locales/loam.<locale>.yml` overriding `loam.*` (distinct from `Loam::Translatable`, which localizes record DATA) |
-| Auto OpenAPI | `Loam::OpenApi` (introspected, no annotations) | `Loam::OpenApi.document`/`.markdown` describe the JSON API (bearer auth, per-entity schemas, writable-only request bodies, tenancy note); browse at `/admin/api_docs` (+`.json`), export with `loam:openapi:export`; it's automatic — add an entity and it appears |
-| Dashboard widgets | `Loam::Widgets` + `Loam::Dashboard` + `Loam::DashboardWidget` | `Loam::Widgets.register(key:, title:, roles:, &block)` a tile (block returns `{kind:"count"/"list", ...}`, tenant-scoped); managers arrange them at `/admin/dashboard_widgets`; role-filtered server-side, a raising widget is an isolated error tile |
-| Bulk import / export | `Loam::Import` + `Loam::Export` + `Loam::Bulk` | every entity index has (manager) Export CSV / Import CSV / a bulk-action bar; import maps columns → writable fields (dry-run, error file, update-by-key, background progress); export & bulk are policy + encryption + tenant aware ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/_agents/bulk-import-export.md)) |
+| Domain events | published from models/services via `OpenLoam::Events.publish` | ephemeral `OpenLoam::Events.subscribe` (inline, best-effort) or durable `OpenLoam::DurableEvents.register(key:, to:, call:)` (persisted, retried, at-least-once — handlers MUST be idempotent) in `config/initializers/open_loam.rb` ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/_agents/events.md)) |
+| Audit trail | automatic (`OpenLoam::Auditable`) | nothing — it is on by default |
+| MCP server | `OpenLoam::Mcp` + `bin/rails open_loam:mcp:serve` (stdio, auth via `OPEN_LOAM_MCP_TOKEN`) | expose OpenLoam to an agent: `list_entities` / `describe_entity` / `query_entity` (read, policy-aware, tenant-scoped) / `stage_write` (proposes an update — staged as a PendingAction for human approval, never committed); tools-only v1 ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/_agents/mcp.md)) |
+| Observability | `OpenLoam::Telemetry.span(name, **attrs) { }`; default emits `open_loam.span.*` notifications | wrap work in a span (OpenLoam already wraps scheduler tick / durable delivery / inbound ingest); plug a tracer via `OpenLoam::Telemetry.backend = ->(name, attrs, work){ ... }` — no hard OTel dependency |
+| Feature permissions | `OpenLoam::Permissions` (wildcard capability strings per role) | declare in the initializer (`role :manager, allow: %w[equipment.*]`); check with `OpenLoam.can?("equipment.edit")`, `require_permission!("...")` in a controller, or the `can?` view helper; deny-by-default, `*` = all, trailing `.*` = prefix; orthogonal to roles/policies/features |
+| Undo / history | `OpenLoam::Undo` over the audit trail; per-record History screen (`/admin/history`) | `OpenLoam::Undo.undo(audit, policy:)` reverts a change and records itself (undo an `undo` = redo); only the latest change is undoable; encrypted fields + the workflow column are skipped (undo state via the reverse transition) ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/_agents/undo.md)) |
+| Delete / recycle bin | soft-delete via `OpenLoam::SoftDeletable` | `record.soft_delete` hides it (excluded by default, still tenant-scoped, audited); `Model.only_deleted` + `record.restore` bring it back; `destroy` still hard-erases |
+| Settings / config | `OpenLoam::Configs` (a `key` + JSON value, global or per-tenant) | `OpenLoam::Configs.get("billing.currency")`; `set(k, v)` overrides for the current tenant, `set(k, v, scope: :global)` sets the app-wide row, `reset(k)` drops the override; declare defaults in the initializer; admin at `/admin/configs` |
+| Feature flags | `OpenLoam::Features` (a capability on/off per tenant, over `OpenLoam::Configs`) | `OpenLoam::Features.on?(:beta)`; `enable(:beta)`/`disable(:beta)` override for the current tenant, `enable(:beta, scope: :global)` app-wide, `reset(:beta)` drops it; declare in `OpenLoam.feature_defaults`; guard via `require_feature!`/`feature_on?`; admin at `/admin/features` |
+| Encryption at rest | `OpenLoam::Encryptable` (`encrypts :field`, per-tenant AES-256-GCM) | generate with `--encrypt ssn --encrypt-searchable email`, or add `encrypts :ssn` / `encrypts :email, searchable: true` to the model; read/write is transparent, `find_by_email` matches the blind index; set `OPEN_LOAM_MASTER_KEY`; NEVER `searchable_by` an encrypted field ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/_agents/encryption.md)) |
+| MFA & step-up | `OpenLoam::MfaCredential` + `OpenLoam::Totp` (per-user TOTP + recovery codes) | second factor at login, automatic once a user enrolls at `/admin/mfa`; gate a sensitive action with `require_sudo!` (re-auth within 5 min); require MFA per role via `security.mfa_required_roles`; failed password/TOTP/sudo attempts are rate-limited + locked out (OpenLoam::AuthThrottle, per-identifier, enumeration-safe) |
+| AI approval gate | `OpenLoam::PendingActions` + `OpenLoam::PendingAction` (stage → manager approves → executes) | under confirm-mode, `OpenLoam::PendingActions.stage(summary:, on:, action:, changes:)` records a write for review instead of committing; a manager approves at `/admin/pending_actions`; nothing mutates until then ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/_agents/confirm-mode.md)) |
+| Saved views | `OpenLoam::Perspectives` + `OpenLoam::Perspective` (private / role / tenant) | a named index view (filters/sort/columns) saved from the entity index; `OpenLoam::Perspectives.visible_to(entity, user:)` / `default_for` / `resolve`; managed at `/admin/perspectives?entity_type=Name`; `perspective.apply(scope)` filters/sorts only whitelisted columns |
+| Concurrent-edit safety | `lock_version` (optimistic) + `OpenLoam::RecordLocks` (advisory) | every generated entity has `lock_version`; a stale update re-renders a conflict diff, never a clobber; `RecordLocks.acquire/holder/release/force_release` warns "who's editing" with a TTL and manager take-over |
+| Real-time updates | `OpenLoam::EventStream` (SSE push, default off) | declare patterns in `OpenLoam.broadcast_events` (e.g. `"open_loam.notification."`); matching events, filtered to the connection's tenant + audience, stream to the browser at `/admin/events/stream`; the bell updates live |
+| Response enrichers | `OpenLoam::Enrichers` (computed cross-module blocks) | `register(entity_type, key:, batch:)` in the initializer to attach a computed value onto another entity's response; shown on the admin show screen and under `enrichments` in the API; use `batch:` to avoid N+1 |
+| Business rules | `OpenLoam::BusinessRules` + `OpenLoam::BusinessRule` (admin-editable WHEN/THEN) | declare at `/admin/business_rules`: a `trigger` event pattern + a safe `{field, op, value}` condition + typed actions (notify / emit_event / set_field / block_transition); fires tenant-scoped in priority order on matching events; the run log shows why it acted |
+| Migration-free field | `custom_fields` jsonb column, read/written via `OpenLoam::CustomFields` | a `OpenLoam::FieldDefinition` row, created via the admin "Field definitions" screen (`/admin/field_definitions`) — never a migration; filter/sort is index-backed via `OpenLoam::CustomFieldIndex.filter(model, key, op, value)` (the entity index takes `cf_field`/`cf_op`/`cf_value`); a gappy index still returns CORRECT results (JSON fallback) and self-heals in the background — `coverage(model, key)` / `open_loam:index:coverage` show completeness; a field's `readable_roles` gate filter/sort (a role that can't read a field can't use it as a filter oracle) |
+| States & approvals | a `workflow` block in the model (`OpenLoam::Workflow`) | `include OpenLoam::Workflow`; add a string column for the state |
+| Notifications | `OpenLoam::Notification` rows, read at `/admin/notifications` | `OpenLoam::Notifications.notify(user, title:)` / `notify_role(:manager, title:)`, normally from an event subscriber |
+| Search | `searchable_by :col, :col` in the model (`OpenLoam::Searchable`) | declared with the entity for its string/text columns; `Model.search(q)` and the admin's global box at `/admin/search`. HOW it matches is a swappable driver (`OpenLoam::Search.driver`): substring LIKE (default) or the portable word-level TokenDriver — call sites never change |
+| SSO (OIDC) | `OpenLoam::Sso` + `OpenLoam::SsoProvider` (per-tenant, admin-configured) | configure at `/admin/sso_providers` (issuer, client_id, client_secret, email domain, JIT role); a matching-domain email is routed to the IdP, verified, and JIT-provisioned/linked; the client_secret is encrypted (needs `OPEN_LOAM_MASTER_KEY`); SAML/SCIM are seams ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/_agents/sso.md)) |
+| Dictionaries | `OpenLoam::Dictionary` + `OpenLoam::Dictionaries` (managed lookup lists) | curate at `/admin/dictionaries`; a `FieldDefinition` of type "dictionary" makes a custom field a select of its entries; read via `OpenLoam::Dictionaries.entries`/`default`/`label_for` |
+| Task progress | `OpenLoam::Progress` + `OpenLoam::ProgressJob` (live over SSE) | `start(name:, total:)` then `advance`/`complete!`/`fail!`/`cancel!`; percent/ETA push to the `/admin/progress_jobs` bar live; broadcast throttled per-percent; `cancelled?` for a cooperative stop |
+| Scheduler | `OpenLoam::Scheduler` + `OpenLoam::ScheduledJob` (recurring cron/interval jobs) | `register(key:, job_class:, schedule:, scope:)` a schedule (or add one at `/admin/scheduled_jobs`); `open_loam:scheduler:tick` (system cron) fires due ones with an atomic no-double-fire claim; job_class must be a real ActiveJob ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/_agents/scheduler.md)) |
+| Override registry | `OpenLoam::Overrides` (customization without forking) | `OpenLoam::Overrides.disable(:widgets, "open_progress")` / `.replace(:widgets, key) { ... }` in the initializer to drop/swap a OpenLoam registry entry (widgets, broadcast_events); `check!` warns about stale overrides at boot; VIEWS/CONTROLLERS/ROUTES use Rails path-shadowing, not this |
+| Content translations | `OpenLoam::Translatable` + `OpenLoam::Translation` | `translates :name` overlays `record.name` with the current locale's value (else the base column); `set_translation(field, locale, value)`; locale is request state (`OpenLoam::Current.locale`, admin switcher over `OpenLoam.locales`); NEVER `translates` an encrypted field (refused at load) — this is data, not Rails i18n |
+| UI strings (i18n) | Rails i18n; the gem ships a `open_loam.*` base locale, the switcher sets `I18n.locale` too | in a view write `t("open_loam.nav.…")` / `t("something")`, NOT a bare English literal; add the key to `config/locales/*.yml`; translate a locale by adding `config/locales/open_loam.<locale>.yml` overriding `open_loam.*` (distinct from `OpenLoam::Translatable`, which localizes record DATA) |
+| Auto OpenAPI | `OpenLoam::OpenApi` (introspected, no annotations) | `OpenLoam::OpenApi.document`/`.markdown` describe the JSON API (bearer auth, per-entity schemas, writable-only request bodies, tenancy note); browse at `/admin/api_docs` (+`.json`), export with `open_loam:openapi:export`; it's automatic — add an entity and it appears |
+| Dashboard widgets | `OpenLoam::Widgets` + `OpenLoam::Dashboard` + `OpenLoam::DashboardWidget` | `OpenLoam::Widgets.register(key:, title:, roles:, &block)` a tile (block returns `{kind:"count"/"list", ...}`, tenant-scoped); managers arrange them at `/admin/dashboard_widgets`; role-filtered server-side, a raising widget is an isolated error tile |
+| Bulk import / export | `OpenLoam::Import` + `OpenLoam::Export` + `OpenLoam::Bulk` | every entity index has (manager) Export CSV / Import CSV / a bulk-action bar; import maps columns → writable fields (dry-run, error file, update-by-key, background progress); export & bulk are policy + encryption + tenant aware ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/_agents/bulk-import-export.md)) |
 | Long lists | `paginate(scope)` from `Admin::Pagination` in `BaseController` | already wired into generated index screens — 25 a page, with a filter box |
-| Comments | `Loam::Comment` rows via `Loam::Commentable` | `record.comment!("...")`, or the form on the entity's show screen; publishes `loam.comment.created` |
-| Attachments | ActiveStorage `files` via `Loam::Attachable` | `record.files.attach(...)`, or the file field on the entity's form — uploading counts as an update, so the entity's policy decides |
-| Sign-in | `app/controllers/admin/sessions_controller.rb` (`has_secure_password` on `User`) | email + password, then a tenant — the picker only ever lists tenants you hold a `Loam::Membership` in |
-| JSON API | `app/controllers/api/<plural>_controller.rb` | generated with the entity; auth is `Authorization: Bearer <Loam::ApiToken>`, and the same policies apply |
-| Webhooks (outbound) | `Loam::WebhookEndpoint` rows, managed at `/admin/webhook_endpoints` | add an endpoint with an event pattern; matching events POST signed JSON via `Loam::WebhookDeliveryJob` |
-| Webhooks (inbound) | `Loam::InboundWebhookSource` at `/admin/inbound_webhook_sources`; public `POST /webhooks/:token` | register a source (token+secret generated); external systems POST HMAC-signed bodies; verified, replay-deduped, published on the bus as the source's `event_name` — a durable subscriber reads the body from `Loam::InboundWebhookDelivery` ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/_agents/inbound-webhooks.md)) |
+| Comments | `OpenLoam::Comment` rows via `OpenLoam::Commentable` | `record.comment!("...")`, or the form on the entity's show screen; publishes `open_loam.comment.created` |
+| Attachments | ActiveStorage `files` via `OpenLoam::Attachable` | `record.files.attach(...)`, or the file field on the entity's form — uploading counts as an update, so the entity's policy decides |
+| Sign-in | `app/controllers/admin/sessions_controller.rb` (`has_secure_password` on `User`) | email + password, then a tenant — the picker only ever lists tenants you hold a `OpenLoam::Membership` in |
+| JSON API | `app/controllers/api/<plural>_controller.rb` | generated with the entity; auth is `Authorization: Bearer <OpenLoam::ApiToken>`, and the same policies apply |
+| Webhooks (outbound) | `OpenLoam::WebhookEndpoint` rows, managed at `/admin/webhook_endpoints` | add an endpoint with an event pattern; matching events POST signed JSON via `OpenLoam::WebhookDeliveryJob` |
+| Webhooks (inbound) | `OpenLoam::InboundWebhookSource` at `/admin/inbound_webhook_sources`; public `POST /webhooks/:token` | register a source (token+secret generated); external systems POST HMAC-signed bodies; verified, replay-deduped, published on the bus as the source's `event_name` — a durable subscriber reads the body from `OpenLoam::InboundWebhookDelivery` ([details](https://github.com/DeliveristsIO/open-loam/blob/main/docs/_agents/inbound-webhooks.md)) |
 | Tests | `test/entities/<name>_test.rb` | generated with the entity; extend, never delete |
-| New-tenant defaults | `Loam.on_tenant_created` blocks in `config/initializers/loam.rb` | edit the initializer; backfill with `bin/rails loam:sync` |
+| New-tenant defaults | `OpenLoam.on_tenant_created` blocks in `config/initializers/open_loam.rb` | edit the initializer; backfill with `bin/rails open_loam:sync` |
 
 ## The one way to add a feature
 
 1. Run the generator — never hand-create entity files:
-   `bin/rails g loam:entity DamageReport reservation_id:integer description:text approved:boolean --domain rental`
+   `bin/rails g open_loam:entity DamageReport reservation_id:integer description:text approved:boolean --domain rental`
 2. `bin/rails db:migrate`
 3. Declare permissions in the generated policy, e.g.:
    `field :approved, writable: [:manager]`
 4. Add business logic to the model; publish business events explicitly:
-   `Loam::Events.publish("billing.penalty.due", id: id)`
+   `OpenLoam::Events.publish("billing.penalty.due", id: id)`
 5. Run `bin/rails test`. All green — including the generated isolation tests — before you finish.
 
 ## Adding a field with no migration
 
 If a field doesn't need a real column — an admin-configurable attribute, a
 one-off value, something that varies per tenant — don't run the entity
-generator again. Create a `Loam::FieldDefinition` instead (`entity_type`,
+generator again. Create a `OpenLoam::FieldDefinition` instead (`entity_type`,
 `name`, `field_type`, optional `writable_roles` / `readable_roles`), typically via the admin
 "Field definitions" screen. Every generated entity already has a
-`custom_fields` jsonb column and `include Loam::CustomFields`, so the field is
+`custom_fields` jsonb column and `include OpenLoam::CustomFields`, so the field is
 immediately readable/writable via `record.custom_field(:name)` /
 `record.set_custom_field(:name, value)` and renders on the generated admin
 form/show screens automatically. Reading or writing a name with no matching
-`Loam::FieldDefinition` raises `Loam::UnknownCustomFieldError` — that means
+`OpenLoam::FieldDefinition` raises `OpenLoam::UnknownCustomFieldError` — that means
 the field definition doesn't exist yet, not that you should rescue it.
 
 ## States and approvals
@@ -91,7 +91,7 @@ workflow instead of hand-rolled `if status ==` checks. Add a string column for
 the state, then:
 
 ```ruby
-include Loam::Workflow
+include OpenLoam::Workflow
 
 workflow :status, initial: "draft" do
   state "draft"; state "pending_approval"; state "approved"
@@ -102,9 +102,9 @@ end
 
 `order.submit!` moves the record, saves it, and publishes
 `<domain>.<entity>.submit` with `from`/`to`; an illegal move raises
-`Loam::InvalidTransitionError` and a `roles:`-gated one raises
-`Loam::NotAuthorizedError`. `order.workflow_transitions_available` lists what
-this actor may do next, and `Model.loam_workflow` is the whole machine, frozen
+`OpenLoam::InvalidTransitionError` and a `roles:`-gated one raises
+`OpenLoam::NotAuthorizedError`. `order.workflow_transitions_available` lists what
+this actor may do next, and `Model.open_loam_workflow` is the whole machine, frozen
 and readable.
 
 ## Deleting a record
@@ -121,13 +121,13 @@ genuine "forget me".
 ## Settings
 
 Configurable values — a currency, a fee, a threshold — go through
-`Loam::Configs`, never a hand-rolled constant or a column. `Loam::Configs.get(key)`
+`OpenLoam::Configs`, never a hand-rolled constant or a column. `OpenLoam::Configs.get(key)`
 resolves, most specific first: the current tenant's override → the global row →
-the default declared in `Loam.config_defaults` → `nil`. `set(key, value)` writes
+the default declared in `OpenLoam.config_defaults` → `nil`. `set(key, value)` writes
 the current tenant's override, `set(key, value, scope: :global)` the app-wide
 row, and `reset(key)` drops the override so the key falls back. Values keep their
 JSON type (bool, number, string, hash) and an override never leaks to another
-tenant. Declare app-wide defaults in `config/initializers/loam.rb`; managers edit
+tenant. Declare app-wide defaults in `config/initializers/open_loam.rb`; managers edit
 per-tenant values at `/admin/configs`.
 
 ## Feature flags
@@ -135,8 +135,8 @@ per-tenant values at `/admin/configs`.
 A feature flag answers "is this capability turned ON for this tenant right now",
 independent of who is signed in — for a gradual rollout or a kill-switch. This is
 NOT permissions: a policy gates a PERSON, a flag gates a CAPABILITY, and the two
-coexist. Declare flags in `Loam.feature_defaults` (name → default state +
-description); `Loam::Features.on?(:name)` resolves override → global → declared
+coexist. Declare flags in `OpenLoam.feature_defaults` (name → default state +
+description); `OpenLoam::Features.on?(:name)` resolves override → global → declared
 default → false. `enable`/`disable` set the current tenant's override (add
 `scope: :global` for app-wide), `reset` drops it. Guard a controller action with
 `require_feature!(:name)` (raises → 404 when off) and hide view UI with
@@ -153,9 +153,9 @@ genuinely sensitive action (revoking access, a bulk change), call `require_sudo!
 in the controller: it re-challenges when the user's last authentication is older
 than 5 minutes, then returns them to the action. Step-up gates by RECENCY of
 auth and is orthogonal to role — even a manager re-confirms. To force MFA for a
-role, set `security.mfa_required_roles` (a `Loam::Configs` array, global or
+role, set `security.mfa_required_roles` (a `OpenLoam::Configs` array, global or
 per-tenant); an un-enrolled user with that role is sent to enrollment at login.
-Never store a TOTP secret or recovery code in the clear — `Loam::MfaCredential`
+Never store a TOTP secret or recovery code in the clear — `OpenLoam::MfaCredential`
 already encrypts / hashes them. Recovery codes are for LOGIN only — step-up
 (`require_sudo!`) takes a TOTP code, never a single-use recovery code.
 
@@ -164,7 +164,7 @@ already encrypts / hashes them. Recovery codes are for LOGIN only — step-up
 A user saves a named view of an entity's admin index — its filters, sort, and
 columns — from the index itself ("Save current view"), and manages them at
 `/admin/perspectives?entity_type=Name`. Three visibility tiers: `private` (owner
-only), `role` (a membership role), `tenant` (everyone). `Loam::Perspectives.visible_to(entity, user:)`
+only), `role` (a membership role), `tenant` (everyone). `OpenLoam::Perspectives.visible_to(entity, user:)`
 lists what a user may see, `default_for` resolves the applicable default
 (private > role > tenant), and the entity index applies the picked/default one.
 `perspective.apply(scope)` is SAFE: a filter or sort is honored only if it names
@@ -178,23 +178,23 @@ delete one, and rows are optimistic-locked against concurrent edits.
 raises `ActiveRecord::StaleObjectError`, which the generated controller turns into
 a "changed since you opened it" conflict — a diff and a retry, never a 500 or a
 clobber. Keep the hidden `lock_version` field in the edit form and permit it.
-`Loam::RecordLocks.acquire(record, by:)` is the COURTESY: an advisory, TTL'd
+`OpenLoam::RecordLocks.acquire(record, by:)` is the COURTESY: an advisory, TTL'd
 "someone is editing this" banner (heartbeat on re-acquire, auto-frees on
 soft-delete, manager `force_release`). It warns; it does not block.
 
 ## Real-time updates (SSE)
 
 Push events to the browser instead of polling. OPT-IN and default-off: only an
-event whose name matches a `Loam.broadcast_events` pattern (set in the
+event whose name matches a `OpenLoam.broadcast_events` pattern (set in the
 initializer) is eligible, and each is filtered to the connected tenant AND
 audience (a payload `user_id` is the sole recipient) before it leaves the server.
-The bell already streams `loam.notification.created`; add a pattern to stream
+The bell already streams `open_loam.notification.created`; add a pattern to stream
 your own events to a live widget. Fan-out is single-process in the prototype
-(Redis/SolidCable is the seam — see [How Loam works](https://github.com/DeliveristsIO/open-loam/blob/main/docs/_foundation/overview.md)).
+(Redis/SolidCable is the seam — see [How OpenLoam works](https://github.com/DeliveristsIO/open-loam/blob/main/docs/_foundation/overview.md)).
 
 ## Response enrichers
 
-`Loam::Enrichers.register(entity_type, key:, batch:)` (in the initializer)
+`OpenLoam::Enrichers.register(entity_type, key:, batch:)` (in the initializer)
 attaches a computed block onto ANOTHER module's entity — shown on its admin show
 screen and under an `enrichments` key in the API, never mixed into the record's
 own attributes. A `batch:` resolver (array → `{ id => value }`) keeps an index one
@@ -219,35 +219,35 @@ never by evaluating a rule string.
 
 `searchable_by :col, :col` declares the columns; `Model.search(q)` returns a
 tenant-scoped relation. HOW a query matches is a swappable driver
-(`Loam::Search.driver`): the default `LikeDriver` is a substring LIKE; the
-`TokenDriver` keeps a portable word-level index (`loam_search_tokens`) for
+(`OpenLoam::Search.driver`): the default `LikeDriver` is a substring LIKE; the
+`TokenDriver` keeps a portable word-level index (`open_loam_search_tokens`) for
 order-independent, whole-word matching; an external engine is a third — all
 behind one seam, so NO `searchable_by`/`Model.search` call site changes. Switch it
-in the initializer, then `bin/rails loam:search:reindex` once to backfill
+in the initializer, then `bin/rails open_loam:search:reindex` once to backfill
 (new/updated records self-index). Never `searchable_by` an encrypted field — and
 the TokenDriver never tokenizes one either (no plaintext leak into the index).
 
 ## Dictionaries
 
-Per-tenant managed lookup lists (`Loam::Dictionary`), curated at
+Per-tenant managed lookup lists (`OpenLoam::Dictionary`), curated at
 `/admin/dictionaries` with no deploy. Use one as a custom-field type: a
 `FieldDefinition` of `field_type: "dictionary"` (dictionary key in its `config`)
 renders a select of active entries and stores the chosen value — read it with
-`custom_field`, its label with `custom_field_label` / `Loam::Dictionaries.label_for`.
+`custom_field`, its label with `custom_field_label` / `OpenLoam::Dictionaries.label_for`.
 
 ## Task progress
 
 A long-running job reports progress live (SSE, no polling): `progress =
-Loam::Progress.start(name:, total:)`, then `progress.advance(by:, message:)` per
+OpenLoam::Progress.start(name:, total:)`, then `progress.advance(by:, message:)` per
 unit and `complete!`/`fail!`/`cancel!` at the end; check `progress.cancelled?` to
 stop early. Pushes id/percent/status to the `/admin/progress_jobs` bar, throttled
-per-percent. In a background job wrap the work in `Loam.as_tenant(tenant, actor:)`
+per-percent. In a background job wrap the work in `OpenLoam.as_tenant(tenant, actor:)`
 (tenant-scoped, not audited; `stale?` flags a dead job).
 
 ## Dashboard widgets
 
 The admin home is a grid of registered widgets. Add one with
-`Loam::Widgets.register(key:, title:, roles: nil) { |actor| { kind: "count",
+`OpenLoam::Widgets.register(key:, title:, roles: nil) { |actor| { kind: "count",
 value: ... } }` (or `kind: "list", items: [...]`) — the block is a DATA PROVIDER
 run tenant-scoped, never arbitrary view code. `roles:` hides it server-side (its
 data isn't computed for a role that can't see it); a raising widget becomes an
@@ -256,30 +256,30 @@ isolated error tile. Managers pick/reorder widgets per tenant at
 
 ## Auto OpenAPI
 
-The JSON API self-documents — no annotations. `Loam::OpenApi.document` (OpenAPI
+The JSON API self-documents — no annotations. `OpenLoam::OpenApi.document` (OpenAPI
 3.1) and `.markdown` are introspected from the generated `Api::<Plural>Controller`s
 (bearer-token auth, a schema per entity, request bodies of WRITABLE fields only —
 never tenant_id, encrypted fields typed as plain strings, a tenancy note). Browse
 it at `/admin/api_docs` (a plain server-rendered explorer, no external JS) or
-`/admin/api_docs.json`; `bin/rails loam:openapi:export` writes it to disk. Add an
+`/admin/api_docs.json`; `bin/rails open_loam:openapi:export` writes it to disk. Add an
 entity with the generator and it appears automatically.
 
 ## Override registry
 
-Customize Loam WITHOUT forking. `Loam::Overrides.disable(registry, key)` and
+Customize OpenLoam WITHOUT forking. `OpenLoam::Overrides.disable(registry, key)` and
 `.replace(registry, key) { ... }` in the initializer drop or swap an entry in one
-of Loam's keyed registries — `:widgets`, `:broadcast_events`. A stale override (a
+of OpenLoam's keyed registries — `:widgets`, `:broadcast_events`. A stale override (a
 key that no longer exists) is warned about at boot (`check!`), so a typo isn't a
-silent no-op. BOUNDARY: this is only for Loam's in-gem registries — override a
+silent no-op. BOUNDARY: this is only for OpenLoam's in-gem registries — override a
 VIEW, CONTROLLER, or ROUTE the standard Rails way (shadow the file by path, or
 `prepend`), never here.
 
 ## Content translations
 
 Translate DATA in record fields per locale (a product name) — NOT Rails i18n
-(developer UI strings, which stay Rails-native). `include Loam::Translatable;
+(developer UI strings, which stay Rails-native). `include OpenLoam::Translatable;
 translates :name` makes `record.name` return the current locale's translation
-(`Loam::Current.locale`, set by the admin switcher over `Loam.locales`) when one
+(`OpenLoam::Current.locale`, set by the admin switcher over `OpenLoam.locales`) when one
 exists, else the base column — the base value is authoritative and never lost.
 `record.set_translation(:name, "de", "…")` writes; edit per-record at
 `/admin/translations`. NEVER `translates` an encrypted field — it would store
@@ -288,45 +288,45 @@ plaintext, so it's refused at class load.
 ## Seeding a new tenant
 
 Anything every tenant should start with — roles, default field definitions,
-starter records — belongs in a `Loam.on_tenant_created` block in
-`config/initializers/loam.rb`, never in a one-off script. The block runs inside
-`Loam.as_tenant(tenant)` when the tenant is created, and again for every
-existing tenant when someone runs `bin/rails loam:sync`. That second path is
+starter records — belongs in a `OpenLoam.on_tenant_created` block in
+`config/initializers/open_loam.rb`, never in a one-off script. The block runs inside
+`OpenLoam.as_tenant(tenant)` when the tenant is created, and again for every
+existing tenant when someone runs `bin/rails open_loam:sync`. That second path is
 the point: it is how a default you add today reaches tenants created last year.
 So the block MUST be idempotent — `find_or_create_by!`, never `create!`.
 
 ## Invariants you MUST NOT break
 
-- **Every business model inherits `Loam::TenantRecord`.** Never `ApplicationRecord`
-  for domain data. The guardrail test `test/loam_guardrails_test.rb` fails otherwise.
+- **Every business model inherits `OpenLoam::TenantRecord`.** Never `ApplicationRecord`
+  for domain data. The guardrail test `test/open_loam_guardrails_test.rb` fails otherwise.
 - **Never call `.unscoped` on a tenant-scoped model.** It is the only way to see
   other tenants' data and it is reserved for vetted framework code.
-- **Never rescue `Loam::MissingTenantError`.** It firing means a bug upstream —
-  fix the missing `Loam.as_tenant` context instead.
-- **Never rescue `Loam::UnknownCustomFieldError`.** It firing means the
-  `Loam::FieldDefinition` doesn't exist — create it, don't swallow the error.
+- **Never rescue `OpenLoam::MissingTenantError`.** It firing means a bug upstream —
+  fix the missing `OpenLoam.as_tenant` context instead.
+- **Never rescue `OpenLoam::UnknownCustomFieldError`.** It firing means the
+  `OpenLoam::FieldDefinition` doesn't exist — create it, don't swallow the error.
 - **Never write raw SQL that touches tenant tables** without a `tenant_id` predicate.
 - **Every controller action checks a policy** (`authorize!`); every form uses
   `policy.permitted_fields` — no hand-rolled `params.permit` lists.
 - **Event names are `domain.thing.happened`** — three+ dot-separated segments.
-- **`Loam.on_tenant_created` callbacks are idempotent** — `loam:sync` re-runs them.
+- **`OpenLoam.on_tenant_created` callbacks are idempotent** — `open_loam:sync` re-runs them.
 - **Never assign a workflow column directly** — call the transition, so the legal
   moves and the roles that may make them stay in one place.
 - **Delete with `soft_delete`, not `destroy`.** A business record should be
   hidden and recoverable, not erased. `destroy` hard-deletes; keep it for a
   deliberate, permanent "forget me", never as the default delete path.
 - **Never LIKE-search, log, or hand-roll crypto for an encrypted field**, and
-  never commit `LOAM_MASTER_KEY`. Use `find_by_<field>` for lookup, let
-  `Loam::Encryptable` do the AES-256-GCM, and keep the master key in ENV/credentials.
+  never commit `OPEN_LOAM_MASTER_KEY`. Use `find_by_<field>` for lookup, let
+  `OpenLoam::Encryptable` do the AES-256-GCM, and keep the master key in ENV/credentials.
 - **Attachment URLs are capabilities, not addresses.** ActiveStorage blobs live in
-  global tables Loam does not tenant-scope: a signed blob URL is fetchable by
+  global tables OpenLoam does not tenant-scope: a signed blob URL is fetchable by
   whoever holds it, with no tenant check. Gate files at the record that owns
   them, through its policy, and never paste those URLs anywhere public.
 
 ## Context helpers
 
-- `Loam.as_tenant(tenant, actor: user) { ... }` — run code as a tenant/actor.
-- `Loam.tenant!` — current tenant or raise. `Loam.actor` — current user.
+- `OpenLoam.as_tenant(tenant, actor: user) { ... }` — run code as a tenant/actor.
+- `OpenLoam.tenant!` — current tenant or raise. `OpenLoam.actor` — current user.
 - In tests: `with_tenant(tenant, actor: user) { ... }`.
 
 ## Definition of done
@@ -335,7 +335,7 @@ So the block MUST be idempotent — `find_or_create_by!`, never `create!`.
 no new model outside the generator convention, policy declared for every new
 entity, and the diff small enough that a human reviews it in minutes.
 
-*This file is budgeted: ≤ 32 KB, enforced by `test/loam_guardrails_test.rb`.
+*This file is budgeted: ≤ 32 KB, enforced by `test/open_loam_guardrails_test.rb`.
 Agent harnesses truncate oversized instruction files without warning, so
 everything past the budget stops being read. Link out to `docs/` instead of
 growing this file.*

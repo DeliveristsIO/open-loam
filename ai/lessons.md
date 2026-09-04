@@ -9,10 +9,10 @@ Format: **Lesson** — what went wrong. **Rule** — what to do instead.
 ---
 
 **Adding a workflow to a generated entity breaks its generated isolation test.**
-`loam:entity` writes a test that creates the record with placeholder string values
+`open_loam:entity` writes a test that creates the record with placeholder string values
 (`state: "Sample state 0"`). Add `workflow :state` later and those values fail the
 states-inclusion validation.
-**Rule:** after `include Loam::Workflow` on a generated entity, update the
+**Rule:** after `include OpenLoam::Workflow` on a generated entity, update the
 generated entity test's placeholder for the workflow column to a declared state
 (or omit it so it defaults to the initial state).
 
@@ -26,9 +26,9 @@ nothing while the redirect still said "success". They arrive as
 Bulk set-field, import, business-rule `set_field`, an edit form, and undo could
 all set the `status`/`state` column and skip the role-gated transition — a member
 could self-"approve". A model validation (`on: :update`) closes every path at once.
-**Rule:** change a workflow column only through `loam_perform_transition!`. Any new
+**Rule:** change a workflow column only through `open_loam_perform_transition!`. Any new
 write path (undo, a rule action, an importer) must skip the workflow column — detect
-it via `Model.loam_workflow&.column`.
+it via `Model.open_loam_workflow&.column`.
 
 **Encrypted fields have no plaintext in the audit.**
 The audit changeset stores `"[encrypted]"` for an encrypted field, never the value.
@@ -41,7 +41,7 @@ plaintext).
 **Never `constantize` a type name straight from params or a DB row.**
 Turning `params[:type]` or a stored `job_class`/`subscriber_key` into a class and
 calling it is a code-execution hole.
-**Rule:** `safe_constantize`, then require membership in a known set — `< Loam::TenantRecord`,
+**Rule:** `safe_constantize`, then require membership in a known set — `< OpenLoam::TenantRecord`,
 an allowlist (scheduler `job_class`), or the boot registry (durable subscribers). An
 unknown value is refused/parked, never executed.
 
@@ -60,7 +60,7 @@ run twice on the same payload. Don't keep retry state in the queue (`retry_on`);
 keep it in the row.
 
 **Anonymous test classes leak into `descendants`.**
-`Class.new(Loam::TenantRecord)` in a test appears in `TenantRecord.descendants`;
+`Class.new(OpenLoam::TenantRecord)` in a test appears in `TenantRecord.descendants`;
 code that walks descendants (`OpenApi`, search) then crashed on the nameless class —
 order-dependent, so green locally and red in CI.
 **Rule:** when iterating `descendants`, `reject { |m| m.name.blank? }`.
@@ -74,6 +74,6 @@ sort/dir) and pass it to every pagination link, the export link, and the sort he
 **UI strings need `t()`, entity/field names need Rails i18n.**
 Baking English into a generated view (`"New equipment"`, `attribute.humanize`) makes
 the app un-translatable.
-**Rule:** generic chrome uses `t("loam.…")`; entity/field labels use
+**Rule:** generic chrome uses `t("open_loam.…")`; entity/field labels use
 `Model.model_name.human` / `human_attribute_name` (localized via `activerecord.*`).
-The switcher sets `I18n.locale`, not just `Loam::Current.locale`.
+The switcher sets `I18n.locale`, not just `OpenLoam::Current.locale`.

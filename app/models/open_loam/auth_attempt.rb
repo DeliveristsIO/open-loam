@@ -1,12 +1,12 @@
-module Loam
+module OpenLoam
   # A single failed authentication attempt, for rate-limiting/lockout
-  # (Loam::AuthThrottle). Deliberately NOT tenant-scoped — authentication happens
+  # (OpenLoam::AuthThrottle). Deliberately NOT tenant-scoped — authentication happens
   # BEFORE a tenant is chosen (login), so this is a global auth-layer table keyed
-  # by the submitted identifier (the same reason Loam::MfaCredential is global).
+  # by the submitted identifier (the same reason OpenLoam::MfaCredential is global).
   # Allowlisted in the guardrails tenancy lint.
   class AuthAttempt < ApplicationRecord
-    include Loam::GeneratedKey
-    self.table_name = "loam_auth_attempts"
+    include OpenLoam::GeneratedKey
+    self.table_name = "open_loam_auth_attempts"
 
     validates :identifier, :kind, presence: true
   end

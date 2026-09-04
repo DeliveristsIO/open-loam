@@ -6,15 +6,15 @@ module Admin
     before_action { require_role!(:manager) }
 
     def index
-      @records = Loam::WebhookEndpoint.order(:event_pattern)
+      @records = OpenLoam::WebhookEndpoint.order(:event_pattern)
     end
 
     def new
-      @record = Loam::WebhookEndpoint.new(active: true)
+      @record = OpenLoam::WebhookEndpoint.new(active: true)
     end
 
     def create
-      @record = Loam::WebhookEndpoint.new(permitted_params)
+      @record = OpenLoam::WebhookEndpoint.new(permitted_params)
 
       if @record.save
         redirect_to admin_webhook_endpoints_path
@@ -24,7 +24,7 @@ module Admin
     end
 
     def destroy
-      Loam::WebhookEndpoint.find(params[:id]).destroy!
+      OpenLoam::WebhookEndpoint.find(params[:id]).destroy!
       redirect_to admin_webhook_endpoints_path
     end
 

@@ -1,15 +1,15 @@
-# Loam — Roadmap
+# OpenLoam — Roadmap
 
 The merge of two plans: the 90-day product & business plan
-([LOAM_PLAN.md](LOAM_PLAN.md), the source of truth for scope and KPIs) and the
-execution backlog in the [Loam GitHub project](https://github.com/orgs/DeliveristsIO/projects/7)
+([OPEN_LOAM_PLAN.md](OPEN_LOAM_PLAN.md), the source of truth for scope and KPIs) and the
+execution backlog in the [OpenLoam GitHub project](https://github.com/orgs/DeliveristsIO/projects/7)
 (L-numbered tasks). Statuses below reflect the repository as of 2026-08-22.
 
 ## Where we are
 
-**The technical foundation is far ahead of the plan.** LOAM_PLAN.md's Days 1–14
+**The technical foundation is far ahead of the plan.** OPEN_LOAM_PLAN.md's Days 1–14
 core is long done; on top of it, six batches of features shipped — roughly thirty
-`Loam::` modules in all — each added behind a convention, tested, and run
+`OpenLoam::` modules in all — each added behind a convention, tested, and run
 through an independent adversarial security review.
 
 | Batch | Modules | Status |
@@ -26,7 +26,7 @@ chains, privilege escalations, and PII-leak vectors — each fix shipped with a
 regression test that reproduces the exploit. The demo suite carries 454 tests /
 1,534 assertions (verified 2026-08-22); CI is green.
 
-Naming decision: the isolation axis stays **`Loam::Tenant`** — the precise
+Naming decision: the isolation axis stays **`OpenLoam::Tenant`** — the precise
 technical term. A business-facing `Organization` layer can sit on top later
 (the Frappe/Mercato pattern) without renaming the core.
 
@@ -41,7 +41,7 @@ L-711, L-712, L-713). The demo suite carries 454 tests / 1,534 assertions
 
 **The honest gap is not features — it's validation.** None of this has been used
 on a real project yet. The single highest-value next step is one measured
-dogfood build (LOAM_PLAN.md Days 61–75, ticketed as **L-709**), not another
+dogfood build (OPEN_LOAM_PLAN.md Days 61–75, ticketed as **L-709**), not another
 module. **The remaining open tickets are deferred by design, not overlooked:**
 the gem-wrapping refactors (L-201…L-204) would replace the working, tested
 tenancy/policy/audit/event *spine* with third-party dependencies for no
@@ -54,18 +54,18 @@ Everything below is ordered with that in mind.
 
 ## What the Open Mercato 0.7 research changed
 
-Comparing Loam against Open Mercato's August 2026 (0.7.0) release: Loam already
+Comparing OpenLoam against Open Mercato's August 2026 (0.7.0) release: OpenLoam already
 matches its foundation — multi-tenancy, RBAC, custom-fields with a hybrid index
-(`Loam::CustomFieldIndex`, coverage + self-heal), event backbone, encryption in
+(`OpenLoam::CustomFieldIndex`, coverage + self-heal), event backbone, encryption in
 the ORM lifecycle, overlay overrides, the AI mutation-approval gate. Mercato 0.7
-surfaced three things worth having that Loam did **not** — now ticketed:
+surfaced three things worth having that OpenLoam did **not** — now ticketed:
 
 - **Durable/async event subscribers** — Mercato runs persistent subscribers
-  (local or Redis). Loam's were in-process only. **Shipped as L-706.**
-- **Inbound webhook receiver** — Loam signs *outbound* webhooks but had no
+  (local or Redis). OpenLoam's were in-process only. **Shipped as L-706.**
+- **Inbound webhook receiver** — OpenLoam signs *outbound* webhooks but had no
   bounded, replay-resistant path to *receive* them. **L-710.**
 - **Query-index ACL** — Mercato's "ACL-enforced results" prevents a filter from
-  leaking values a role can't read. Loam's index never exposes encrypted data,
+  leaking values a role can't read. OpenLoam's index never exposes encrypted data,
   but filtering on an unreadable field was an inference oracle. **Shipped as L-711.**
 
 Explicitly **not** adopted (Mercato features that are product/vertical, not
@@ -80,16 +80,16 @@ number = higher priority.
 
 ### P0 — Validation (do this before any new module)
 - **L-709 — Dogfood: one measured real build.** Build one real Deliverists
-  process on Loam+AI; measure the vanilla-Rails estimate vs the Loam actual.
+  process on OpenLoam+AI; measure the vanilla-Rails estimate vs the OpenLoam actual.
   Target ≥25–30% time reduction — the **kill criterion** for the whole thesis
-  (LOAM_PLAN.md Days 61–75). It also *tells us* which gap below to build next
+  (OPEN_LOAM_PLAN.md Days 61–75). It also *tells us* which gap below to build next
   instead of guessing.
 
 ### P1 — Foundational + user-facing gaps
 - ~~L-713 — i18n-friendly generated UI~~ (user-flagged priority) — ✅ shipped:
-  a `loam.*` base locale ships in the gem, the switcher drives `I18n.locale`
+  a `open_loam.*` base locale ships in the gem, the switcher drives `I18n.locale`
   (chrome + content), and the whole generated surface — admin layout + every
-  `loam:entity` view and its flashes — is `t()`-wrapped (model/field names via
+  `open_loam:entity` view and its flashes — is `t()`-wrapped (model/field names via
   Rails `activerecord.*`). Demo proves a Polish round-trip. *Remaining (minor):*
   the gem's own built-in admin screens (scheduler, webhooks, …) stay English.
 - ~~L-710 — Inbound webhook receiver~~ — ✅ shipped: public `/webhooks/:token`,
@@ -99,24 +99,24 @@ number = higher priority.
 
 ### P2 — AI layer (the on-brand differentiator; gate depth on L-709's signal)
 - ~~L-302 — MCP server~~ — ✅ shipped (v1, ahead of the dogfood signal at the
-  user's call): `Loam::Mcp` + `bin/rails loam:mcp:serve` (stdio) exposes
+  user's call): `OpenLoam::Mcp` + `bin/rails open_loam:mcp:serve` (stdio) exposes
   list_entities / describe_entity / query_entity (read, policy-aware) /
   stage_write (proposes an update, staged for human approval, never committed).
   Tools-only; the roadmap's gate was about DEPTH — the dogfood still informs
   which tools to add next. See `docs/_agents/mcp.md`.
-- ~~L-301 — `.loam/agents/` pack~~ — ✅ shipped: `.loam/agents/README.md` is the
+- ~~L-301 — `.open_loam/agents/` pack~~ — ✅ shipped: `.open_loam/agents/README.md` is the
   pack index/manifest tying together AGENTS.md, lessons, ADRs, deep-dives, the
   contract inventory, and the golden-task benchmark, with a load order.
-- ~~L-303 — scripted "agent adds a feature" eval~~ — ✅ shipped: `Loam::Eval`
-  + `bin/rails loam:eval[task]` score a run (green suite AND no invariant
+- ~~L-303 — scripted "agent adds a feature" eval~~ — ✅ shipped: `OpenLoam::Eval`
+  + `bin/rails open_loam:eval[task]` score a run (green suite AND no invariant
   violated) into a machine-readable scorecard under `ai/benchmark_runs/`.
 
 ### P3 — Hardening backlog (fed by the Open Mercato research)
-- ~~L-704 — undo/redo on the audit trail~~ — ✅ shipped: `Loam::Undo` + a
+- ~~L-704 — undo/redo on the audit trail~~ — ✅ shipped: `OpenLoam::Undo` + a
   per-record History screen; undo records itself (redo = undo the undo), with
   stack-order / encrypted / workflow-column guardrails.
 - ~~L-705 — feature-string permissions with wildcards~~ — ✅ shipped:
-  `Loam::Permissions` (role → wildcard capability strings), `Loam.can?` /
+  `OpenLoam::Permissions` (role → wildcard capability strings), `OpenLoam.can?` /
   `require_permission!` / `can?` helper, deny-by-default.
 - ~~L-707 — frozen contract inventory~~ — ✅ shipped: `BACKWARD_COMPATIBILITY.md`
   catalogues every frozen public surface (tenancy, events, generators, policy,
@@ -124,9 +124,9 @@ number = higher priority.
 - ~~L-708 — specs-as-ADRs + `lessons.md`~~ — ✅ shipped: `docs/_adr/` (convention +
   template + 5 seed ADRs) and `ai/lessons.md` (the framework's real gotchas),
   referenced from `AGENTS.md`.
-- ~~L-712 — observability seam~~ — ✅ shipped: `Loam::Telemetry.span` wraps the
+- ~~L-712 — observability seam~~ — ✅ shipped: `OpenLoam::Telemetry.span` wraps the
   scheduler tick, durable delivery, and inbound ingest; default emits
-  `loam.span.*` notifications, pluggable to OTLP via `Telemetry.backend`.
+  `open_loam.span.*` notifications, pluggable to OTLP via `Telemetry.backend`.
 
 ### P4 — Admin & UX polish
 - ~~L-401 — pagination + search on generated admin index views~~ — ✅ shipped:
@@ -140,23 +140,23 @@ number = higher priority.
 
 ### P5 — Prove domain-agnosticism
 - ~~L-501 — a second domain in the demo~~ — ✅ shipped: a **CRM slice** (Company +
-  Lead) built with the real `loam:entity` generator, then a sales-pipeline
+  Lead) built with the real `open_loam:entity` generator, then a sales-pipeline
   workflow (new→qualified→won/lost, manager-gated close), a field-level policy,
   and a win→notification — the SAME primitives as the rental domain. Proves
-  domain-agnosticism; folds toward the LOAM_PLAN reference CRM.
+  domain-agnosticism; folds toward the OPEN_LOAM_PLAN reference CRM.
 
 ### P6 — Swap in proven gems (a refactor, not a feature — do last)
-- **L-201** evaluate & wrap `acts_as_tenant` behind `Loam::TenantRecord`.
-- **L-202** wrap Pundit behind `Loam::Policy`'s field DSL.
-- **L-203** wrap `paper_trail` behind `Loam::Auditable`.
-- **L-204** wrap Rails Event Store behind `Loam::Events`.
+- **L-201** evaluate & wrap `acts_as_tenant` behind `OpenLoam::TenantRecord`.
+- **L-202** wrap Pundit behind `OpenLoam::Policy`'s field DSL.
+- **L-203** wrap `paper_trail` behind `OpenLoam::Auditable`.
+- **L-204** wrap Rails Event Store behind `OpenLoam::Events`.
 
 ### P7 — Monetization infrastructure
-- **L-601** `loam-enterprise` extension-point skeleton.
+- **L-601** `open-loam-enterprise` extension-point skeleton.
 - **L-602** one-click Managed hosting deploy.
 - **L-603** first Marketplace domain pack.
 
-## Non-goals for V1 (from LOAM_PLAN.md)
+## Non-goals for V1 (from OPEN_LOAM_PLAN.md)
 
 Billing, accounting, warehouse, ecommerce, marketplace, payroll, full ERP,
 full CRM, low-code builder, semantic/vector search, mobile push. Modules later;
@@ -164,5 +164,5 @@ the core stays small.
 
 ## Guiding principle
 
-> Does this make Loam better at building business software repeatedly and
+> Does this make OpenLoam better at building business software repeatedly and
 > predictably? If no, it does not belong in the core.

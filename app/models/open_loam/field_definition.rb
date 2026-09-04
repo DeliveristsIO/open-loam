@@ -1,12 +1,12 @@
-module Loam
+module OpenLoam
   # Runtime declaration of a migration-free field on a tenant-scoped entity —
   # "entity_type Equipment gets a field called serial_number of type string,
   # writable by managers only." Tenant-scoped like everything else: a field
   # defined in one tenant is invisible to another's records of the same
   # entity_type, and definitions are the ONLY way values in an entity's
-  # `custom_fields` json column get read/written (see Loam::CustomFields).
-  class FieldDefinition < Loam::TenantRecord
-    self.table_name = "loam_field_definitions"
+  # `custom_fields` json column get read/written (see OpenLoam::CustomFields).
+  class FieldDefinition < OpenLoam::TenantRecord
+    self.table_name = "open_loam_field_definitions"
 
     FIELD_TYPES = %w[string text integer decimal boolean date datetime dictionary].freeze
 
@@ -17,15 +17,15 @@ module Loam
 
     # Field-level READ gate for the runtime field, mirroring writable_roles: an
     # empty readable_roles means any member may read it; otherwise only the listed
-    # roles. Used by Loam::CustomFieldIndex (so a filter can't be an oracle on a
-    # restricted field) and Loam::Policy#custom_field_readable?.
+    # roles. Used by OpenLoam::CustomFieldIndex (so a filter can't be an oracle on a
+    # restricted field) and OpenLoam::Policy#custom_field_readable?.
     def readable_by?(role)
       roles = readable_roles
       roles.blank? || (role.present? && roles.map(&:to_sym).include?(role.to_sym))
     end
 
     # The `config` json holds type-specific settings. For a "dictionary" field it
-    # carries the key of the Loam::Dictionary whose entries populate the select.
+    # carries the key of the OpenLoam::Dictionary whose entries populate the select.
     def dictionary_key
       config.is_a?(Hash) ? config["dictionary"] : nil
     end
@@ -40,7 +40,7 @@ module Loam
     def dictionary_key_resolves
       if dictionary_key.blank?
         errors.add(:dictionary_key, "is required for a dictionary field")
-      elsif Loam::Dictionaries.get(dictionary_key).nil?
+      elsif OpenLoam::Dictionaries.get(dictionary_key).nil?
         errors.add(:dictionary_key, "must name an existing dictionary in this tenant")
       end
     end

@@ -19,11 +19,11 @@
   </p>
   <p>
     <%%= f.label :field_type %><br>
-    <%%= f.select :field_type, Loam::FieldDefinition::FIELD_TYPES %>
+    <%%= f.select :field_type, OpenLoam::FieldDefinition::FIELD_TYPES %>
   </p>
   <p>
     <%%= f.label :dictionary_key, "Dictionary key (only for a 'dictionary' field type)" %><br>
-    <%%= f.select :dictionary_key, Loam::Dictionary.order(:key).pluck(:key), include_blank: true %>
+    <%%= f.select :dictionary_key, OpenLoam::Dictionary.order(:key).pluck(:key), include_blank: true %>
   </p>
   <p>
     <%%= f.label :writable_roles, "Writable by (comma-separated roles, blank = any member)" %><br>

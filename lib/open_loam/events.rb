@@ -1,4 +1,4 @@
-module Loam
+module OpenLoam
   # A thin domain event bus over ActiveSupport::Notifications.
   #
   # Convention: event names are `domain.thing.happened`, e.g.
@@ -7,7 +7,7 @@ module Loam
   # subscribers are always tenant-aware.
   module Events
     NAME_FORMAT = /\A[a-z0-9_]+(\.[a-z0-9_]+){2,}\z/
-    PREFIX = "loam.event."
+    PREFIX = "open_loam.event."
 
     def self.publish(name, payload = {})
       name = name.to_s
@@ -17,12 +17,12 @@ module Loam
 
       ActiveSupport::Notifications.instrument(
         PREFIX + name,
-        payload.merge(tenant_id: Loam::Current.tenant&.id, actor_id: Loam::Current.actor&.id)
+        payload.merge(tenant_id: OpenLoam::Current.tenant&.id, actor_id: OpenLoam::Current.actor&.id)
       )
     end
 
     # The subscription rule, in one place: a trailing dot is a domain prefix,
-    # anything else is an exact event name. Loam::WebhookEndpoint matches
+    # anything else is an exact event name. OpenLoam::WebhookEndpoint matches
     # against this too, so a pattern means the same thing everywhere.
     def self.pattern_matches?(pattern, event_name)
       pattern = pattern.to_s
@@ -31,7 +31,7 @@ module Loam
       pattern.end_with?(".") ? event_name.start_with?(pattern) : event_name == pattern
     end
 
-    # Every Loam event, whatever its domain — the empty prefix matches them
+    # Every OpenLoam event, whatever its domain — the empty prefix matches them
     # all. Used by the webhook dispatcher, which decides per event which
     # endpoints care.
     def self.subscribe_all(&block)

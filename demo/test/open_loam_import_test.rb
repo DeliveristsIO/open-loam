@@ -1,16 +1,16 @@
 require "test_helper"
 
-# Loam::Import (mapping engine) + Loam::Export (policy/encryption-aware CSV).
-class LoamImportTest < ActiveSupport::TestCase
+# OpenLoam::Import (mapping engine) + OpenLoam::Export (policy/encryption-aware CSV).
+class OpenLoamImportTest < ActiveSupport::TestCase
   setup do
-    @warsaw = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-imp")
-    @krakow = Loam::Tenant.create!(name: "Branch Krakow", slug: "krakow-imp")
+    @warsaw = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-imp")
+    @krakow = OpenLoam::Tenant.create!(name: "Branch Krakow", slug: "krakow-imp")
     @mgr = User.create!(name: "M", email: "m@example.test", password: "password")
     @emp = User.create!(name: "E", email: "e@example.test", password: "password")
     [ @warsaw, @krakow ].each do |t|
       with_tenant(t) do
-        Loam::Membership.create!(user: @mgr, role: "manager")
-        Loam::Membership.create!(user: @emp, role: "employee")
+        OpenLoam::Membership.create!(user: @mgr, role: "manager")
+        OpenLoam::Membership.create!(user: @emp, role: "employee")
       end
     end
   end
@@ -21,7 +21,7 @@ class LoamImportTest < ActiveSupport::TestCase
       csv = "Name,Rate,Status\nDrill A,25,rented\nDrill B,15,available\n"
       mapping = { "Name" => "name", "Rate" => "daily_rate", "Status" => "status" }
 
-      result = Loam::Import.run(csv, model: Equipment, mapping: mapping, actor: @mgr, match_key: "name")
+      result = OpenLoam::Import.run(csv, model: Equipment, mapping: mapping, actor: @mgr, match_key: "name")
 
       assert_equal 1, result.created
       assert_equal 1, result.updated
@@ -37,7 +37,7 @@ class LoamImportTest < ActiveSupport::TestCase
       csv = "Desc,State\ngood,open\nbad,NOPE\nalso good,open\n"
       mapping = { "Desc" => "description", "State" => "state" }
 
-      result = Loam::Import.run(csv, model: DamageReport, mapping: mapping, actor: @mgr)
+      result = OpenLoam::Import.run(csv, model: DamageReport, mapping: mapping, actor: @mgr)
 
       assert_equal 2, result.created
       assert_equal 1, result.failed
@@ -48,7 +48,7 @@ class LoamImportTest < ActiveSupport::TestCase
 
   test "a dry run validates but commits nothing" do
     with_tenant(@warsaw, actor: @mgr) do
-      result = Loam::Import.run("Name,Status\nGhost,available\n", model: Equipment,
+      result = OpenLoam::Import.run("Name,Status\nGhost,available\n", model: Equipment,
                                 mapping: { "Name" => "name", "Status" => "status" }, actor: @mgr, dry_run: true)
 
       assert_equal 1, result.created, "reports what WOULD be created"
@@ -59,8 +59,8 @@ class LoamImportTest < ActiveSupport::TestCase
   test "the error file lists the failed rows with reasons" do
     with_tenant(@warsaw, actor: @mgr) do
       csv = "Desc,State\nbad,NOPE\n"
-      result = Loam::Import.run(csv, model: DamageReport, mapping: { "Desc" => "description", "State" => "state" }, actor: @mgr, dry_run: true)
-      error_csv = Loam::Import.error_csv(result, csv)  # rebuilt from the original csv
+      result = OpenLoam::Import.run(csv, model: DamageReport, mapping: { "Desc" => "description", "State" => "state" }, actor: @mgr, dry_run: true)
+      error_csv = OpenLoam::Import.error_csv(result, csv)  # rebuilt from the original csv
 
       assert_match "_error", error_csv.lines.first
       assert_match "bad", error_csv, "the failed row's original cells are in the downloadable file"
@@ -69,27 +69,27 @@ class LoamImportTest < ActiveSupport::TestCase
 
   test "a mapping to tenant_id or a non-permitted field is refused" do
     with_tenant(@warsaw, actor: @mgr) do
-      assert_raises(Loam::Error) do
-        Loam::Import.run("X\n1\n", model: Equipment, mapping: { "X" => "tenant_id" }, actor: @mgr)
+      assert_raises(OpenLoam::Error) do
+        OpenLoam::Import.run("X\n1\n", model: Equipment, mapping: { "X" => "tenant_id" }, actor: @mgr)
       end
-      assert_raises(Loam::Error) do
-        Loam::Import.run("X\n1\n", model: Equipment, mapping: { "X" => "made_up_field" }, actor: @mgr)
+      assert_raises(OpenLoam::Error) do
+        OpenLoam::Import.run("X\n1\n", model: Equipment, mapping: { "X" => "made_up_field" }, actor: @mgr)
       end
     end
   end
 
-  test "the import target must be a Loam entity, never an arbitrary class" do
+  test "the import target must be a OpenLoam entity, never an arbitrary class" do
     %w[User Kernel String].each do |bad|
-      assert_raises(Loam::Error) { Loam::Import.allowed_model(bad) }
+      assert_raises(OpenLoam::Error) { OpenLoam::Import.allowed_model(bad) }
     end
-    assert_equal Equipment, Loam::Import.allowed_model("Equipment")
+    assert_equal Equipment, OpenLoam::Import.allowed_model("Equipment")
   end
 
   test "update-by-key can only ever match a record in the CURRENT tenant" do
     with_tenant(@krakow, actor: @mgr) { Equipment.create!(name: "Shared", daily_rate: 1, status: "available") }
     with_tenant(@warsaw, actor: @mgr) do
       # Same name exists in Krakow; importing here must CREATE, not reach across.
-      result = Loam::Import.run("Name,Status\nShared,rented\n", model: Equipment,
+      result = OpenLoam::Import.run("Name,Status\nShared,rented\n", model: Equipment,
                                 mapping: { "Name" => "name", "Status" => "status" }, actor: @mgr, match_key: "name")
       assert_equal 1, result.created
       assert_equal 0, result.updated
@@ -99,8 +99,8 @@ class LoamImportTest < ActiveSupport::TestCase
 
   test "import advances a ProgressJob per row" do
     with_tenant(@warsaw, actor: @mgr) do
-      progress = Loam::Progress.start(name: "Import", total: 2)
-      Loam::Import.run("Name,Status\nA,available\nB,available\n", model: Equipment,
+      progress = OpenLoam::Progress.start(name: "Import", total: 2)
+      OpenLoam::Import.run("Name,Status\nA,available\nB,available\n", model: Equipment,
                        mapping: { "Name" => "name", "Status" => "status" }, actor: @mgr, progress: progress)
       assert_equal 2, progress.reload.completed
     end
@@ -108,8 +108,8 @@ class LoamImportTest < ActiveSupport::TestCase
 
   test "malformed CSV is a clean error, not a crash" do
     with_tenant(@warsaw, actor: @mgr) do
-      assert_raises(Loam::Error) do
-        Loam::Import.run("a,b\n\"unterminated", model: Equipment, mapping: { "a" => "name" }, actor: @mgr)
+      assert_raises(OpenLoam::Error) do
+        OpenLoam::Import.run("a,b\n\"unterminated", model: Equipment, mapping: { "a" => "name" }, actor: @mgr)
       end
     end
   end
@@ -120,7 +120,7 @@ class LoamImportTest < ActiveSupport::TestCase
     with_tenant(@warsaw, actor: @emp) do
       Customer.create!(name: "Acme", email: "orders@acme.test", tax_id: "PL5260001")
 
-      csv = Loam::Export.csv(Customer.where(name: "Acme"), actor: @emp)
+      csv = OpenLoam::Export.csv(Customer.where(name: "Acme"), actor: @emp)
 
       refute_match "PL5260001", csv, "encrypted tax_id is never exported in the clear"
       refute_match "orders@acme.test", csv, "encrypted email is never exported in the clear"
@@ -134,7 +134,7 @@ class LoamImportTest < ActiveSupport::TestCase
     with_tenant(@warsaw, actor: @mgr) { Equipment.create!(name: "WarsawRig", daily_rate: 5, status: "available") }
     with_tenant(@krakow, actor: @mgr) { Equipment.create!(name: "KrakowRig", daily_rate: 5, status: "available") }
 
-    csv = with_tenant(@warsaw, actor: @mgr) { Loam::Export.csv(Equipment.all, actor: @mgr) }
+    csv = with_tenant(@warsaw, actor: @mgr) { OpenLoam::Export.csv(Equipment.all, actor: @mgr) }
     assert_match "WarsawRig", csv
     refute_match "KrakowRig", csv
   end

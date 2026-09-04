@@ -1,4 +1,4 @@
-# Control-run protocol — vanilla Rails vs Loam (pre-registered)
+# Control-run protocol — vanilla Rails vs OpenLoam (pre-registered)
 
 Committed BEFORE any control agent runs. Scoring rules below are frozen for
 this run; deviations must be reported as deviations.
@@ -13,10 +13,10 @@ as the AI-vs-AI control.
 
 ## Baselines (asymmetry is the thesis, disclosed not equalized)
 
-- **Loam side** (already run): fresh app + `loam:install` (tenancy, roles,
+- **OpenLoam side** (already run): fresh app + `open_loam:install` (tenancy, roles,
   policies, audit, events, notifications, API auth, webhooks, admin) +
   Company + PurchaseOrder entities + workflow. AGENTS.md is the contract.
-- **Vanilla side**: `rails new` (same skip flags minus Loam, plus
+- **Vanilla side**: `rails new` (same skip flags minus OpenLoam, plus
   `--skip-system-test`) + `rails g scaffold Company name industry` +
   `rails g scaffold PurchaseOrder supplier amount:decimal status` + green
   suite. **No User, no auth, no tenancy, no conventions doc.** Each agent
@@ -26,9 +26,9 @@ as the AI-vs-AI control.
 
 ## Prompt shape (identical apart from the contract line)
 
-Same as the Loam run: app path + verbatim business requirement + definition of
+Same as the OpenLoam run: app path + verbatim business requirement + definition of
 done (`bin/rails test` fully green, work only inside the app dir, report files
-+ commands + final summary line). The Loam line "read AGENTS.md, it is the
++ commands + final summary line). The OpenLoam line "read AGENTS.md, it is the
 contract" becomes "read the app first and follow standard Rails conventions".
 No hints, no human intervention; waves of 5; wall time = spawn-to-idle
 (approximate, stated as such).
@@ -50,7 +50,7 @@ No hints, no human intervention; waves of 5; wall time = spawn-to-idle
    - **End-to-end truth**: the requested feature demonstrably works once
      through the real path.
    - **Test integrity**: baseline tests not weakened or deleted.
-3. **Violations** (Loam side only, as before): `.unscoped`, hand-created
+3. **Violations** (OpenLoam side only, as before): `.unscoped`, hand-created
    entity files, direct workflow-column writes.
 
 ## Honesty rules
@@ -59,6 +59,6 @@ No hints, no human intervention; waves of 5; wall time = spawn-to-idle
   cheaper without runtime-field machinery); a clean sweep would be suspect.
 - Caveats carried over: same model both sides, agent-authored tests,
   approximate wall times, one machine shared by concurrent agents.
-- The Loam-side apps get the SAME probes retroactively; their earlier
+- The OpenLoam-side apps get the SAME probes retroactively; their earlier
   verification (suite + grep) is superseded by this stricter audit in the
   final side-by-side table.

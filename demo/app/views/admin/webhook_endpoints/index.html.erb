@@ -28,5 +28,5 @@ domain ("rental."); anything else is one exact event name.</p>
   </tbody>
 </table>
 
-<p>Each delivery is signed: <code>X-Loam-Signature: sha256=HMAC-SHA256(secret, body)</code>.
+<p>Each delivery is signed: <code>X-OpenLoam-Signature: sha256=HMAC-SHA256(secret, body)</code>.
 Recompute it on your side and reject anything that does not match.</p>

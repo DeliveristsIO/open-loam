@@ -1,33 +1,33 @@
 module Admin
-  # Per-tenant settings (Loam::Configs). Structural, not per-record, so it is
+  # Per-tenant settings (OpenLoam::Configs). Structural, not per-record, so it is
   # gated on the manager role rather than an entity policy — settings are
-  # privileged. Everything routes through Loam::Configs, never Loam::Config
+  # privileged. Everything routes through OpenLoam::Configs, never OpenLoam::Config
   # directly, so the cross-level resolution stays in vetted gem code.
   class ConfigsController < BaseController
     before_action { require_role!(:manager) }
 
     def index
-      # Feature flags share the loam_configs store but have their own screen
+      # Feature flags share the open_loam_configs store but have their own screen
       # (/admin/features), so hide their reserved-prefix keys from Settings.
-      keys = Loam::Configs.defined_keys.reject { |key| key.start_with?(Loam::Features::PREFIX) }
+      keys = OpenLoam::Configs.defined_keys.reject { |key| key.start_with?(OpenLoam::Features::PREFIX) }
       @settings = keys.map do |key|
-        { key: key, value: Loam::Configs.get(key), overridden: Loam::Configs.overridden?(key) }
+        { key: key, value: OpenLoam::Configs.get(key), overridden: OpenLoam::Configs.overridden?(key) }
       end
     end
 
     def edit
       @key = params[:key]
-      @value = Loam::Configs.get(@key)
-      @overridden = Loam::Configs.overridden?(@key)
+      @value = OpenLoam::Configs.get(@key)
+      @overridden = OpenLoam::Configs.overridden?(@key)
     end
 
     def update
-      Loam::Configs.set(params[:key], coerce(params[:value]))
+      OpenLoam::Configs.set(params[:key], coerce(params[:value]))
       redirect_to admin_configs_path, notice: "#{params[:key]} set for this tenant."
     end
 
     def reset
-      Loam::Configs.reset(params[:key])
+      OpenLoam::Configs.reset(params[:key])
       redirect_to admin_configs_path, notice: "#{params[:key]} reset to the default."
     end
 

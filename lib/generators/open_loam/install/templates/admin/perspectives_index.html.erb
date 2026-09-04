@@ -24,7 +24,7 @@ or delete it.</p>
           <%% if perspective.owner_id == current_actor.id || (perspective.visibility != "private" && current_role == :manager) %>
             <%%= form_with url: admin_perspective_path(perspective, entity_type: @entity_type), method: :patch, class: "inline" do %>
               <%%= text_field_tag :"perspective[name]", perspective.name, size: 16 %>
-              <%%= select_tag :"perspective[visibility]", options_for_select(Loam::Perspective::VISIBILITIES, perspective.visibility) %>
+              <%%= select_tag :"perspective[visibility]", options_for_select(OpenLoam::Perspective::VISIBILITIES, perspective.visibility) %>
               <%%= text_field_tag :"perspective[role]", perspective.role, placeholder: "role", size: 8 %>
               <%%= submit_tag "Save" %>
             <%% end %>

@@ -1,4 +1,4 @@
-module Loam
+module OpenLoam
   module BusinessRules
     # The SAFE condition evaluator — the critical security boundary of the rules
     # engine. A rule is DATA an admin edits, so this must NEVER run arbitrary
@@ -48,7 +48,7 @@ module Loam
         elsif custom_field?(record, field)
           begin
             record.custom_field(field)
-          rescue Loam::UnknownCustomFieldError
+          rescue OpenLoam::UnknownCustomFieldError
             REFUSED
           end
         else
@@ -59,8 +59,8 @@ module Loam
       def self.refused_column?(klass, field)
         return true if field == "tenant_id"
 
-        klass.respond_to?(:loam_encrypted_attributes) &&
-          klass.loam_encrypted_attributes.map(&:to_s).include?(field)
+        klass.respond_to?(:open_loam_encrypted_attributes) &&
+          klass.open_loam_encrypted_attributes.map(&:to_s).include?(field)
       end
 
       def self.custom_field?(record, field)

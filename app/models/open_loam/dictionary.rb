@@ -1,15 +1,15 @@
-module Loam
+module OpenLoam
   # A per-tenant managed lookup list — a named set of entries (e.g.
   # "damage_severity" → minor/major/critical). Admins curate the values without a
-  # code deploy, and a Loam::FieldDefinition of type "dictionary" can point a
-  # custom field at one. Tenant-scoped and audited like every Loam entity; see
-  # Loam::Dictionaries for the read API.
-  class Dictionary < Loam::TenantRecord
-    self.table_name = "loam_dictionaries"
+  # code deploy, and a OpenLoam::FieldDefinition of type "dictionary" can point a
+  # custom field at one. Tenant-scoped and audited like every OpenLoam entity; see
+  # OpenLoam::Dictionaries for the read API.
+  class Dictionary < OpenLoam::TenantRecord
+    self.table_name = "open_loam_dictionaries"
 
-    include Loam::Auditable
+    include OpenLoam::Auditable
 
-    has_many :entries, class_name: "Loam::DictionaryEntry",
+    has_many :entries, class_name: "OpenLoam::DictionaryEntry",
              foreign_key: :dictionary_id, dependent: :delete_all
 
     validates :key, presence: true, uniqueness: { scope: :tenant_id }

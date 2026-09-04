@@ -1,7 +1,7 @@
-class CreateLoamApiTokens < ActiveRecord::Migration[8.1]
+class CreateOpenLoamApiTokens < ActiveRecord::Migration[8.1]
   def change
-    create_table :loam_api_tokens do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }
+    create_table :open_loam_api_tokens do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :open_loam_tenants }
       t.references :user, null: false, foreign_key: true
       t.string :token, null: false
       t.string :label
@@ -10,6 +10,6 @@ class CreateLoamApiTokens < ActiveRecord::Migration[8.1]
     end
     # Tokens are looked up before a tenant is known, so the uniqueness that
     # matters is global.
-    add_index :loam_api_tokens, :token, unique: true
+    add_index :open_loam_api_tokens, :token, unique: true
   end
 end

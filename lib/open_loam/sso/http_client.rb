@@ -1,10 +1,10 @@
 require "net/http"
 require "json"
 
-module Loam
+module OpenLoam
   module Sso
     # The one place SSO talks to the network — kept tiny and isolated so the rest
-    # of the flow is pure. Only Loam::Sso::OidcProvider uses it, and the test
+    # of the flow is pure. Only OpenLoam::Sso::OidcProvider uses it, and the test
     # suite injects a FakeProvider instead, so this is never exercised offline.
     module HttpClient
       module_function
@@ -32,7 +32,7 @@ module Loam
 
       def parse(response)
         unless response.is_a?(Net::HTTPSuccess)
-          raise Loam::Sso::Error, "identity provider returned #{response.code}"
+          raise OpenLoam::Sso::Error, "identity provider returned #{response.code}"
         end
 
         JSON.parse(response.body)

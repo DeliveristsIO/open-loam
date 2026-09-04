@@ -1,9 +1,9 @@
 require "openssl"
 require "digest"
 
-module Loam
+module OpenLoam
   # Receiving webhooks FROM external systems (the inbound sibling of
-  # Loam::Webhooks). One entry point — `ingest` — does the whole verified,
+  # OpenLoam::Webhooks). One entry point — `ingest` — does the whole verified,
   # replay-resistant pipeline and returns a Result the controller turns into an
   # HTTP status. Kept here (not in a controller) so it is testable without HTTP
   # and shared by the generated app and the demo.
@@ -30,13 +30,13 @@ module Loam
     module_function
 
     def ingest(token:, raw_body:, headers:)
-      Loam::Telemetry.span("inbound_webhook") { run_ingest(token, raw_body.to_s, headers) }
+      OpenLoam::Telemetry.span("inbound_webhook") { run_ingest(token, raw_body.to_s, headers) }
     end
 
     def run_ingest(token, raw_body, headers)
       return Result.new(status: 413, reason: "body too large") if raw_body.bytesize > MAX_BYTES
 
-      source = Loam::InboundWebhookSource.resolve(token)
+      source = OpenLoam::InboundWebhookSource.resolve(token)
       return Result.new(status: 404, reason: "unknown or inactive source") if source.nil?
 
       signature = header(headers, source.signature_header_key)
@@ -51,8 +51,8 @@ module Loam
 
       begin
         delivery = nil
-        Loam::InboundWebhookDelivery.transaction do
-          delivery = Loam::InboundWebhookDelivery.create!(
+        OpenLoam::InboundWebhookDelivery.transaction do
+          delivery = OpenLoam::InboundWebhookDelivery.create!(
             source: source, external_id: external_id, event_name: source.event_name,
             status: "received", received_at: Time.current, payload: parse(raw_body)
           )
@@ -60,7 +60,7 @@ module Loam
           # lives on the delivery row, subscribers read it from there. Publishing
           # inside the txn ties capture to the row — a publish failure rolls the
           # row back so the sender's retry isn't deduped away.
-          Loam::Events.publish(source.event_name, { source_id: source.id, delivery_id: delivery.id })
+          OpenLoam::Events.publish(source.event_name, { source_id: source.id, delivery_id: delivery.id })
         end
         Result.new(status: 202, reason: "accepted", delivery: delivery)
       rescue ActiveRecord::RecordNotUnique

@@ -1,14 +1,14 @@
 require "test_helper"
 
-# Comments: a discussion on any Loam entity, tenant-scoped like its subject.
-class LoamCommentTest < ActiveSupport::TestCase
+# Comments: a discussion on any OpenLoam entity, tenant-scoped like its subject.
+class OpenLoamCommentTest < ActiveSupport::TestCase
   setup do
-    @warsaw = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-comments")
-    @krakow = Loam::Tenant.create!(name: "Branch Krakow", slug: "krakow-comments")
+    @warsaw = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-comments")
+    @krakow = OpenLoam::Tenant.create!(name: "Branch Krakow", slug: "krakow-comments")
     @anna = User.create!(name: "Anna", email: "anna@example.test", password: "password")
 
     with_tenant(@warsaw) do
-      Loam::Membership.create!(user: @anna, role: "manager")
+      OpenLoam::Membership.create!(user: @anna, role: "manager")
       @excavator = Equipment.create!(name: "Excavator", daily_rate: 950, status: "available")
     end
   end
@@ -20,13 +20,13 @@ class LoamCommentTest < ActiveSupport::TestCase
       assert_equal "Hydraulics serviced", comment.body
       assert_equal @anna.id, comment.author_id
       assert_equal @warsaw.id, comment.tenant_id
-      assert_equal [ comment ], @excavator.loam_comments.to_a
+      assert_equal [ comment ], @excavator.open_loam_comments.to_a
     end
   end
 
-  test "a comment publishes loam.comment.created so notifications and webhooks can react" do
+  test "a comment publishes open_loam.comment.created so notifications and webhooks can react" do
     received = []
-    subscription = Loam::Events.subscribe("loam.comment.created") { |_name, payload| received << payload }
+    subscription = OpenLoam::Events.subscribe("open_loam.comment.created") { |_name, payload| received << payload }
 
     with_tenant(@warsaw, actor: @anna) { @excavator.comment!("Hydraulics serviced") }
 
@@ -48,24 +48,24 @@ class LoamCommentTest < ActiveSupport::TestCase
       @excavator.comment!("First")
       @excavator.comment!("Second")
 
-      assert_equal %w[First Second], @excavator.loam_comments.oldest_first.pluck(:body)
+      assert_equal %w[First Second], @excavator.open_loam_comments.oldest_first.pluck(:body)
     end
   end
 
   test "comments are invisible from another tenant" do
     with_tenant(@warsaw, actor: @anna) { @excavator.comment!("Hydraulics serviced") }
 
-    with_tenant(@krakow) { assert_equal 0, Loam::Comment.count }
+    with_tenant(@krakow) { assert_equal 0, OpenLoam::Comment.count }
   end
 
   test "destroying the record destroys its comments" do
     with_tenant(@warsaw, actor: @anna) do
       @excavator.comment!("Hydraulics serviced")
-      assert_equal 1, Loam::Comment.count
+      assert_equal 1, OpenLoam::Comment.count
 
       @excavator.destroy!
 
-      assert_equal 0, Loam::Comment.count
+      assert_equal 0, OpenLoam::Comment.count
     end
   end
 end

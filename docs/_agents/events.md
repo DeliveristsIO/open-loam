@@ -6,28 +6,28 @@ nav_order: 2
 
 # Events — ephemeral vs durable subscribers
 
-Loam has one domain event bus and **two ways to subscribe**. They are not
+OpenLoam has one domain event bus and **two ways to subscribe**. They are not
 interchangeable; picking the wrong one is a correctness bug, so the contract is
 explicit.
 
 ## Publishing (unchanged)
 
 ```ruby
-Loam::Events.publish("billing.invoice.paid", { id: invoice.id })
+OpenLoam::Events.publish("billing.invoice.paid", { id: invoice.id })
 ```
 
 Names are `domain.thing.happened`. Publishing stamps `tenant_id` and `actor_id`
-onto the payload. Entities that `include Loam::Eventful` publish
+onto the payload. Entities that `include OpenLoam::Eventful` publish
 `created`/`updated`/`destroyed` automatically on `after_*_commit`.
 
 Payloads are **ids and scalars by convention, never records** — the same
 primitive crosses into a webhook body or a durable delivery row.
 
-## Ephemeral subscribers — `Loam::Events.subscribe`
+## Ephemeral subscribers — `OpenLoam::Events.subscribe`
 
 ```ruby
-Loam::Events.subscribe("billing.") { |name, payload| ... }   # a whole domain
-Loam::Events.subscribe("billing.invoice.paid") { |name, payload| ... } # one event
+OpenLoam::Events.subscribe("billing.") { |name, payload| ... }   # a whole domain
+OpenLoam::Events.subscribe("billing.invoice.paid") { |name, payload| ... } # one event
 ```
 
 - Runs **inline in the publisher's thread**, synchronously.
@@ -40,22 +40,22 @@ fine and where you *want* the work inline. The webhook dispatcher is the
 canonical example: it subscribes to every event and enqueues its own delivery
 jobs.
 
-## Durable subscribers — `Loam::DurableEvents.register`
+## Durable subscribers — `OpenLoam::DurableEvents.register`
 
 ```ruby
 # in an initializer (boot-time, trusted code)
-Loam::DurableEvents.register(
+OpenLoam::DurableEvents.register(
   key:  "billing_grant_access",         # stable id, stored on every delivery row
   to:   "billing.invoice.paid",         # event name, or "billing." for a domain
   call: "Billing::GrantAccessHandler"   # responds to .call(event_name, payload)
 )
 ```
 
-On publish, for each matching durable subscriber Loam:
+On publish, for each matching durable subscriber OpenLoam:
 
-1. **commits a `Loam::EventDelivery` row** in the event's tenant (status
+1. **commits a `OpenLoam::EventDelivery` row** in the event's tenant (status
    `pending`), then
-2. enqueues `Loam::EventDeliveryJob` to run the handler.
+2. enqueues `OpenLoam::EventDeliveryJob` to run the handler.
 
 The job resolves the handler **from the registry by key** and calls it. On
 success the row is `delivered`; on failure the row records the error, increments
@@ -77,7 +77,7 @@ what was never published.
 ### The sweep is the real durability
 
 `perform_later` at publish is only an accelerator. The durability comes from
-`Loam::EventRedeliverySweepJob` — registered per tenant on a 5-minute schedule —
+`OpenLoam::EventRedeliverySweepJob` — registered per tenant on a 5-minute schedule —
 which re-enqueues any `pending` row whose backoff has elapsed. So a delivery
 survives a lost queue message, a crashed worker, or an async adapter that runs
 the job before the creating transaction commits (the job no-ops on the invisible

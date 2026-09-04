@@ -1,5 +1,5 @@
 module Admin
-  # Managing business rules (Loam::BusinessRule) — manager-only, since a rule can
+  # Managing business rules (OpenLoam::BusinessRule) — manager-only, since a rule can
   # notify, emit events, and set fields across the tenant. The condition and
   # actions are edited as JSON for the prototype (a visual builder is a future
   # increment). The recent execution log shows WHY rules fired.
@@ -9,21 +9,21 @@ module Admin
 
     rescue_from JSON::ParserError do |error|
       flash.now[:alert] = "Condition and actions must be valid JSON: #{error.message}"
-      @rule ||= Loam::BusinessRule.new
+      @rule ||= OpenLoam::BusinessRule.new
       render(@rule.persisted? ? :edit : :new, status: :unprocessable_entity)
     end
 
     def index
-      @rules = Loam::BusinessRule.by_priority
-      @recent_runs = Loam::BusinessRuleRun.recent.limit(20)
+      @rules = OpenLoam::BusinessRule.by_priority
+      @recent_runs = OpenLoam::BusinessRuleRun.recent.limit(20)
     end
 
     def new
-      @rule = Loam::BusinessRule.new(active: true, condition: {}, actions: [])
+      @rule = OpenLoam::BusinessRule.new(active: true, condition: {}, actions: [])
     end
 
     def create
-      @rule = Loam::BusinessRule.new(rule_params)
+      @rule = OpenLoam::BusinessRule.new(rule_params)
       if @rule.save
         redirect_to admin_business_rules_path, notice: "Rule created."
       else
@@ -49,7 +49,7 @@ module Admin
     private
 
     def set_rule
-      @rule = Loam::BusinessRule.find(params[:id])
+      @rule = OpenLoam::BusinessRule.find(params[:id])
     end
 
     # Parse the JSON textareas here; a malformed value raises JSON::ParserError,

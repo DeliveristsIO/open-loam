@@ -1,4 +1,4 @@
-# Control run — vanilla Rails vs Loam, both + AI
+# Control run — vanilla Rails vs OpenLoam, both + AI
 
 Run per the pre-registered [protocol](2026-08-19-vanilla-protocol.md). Same
 model family authored both sides and the probes; requirements verbatim; no
@@ -7,7 +7,7 @@ human-estimate baseline.
 
 ## Headline
 
-| | Loam + AI | Vanilla + AI |
+| | OpenLoam + AI | Vanilla + AI |
 |---|---|---|
 | Tasks with green suite | 10/10 | 10/10 |
 | **Tenant isolation enforced** (HTTP probe) | **10/10** | **1/10** |
@@ -18,13 +18,13 @@ human-estimate baseline.
 
 Both sides ship working, tested features. They diverge on the properties no
 single ticket names but every business app needs: **who can see whose data, and
-who is allowed to act.** On Loam those hold by construction on all ten; on
+who is allowed to act.** On OpenLoam those hold by construction on all ten; on
 vanilla they were built only where a task's acceptance criteria happened to
 spell them out — and even then, only for the one endpoint named.
 
 ## The two baselines (asymmetric on purpose — that asymmetry is the measurement)
 
-- **Loam**: `loam:install` ships tenancy, roles, policies, audit, events,
+- **OpenLoam**: `open_loam:install` ships tenancy, roles, policies, audit, events,
   notifications, API auth, webhooks and an admin before task one. AGENTS.md is
   the contract.
 - **Vanilla**: `rails new` + two scaffolds. No User, no auth, no tenancy, no
@@ -36,7 +36,7 @@ spell them out — and even then, only for the one endpoint named.
 Wall times are approximate (spawn-to-idle, waves of five sharing one machine).
 Suite counts are the agent-authored suites, re-run by the orchestrator.
 
-| # | Task | Loam suite | Vanilla suite | Loam isolation / role | Vanilla isolation / role |
+| # | Task | OpenLoam suite | Vanilla suite | OpenLoam isolation / role | Vanilla isolation / role |
 |---|------|-----------|---------------|-----------------------|--------------------------|
 | 1 | Approval > €10k | 24/63 | 29/54 | pass / pass | **absent / fail** (approver = free-text param, no User) |
 | 2 | Custom field on Company | 26/64 | 22/35 | pass / n-a | absent / n-a (plain column; faster on vanilla) |
@@ -51,7 +51,7 @@ Suite counts are the agent-authored suites, re-run by the orchestrator.
 
 ## What the behavioral audit found (both sides probed identically)
 
-**Loam — 10/10 clean.** Independent auditor fired the protocol probes through
+**OpenLoam — 10/10 clean.** Independent auditor fired the protocol probes through
 each app's real HTTP/model paths. Isolation held in every app, including the
 two that rewrote the workflow machine (1, 9) and the one that added an API
 route (6). Manager gates refused direct HTTP with **403**, not just hidden
@@ -82,7 +82,7 @@ Where a vanilla task *did* name security, an agent could build it well: task 3
 reached for Rails 8's `rails g authentication` and produced a genuine
 authenticated role gate. The lesson isn't that the model can't do auth — it's
 that on vanilla it does so **per ticket, ten incompatible times**, and only
-when asked; on Loam it's an app-wide property present before the first task.
+when asked; on OpenLoam it's an app-wide property present before the first task.
 
 ## Cost side of the ledger (honest)
 
@@ -90,7 +90,7 @@ Vanilla was **faster or equal on the tasks that need no foundation** — task 2
 (a custom field) is just a migration when there's no runtime-field machinery,
 and vanilla's suite for it was smaller and quicker. Several vanilla suites are
 larger (task 9: 45 tests) precisely because the agent had to build and test a
-workflow, a User model, and a session layer that Loam ships. Bigger diffs are
+workflow, a User model, and a session layer that OpenLoam ships. Bigger diffs are
 not a virtue here: they are the foundation tax, paid in bespoke, unaudited,
 mutually incompatible security code — the exact surface a reviewer must now
 scrutinize on every one of ten apps instead of trusting once.
@@ -108,9 +108,9 @@ scrutinize on every one of ten apps instead of trusting once.
 
 ## Bottom line
 
-The thesis under test — *"AI can safely modify a Loam application because Loam
+The thesis under test — *"AI can safely modify a OpenLoam application because OpenLoam
 gives the agent strong conventions"* — now has a control. Given identical
-prompts and the same model, **Loam apps enforced tenant isolation 10/10 and
+prompts and the same model, **OpenLoam apps enforced tenant isolation 10/10 and
 role gating 4/4; vanilla apps 1/10 and 1/4**, with every vanilla app leaking
 data to unauthenticated HTTP. The foundation isn't what makes the feature work
 — both sides got the feature working. It's what makes the feature **safe by

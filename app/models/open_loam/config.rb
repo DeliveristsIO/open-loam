@@ -1,22 +1,22 @@
-module Loam
+module OpenLoam
   # A single configuration setting: one namespaced key, one JSON-able value.
   #
-  # Deliberately NOT a Loam::TenantRecord. A setting exists at two levels — a
+  # Deliberately NOT a OpenLoam::TenantRecord. A setting exists at two levels — a
   # GLOBAL default (tenant_id NULL) that every tenant sees, and a per-tenant
   # OVERRIDE (tenant_id set) that wins for that one tenant — so tenancy is a
   # nullable column here, not a default_scope. Resolving a key means reading
   # across both levels at once, which is why the lookup lives in vetted gem code
-  # (Loam::Configs), never in app code (see the tenancy allowlist in
-  # test/loam_guardrails_test.rb).
+  # (OpenLoam::Configs), never in app code (see the tenancy allowlist in
+  # test/open_loam_guardrails_test.rb).
   #
   # The value goes in a json column, so a bool, number, string, array, or hash
   # all round-trip under the same key. Row existence — not the value — is what
   # marks a key as set, so the value may legitimately be JSON null.
   class Config < ApplicationRecord
-    include Loam::GeneratedKey
-    self.table_name = "loam_configs"
+    include OpenLoam::GeneratedKey
+    self.table_name = "open_loam_configs"
 
-    belongs_to :tenant, class_name: "Loam::Tenant", optional: true
+    belongs_to :tenant, class_name: "OpenLoam::Tenant", optional: true
 
     validates :key, presence: true
     # One global per key, one override per key per tenant. AR renders the nil

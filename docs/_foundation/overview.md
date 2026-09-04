@@ -1,46 +1,46 @@
 ---
-title: How Loam works
+title: How OpenLoam works
 description: The shape of the system — tenancy, authorization, audit, events, admin — and where to go deeper.
 nav_order: 1
 permalink: /foundation/overview/
 ---
 
-# How Loam works
+# How OpenLoam works
 
-Loam is an **opinionated foundation, delivered as one Rails engine gem.** Each
+OpenLoam is an **opinionated foundation, delivered as one Rails engine gem.** Each
 pillar — tenancy, authorization, audit, events, admin — is a small,
-self-contained implementation living under `Loam::`. The value is the
+self-contained implementation living under `OpenLoam::`. The value is the
 *fusion*: they all agree with each other and with the tenancy boundary on day
 zero, plus an [agent-legibility layer]({% link _agents/index.md %}) on top so
 a coding agent doesn't have to rediscover any of it per task.
 
 > **Prototype note (2026-08).** The original plan was to *wrap* proven gems
 > (`acts_as_tenant`, `pundit`, `paper_trail`, Rails Event Store, Avo). The
-> prototype instead ships **minimal in-gem implementations** behind Loam's own
+> prototype instead ships **minimal in-gem implementations** behind OpenLoam's own
 > conventions — the smallest surface that proves the conventions and the agent
 > flow end to end (see [ADR 0002]({% link _adr/0002-in-gem-implementations.md %})).
 > Swapping the proven gems back in *behind the same public conventions* is the
-> roadmap, not a reversal: the `Loam::` API is the contract, its internals are
+> roadmap, not a reversal: the `OpenLoam::` API is the contract, its internals are
 > replaceable.
 
 ## Shape
 
-Loam ships as a single Rails **engine** + generators + an `AGENTS.md`
+OpenLoam ships as a single Rails **engine** + generators + an `AGENTS.md`
 contract, layered over a standard Rails 8 app.
 
 ```
 app/                     your business (the 20%)
-lib/loam/                the foundation (the 80%)
+lib/open_loam/                the foundation (the 80%)
   tenant_record.rb       tenant model base class + default-scope isolation
   current.rb             per-request tenant/actor context
   policy.rb              roles + field-level write rules
   auditable.rb           change tracking, on by default
   events.rb / eventful.rb  domain event bus + lifecycle events
-  custom_fields.rb       runtime fields (Loam::FieldDefinition + json column)
+  custom_fields.rb       runtime fields (OpenLoam::FieldDefinition + json column)
   workflow.rb            states, transitions, role-gated approvals
-  lifecycle.rb           on_tenant_created hooks + loam:sync
-app/models/loam/         engine models (Tenant, Membership, AuditRecord, …)
-lib/generators/loam/     install + entity generators (the one interface)
+  lifecycle.rb           on_tenant_created hooks + open_loam:sync
+app/models/open_loam/         engine models (Tenant, Membership, AuditRecord, …)
+lib/generators/open_loam/     install + entity generators (the one interface)
 AGENTS.md                agent conventions + guardrails (byte-budgeted)
 ```
 
@@ -50,15 +50,15 @@ A polished, shareable version of these diagrams (plus the full module
 catalogue) lives as an [**architecture map**](https://claude.ai/code/artifact/949311d3-5e14-4f07-a8ad-7b1bb5bd87ad).
 The two graphs below are Mermaid — they also render inline on GitHub.
 
-**The module map** — two things sit at the center: `Loam::TenantRecord` (the
+**The module map** — two things sit at the center: `OpenLoam::TenantRecord` (the
 ground every model stands on) and the event bus (how modules talk without
 knowing about each other). An arrow reads as "feeds" or "builds on".
 
 {% raw %}
 ```mermaid
 flowchart TB
-  TR{{"Loam::TenantRecord · isolation"}}:::core
-  BUS(["Loam::Events · event bus"]):::bus
+  TR{{"OpenLoam::TenantRecord · isolation"}}:::core
+  BUS(["OpenLoam::Events · event bus"]):::bus
   subgraph IA["Identity and access"]
     MEM["Membership · roles"]:::n
     POL["Policy · field-level"]:::n
@@ -141,17 +141,17 @@ flowchart LR
 
 ## The pillars, briefly
 
-- **Tenant isolation.** Every business model inherits `Loam::TenantRecord`; a
+- **Tenant isolation.** Every business model inherits `OpenLoam::TenantRecord`; a
   missing tenant context raises instead of widening a query. Structural, not a
   convention. → [Tenant isolation]({% link _foundation/tenant-isolation.md %})
-- **Authorization.** A `Loam::Policy` per entity: role-based action checks
+- **Authorization.** A `OpenLoam::Policy` per entity: role-based action checks
   plus field-level `writable:`/`readable:` rules. Orthogonal to tenancy — a
   member of the right tenant can still be denied a specific action or field.
   → [Authorization]({% link _foundation/authorization.md %})
 - **Audit.** Every create/update/destroy on an audited model writes a
-  `Loam::AuditRecord` with actor, action, and changeset — automatically.
+  `OpenLoam::AuditRecord` with actor, action, and changeset — automatically.
   → [Audit trail]({% link _foundation/audit-trail.md %})
-- **Domain events.** `Loam::Events` over `ActiveSupport::Notifications`;
+- **Domain events.** `OpenLoam::Events` over `ActiveSupport::Notifications`;
   *ephemeral* (in-process, best-effort) and *durable* (persisted, retried,
   dead-lettered) subscriber tiers. → [Events]({% link _agents/events.md %})
 - **Admin.** A generated, Hotwire-free ERB console — CRUD, comments,
@@ -165,12 +165,12 @@ what the prototype ships versus the roadmap target for each.
 
 ## Agent-legibility layer
 
-What makes Loam *agent-native* rather than just a starter kit:
+What makes OpenLoam *agent-native* rather than just a starter kit:
 
 1. **`AGENTS.md`** — the canonical map, byte-budgeted (≤32 KB, enforced by a
    [guardrail]({% link _agents/guardrails.md %})) so an agent harness never
    silently truncates its tail. → [The agent contract]({% link _agents/agent-contract.md %})
-2. **Generators as the interface** — agents add features by invoking Loam
+2. **Generators as the interface** — agents add features by invoking OpenLoam
    generators, not free-form file creation. Output is predictable and
    reviewable. → [Generators]({% link _reference/generators.md %})
 3. **Structural guardrails** — tenancy and authorization are enforced by base
@@ -189,12 +189,12 @@ What makes Loam *agent-native* rather than just a starter kit:
 An agent (or human) runs the entity generator, declares the policy rule, adds
 the workflow/event, and the admin panel comes with it — each a conventional,
 audited, tenant-scoped step. No decisions about *how* tenancy or permissions
-work, because Loam already decided. This is exactly the shape the
+work, because OpenLoam already decided. This is exactly the shape the
 [golden-tasks benchmark]({% link _agents/golden-tasks.md %}) exercises.
 
 ## Non-goals
 
-- Not a commerce product (that's Spree/Solidus) — Loam is domain-agnostic.
+- Not a commerce product (that's Spree/Solidus) — OpenLoam is domain-agnostic.
 - Not a low-code builder — it produces normal, readable Rails code.
 - Not a fork of Rails — it's an engine + conventions on top of stock Rails.
 
@@ -209,7 +209,7 @@ calls aren't ADRs yet, in brief:
 
 - **Custom-fields engine** → a json column + `FieldDefinition` typed accessors,
   not full EAV. Portable `json` today; `jsonb`/GIN is the production target; a
-  read-model index (`Loam::CustomFieldIndex`) is the scaling path.
+  read-model index (`OpenLoam::CustomFieldIndex`) is the scaling path.
 - **Encryption at rest** → AES-256-GCM with a random 12-byte IV per value,
   version-tagged so a rotated key or new scheme can coexist with old rows.
   Keys derive per tenant AND per purpose via HKDF-SHA256 from one master key,
@@ -217,11 +217,11 @@ calls aren't ADRs yet, in brief:
 - **MFA key scope** → an MFA secret is keyed by the *user*, not the tenant —
   it must verify at login before any tenant is chosen, so a per-tenant key
   would be a lockout bug.
-- **Approval gate** → a staging primitive (`Loam::PendingActions.stage`), not
-  a global Active Record interceptor — Loam has no single write chokepoint, so
-  a confirm-mode caller checks `Loam.require_confirmation?` and stages
+- **Approval gate** → a staging primitive (`OpenLoam::PendingActions.stage`), not
+  a global Active Record interceptor — OpenLoam has no single write chokepoint, so
+  a confirm-mode caller checks `OpenLoam.require_confirmation?` and stages
   explicitly. See [Confirm-mode]({% link _agents/confirm-mode.md %}).
 - **Real-time push is single-process in the prototype.** The default SSE
   broadcaster only sees events instrumented in its own process — correct for
-  the single-worker prototype, and a documented seam (`Loam::EventStream.broadcaster`)
+  the single-worker prototype, and a documented seam (`OpenLoam::EventStream.broadcaster`)
   for a Redis/SolidCable backend at multi-process scale.

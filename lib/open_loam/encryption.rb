@@ -1,22 +1,22 @@
 require "openssl"
-require "loam/encryption/key_provider"
-require "loam/encryption/cipher"
+require "open_loam/encryption/key_provider"
+require "open_loam/encryption/cipher"
 
-module Loam
+module OpenLoam
   # Field-level encryption at rest, keyed per tenant.
   #
-  # The facade the rest of Loam calls: `encrypt`/`decrypt` seal and open a value
+  # The facade the rest of OpenLoam calls: `encrypt`/`decrypt` seal and open a value
   # with the tenant's derived AES-256-GCM key, and `blind_index` computes the
   # per-tenant HMAC used to find an encrypted field by exact value. Key
   # derivation is delegated to a pluggable `key_provider` (HKDF by default, a
   # KMS in production), so this module holds the scheme, not the key material.
   module Encryption
-    class Error < Loam::Error; end
+    class Error < OpenLoam::Error; end
 
     # Raised when a crypto operation is attempted with no master key configured.
     class MissingMasterKeyError < Error
-      def initialize(msg = "Loam::Encryption has no master key. Set LOAM_MASTER_KEY (or " \
-                           "`Loam::Encryption.master_key = ...`) to a high-entropy secret, e.g. " \
+      def initialize(msg = "OpenLoam::Encryption has no master key. Set OPEN_LOAM_MASTER_KEY (or " \
+                           "`OpenLoam::Encryption.master_key = ...`) to a high-entropy secret, e.g. " \
                            "`SecureRandom.hex(32)`. NEVER commit it; use ENV or Rails credentials.")
         super
       end
@@ -42,18 +42,18 @@ module Loam
       end
 
       def master_key
-        key = @master_key || ENV["LOAM_MASTER_KEY"]
+        key = @master_key || ENV["OPEN_LOAM_MASTER_KEY"]
         raise MissingMasterKeyError if key.nil? || key.empty?
         if key.bytesize < MASTER_KEY_MIN_BYTES
           raise MissingMasterKeyError,
-                "LOAM_MASTER_KEY is too short (#{key.bytesize} bytes); use at least " \
+                "OPEN_LOAM_MASTER_KEY is too short (#{key.bytesize} bytes); use at least " \
                 "#{MASTER_KEY_MIN_BYTES}, e.g. `SecureRandom.hex(32)`."
         end
         key
       end
 
       # Tenant-scoped operations — the default for entity fields via
-      # Loam::Encryptable. nil stays nil (an unset field is not "the empty
+      # OpenLoam::Encryptable. nil stays nil (an unset field is not "the empty
       # string encrypted"); any other value is stringified and sealed.
       def encrypt(plaintext, tenant_id)
         encrypt_scoped(plaintext, tenant_scope(tenant_id))
@@ -89,7 +89,7 @@ module Loam
       # lives — the key scope (tenant/owner) + table + column. Reconstructed
       # identically on read and write, so a blob moved to a different column,
       # table, or tenant fails the auth tag. NOT the record id (see
-      # Loam::Encryptable): the id is unknown at INSERT time, and binding it would
+      # OpenLoam::Encryptable): the id is unknown at INSERT time, and binding it would
       # force an ugly post-insert double-write; record-swap within one
       # tenant+table+column stays a documented residual.
       def aad(scope, table, column)

@@ -1,6 +1,6 @@
 module Admin
   # Manage the external systems allowed to POST webhooks into this tenant
-  # (Loam::InboundWebhookSource) — manager-only. Create a source (token + secret
+  # (OpenLoam::InboundWebhookSource) — manager-only. Create a source (token + secret
   # are generated), copy the receive URL and secret to the sender, rotate either,
   # toggle active, and see the most recent received deliveries.
   class InboundWebhookSourcesController < BaseController
@@ -8,16 +8,16 @@ module Admin
     before_action :set_source, only: %i[destroy rotate_secret rotate_token toggle]
 
     def index
-      @sources = Loam::InboundWebhookSource.order(:name)
-      @recent = Loam::InboundWebhookDelivery.order(received_at: :desc).limit(20)
+      @sources = OpenLoam::InboundWebhookSource.order(:name)
+      @recent = OpenLoam::InboundWebhookDelivery.order(received_at: :desc).limit(20)
     end
 
     def new
-      @source = Loam::InboundWebhookSource.new(event_name: "inbound.webhook.received")
+      @source = OpenLoam::InboundWebhookSource.new(event_name: "inbound.webhook.received")
     end
 
     def create
-      @source = Loam::InboundWebhookSource.new(source_params)
+      @source = OpenLoam::InboundWebhookSource.new(source_params)
       if @source.save
         redirect_to admin_inbound_webhook_sources_path, notice: "Source created. Copy the secret now — it signs every call."
       else
@@ -48,7 +48,7 @@ module Admin
     private
 
     def set_source
-      @source = Loam::InboundWebhookSource.find(params[:id])
+      @source = OpenLoam::InboundWebhookSource.find(params[:id])
     end
 
     def source_params

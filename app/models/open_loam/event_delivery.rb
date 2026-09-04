@@ -1,14 +1,14 @@
-module Loam
+module OpenLoam
   # One durable delivery of one event to one persistent subscriber
-  # (see Loam::DurableEvents). The ROW is the durable record of intent: it is
+  # (see OpenLoam::DurableEvents). The ROW is the durable record of intent: it is
   # committed in the event's tenant at publish time, and the background job is
   # only an accelerator. If the job is lost, the sweep re-enqueues from this row.
   #
   # Lifecycle: pending -> delivered (handler ran) | dead (handler removed, or
   # MAX_ATTEMPTS exhausted). A pending row with next_attempt_at in the future is
   # simply waiting out its backoff.
-  class EventDelivery < Loam::TenantRecord
-    self.table_name = "loam_event_deliveries"
+  class EventDelivery < OpenLoam::TenantRecord
+    self.table_name = "open_loam_event_deliveries"
 
     STATUSES = %w[pending delivered dead].freeze
 

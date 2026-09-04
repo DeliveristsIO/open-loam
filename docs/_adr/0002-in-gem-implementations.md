@@ -11,15 +11,15 @@ nav_order: 2
 
 ## Context
 The original plan was to wrap proven gems (`acts_as_tenant`, `pundit`,
-`paper_trail`, Rails Event Store, Avo) behind Loam conventions. But the value Loam
+`paper_trail`, Rails Event Store, Avo) behind OpenLoam conventions. But the value OpenLoam
 is proving is the *fusion* — that tenancy, policy, audit, events, and encryption
 all agree with each other and with the tenant boundary on day zero — and whether
 an agent can extend that fusion. A pile of third-party dependencies would make
 that harder to reason about and test end to end.
 
 ## Decision
-Ship minimal in-gem implementations behind Loam's own public conventions first —
-the smallest surface that proves the conventions and the agent flow. The `Loam::`
+Ship minimal in-gem implementations behind OpenLoam's own public conventions first —
+the smallest surface that proves the conventions and the agent flow. The `OpenLoam::`
 API is the contract; its internals are replaceable.
 
 ## Consequences

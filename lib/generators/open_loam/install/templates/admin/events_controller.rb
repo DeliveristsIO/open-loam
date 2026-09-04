@@ -1,5 +1,5 @@
 module Admin
-  # Server-Sent Events: a per-tenant push stream (Loam::EventStream) so the admin
+  # Server-Sent Events: a per-tenant push stream (OpenLoam::EventStream) so the admin
   # updates live instead of polling. Authentication runs in the normal
   # before_action chain (set_loam_context) BEFORE any stream write — so an
   # unauthenticated request redirects to login the ordinary way, since no headers
@@ -20,7 +20,7 @@ module Admin
       # Subscribe as the FIRST thing in the begin whose ensure unsubscribes: a
       # leaked AS::Notifications subscriber would fire on every future event in
       # the process, holding this dead stream's queue forever.
-      handle = Loam::EventStream.broadcaster.subscribe(tenant: current_tenant, actor: current_actor) do |sse|
+      handle = OpenLoam::EventStream.broadcaster.subscribe(tenant: current_tenant, actor: current_actor) do |sse|
         queue << sse
       end
 
@@ -34,9 +34,9 @@ module Admin
     rescue IOError, ActionController::Live::ClientDisconnected
       # The client went away — nothing to do but clean up in `ensure`.
     ensure
-      Loam::EventStream.broadcaster.unsubscribe(handle)
+      OpenLoam::EventStream.broadcaster.unsubscribe(handle)
       response.stream.close
-      Loam::Current.reset
+      OpenLoam::Current.reset
     end
   end
 end

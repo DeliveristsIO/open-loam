@@ -16,7 +16,7 @@ schema-per-tenant (a Postgres schema or database each) and row-level (`tenant_id
 connection complexity and fights a shared admin/agent surface.
 
 ## Decision
-Row-level: `Loam::TenantRecord` applies a `default_scope` on `Loam::Current.tenant`;
+Row-level: `OpenLoam::TenantRecord` applies a `default_scope` on `OpenLoam::Current.tenant`;
 every scoped table carries `tenant_id`; a query with no tenant context **raises**
 `MissingTenantError` rather than silently widening.
 

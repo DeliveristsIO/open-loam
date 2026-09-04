@@ -1,18 +1,18 @@
 # Tenant-scoped, audited, evented — by inheritance, not by remembering.
-class Equipment < Loam::TenantRecord
-  include Loam::Auditable
-  include Loam::Eventful
-  include Loam::CustomFields
-  include Loam::Commentable
-  include Loam::Attachable
-  include Loam::Searchable
-  include Loam::SoftDeletable
-  include Loam::Translatable
+class Equipment < OpenLoam::TenantRecord
+  include OpenLoam::Auditable
+  include OpenLoam::Eventful
+  include OpenLoam::CustomFields
+  include OpenLoam::Commentable
+  include OpenLoam::Attachable
+  include OpenLoam::Searchable
+  include OpenLoam::SoftDeletable
+  include OpenLoam::Translatable
 
   event_domain :rental
   searchable_by :name, :status
-  translates :name  # per-locale content overlay over the base name (Loam::Translatable)
+  translates :name  # per-locale content overlay over the base name (OpenLoam::Translatable)
 
   # Business logic goes here. Publish business events explicitly:
-  #   Loam::Events.publish("rental.something.happened", id: id)
+  #   OpenLoam::Events.publish("rental.something.happened", id: id)
 end

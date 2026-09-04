@@ -1,13 +1,13 @@
 require "net/http"
 require "openssl"
 
-module Loam
+module OpenLoam
   # Delivers one event to one endpoint. Inherits ActiveJob::Base rather than
   # the host app's ApplicationJob: the gem must not depend on a class the app
   # owns and may have configured for its own retries.
   #
   # Signing: the receiver recomputes HMAC-SHA256 of the exact body with the
-  # endpoint's secret and compares it to X-Loam-Signature. Body building and
+  # endpoint's secret and compares it to X-OpenLoam-Signature. Body building and
   # signing are class methods so both sides — and the tests — can call them
   # without a network.
   class WebhookDeliveryJob < ActiveJob::Base
@@ -24,11 +24,11 @@ module Loam
     end
 
     def perform(tenant_id, endpoint_id, event_name, payload)
-      tenant = Loam::Tenant.find_by(id: tenant_id)
+      tenant = OpenLoam::Tenant.find_by(id: tenant_id)
       return if tenant.nil?
 
-      Loam.as_tenant(tenant) do
-        endpoint = Loam::WebhookEndpoint.find_by(id: endpoint_id)
+      OpenLoam.as_tenant(tenant) do
+        endpoint = OpenLoam::WebhookEndpoint.find_by(id: endpoint_id)
         # The endpoint may have been deleted or switched off between enqueue
         # and delivery — that is an answer, not an error.
         next if endpoint.nil? || !endpoint.active?
@@ -49,8 +49,8 @@ module Loam
 
       request = Net::HTTP::Post.new(uri.request_uri)
       request["Content-Type"] = "application/json"
-      request["X-Loam-Event"] = event_name
-      request["X-Loam-Signature"] = self.class.signature(endpoint.secret, body)
+      request["X-OpenLoam-Event"] = event_name
+      request["X-OpenLoam-Signature"] = self.class.signature(endpoint.secret, body)
       request.body = body
 
       http.request(request)

@@ -1,14 +1,14 @@
 # Tenant-scoped, audited, evented — by inheritance, not by remembering.
-class <%= class_name %> < Loam::TenantRecord
-  include Loam::Auditable
-  include Loam::Eventful
-  include Loam::CustomFields
-  include Loam::Commentable
-  include Loam::Attachable
-  include Loam::Searchable
-  include Loam::SoftDeletable
+class <%= class_name %> < OpenLoam::TenantRecord
+  include OpenLoam::Auditable
+  include OpenLoam::Eventful
+  include OpenLoam::CustomFields
+  include OpenLoam::Commentable
+  include OpenLoam::Attachable
+  include OpenLoam::Searchable
+  include OpenLoam::SoftDeletable
 <% if encrypted_field_names.any? -%>
-  include Loam::Encryptable
+  include OpenLoam::Encryptable
 <% end -%>
 
   event_domain :<%= domain %>
@@ -23,5 +23,5 @@ class <%= class_name %> < Loam::TenantRecord
 <% end -%>
 
   # Business logic goes here. Publish business events explicitly:
-  #   Loam::Events.publish("<%= domain %>.something.happened", id: id)
+  #   OpenLoam::Events.publish("<%= domain %>.something.happened", id: id)
 end

@@ -14,7 +14,7 @@ module Admin
       # discussion too.
       authorize!(policy_for(record), :read?)
 
-      comment = record.loam_comments.new(body: params[:body], author: current_actor)
+      comment = record.open_loam_comments.new(body: params[:body], author: current_actor)
       flash[:alert] = comment.errors.full_messages.to_sentence unless comment.save
 
       redirect_back fallback_location: [ :admin, record ]
@@ -24,13 +24,13 @@ module Admin
 
     # The type arrives from the browser, so it is never constantized blindly.
     # `safe_constantize` returns nil for anything that is not a real constant,
-    # and the class then has to prove it is a Loam entity that opted into
+    # and the class then has to prove it is a OpenLoam entity that opted into
     # comments — the allowlist is the contract, not a hand-kept list of names.
     def commentable
       klass = params[:commentable_type].to_s.safe_constantize
 
-      unless klass.is_a?(Class) && klass < Loam::TenantRecord && klass.include?(Loam::Commentable)
-        raise Loam::NotAuthorizedError, "#{params[:commentable_type].inspect} is not a commentable Loam entity"
+      unless klass.is_a?(Class) && klass < OpenLoam::TenantRecord && klass.include?(OpenLoam::Commentable)
+        raise OpenLoam::NotAuthorizedError, "#{params[:commentable_type].inspect} is not a commentable OpenLoam entity"
       end
 
       klass.find(params[:commentable_id])

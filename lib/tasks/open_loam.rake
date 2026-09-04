@@ -1,75 +1,75 @@
-namespace :loam do
-  desc "Re-run every Loam.on_tenant_created callback for every existing tenant (idempotent)"
+namespace :open_loam do
+  desc "Re-run every OpenLoam.on_tenant_created callback for every existing tenant (idempotent)"
   task sync: :environment do
-    synced = Loam.sync_tenants!
-    puts "loam:sync — ran #{Loam.tenant_created_callbacks.size} tenant callback(s) across #{synced} tenant(s)."
+    synced = OpenLoam.sync_tenants!
+    puts "open_loam:sync — ran #{OpenLoam.tenant_created_callbacks.size} tenant callback(s) across #{synced} tenant(s)."
   end
 
   namespace :openapi do
     # Write the OpenAPI 3.1 document + a Markdown rendering to disk, for CI or
     # publishing. Introspection only — no server, no network.
     #
-    #   bin/rails loam:openapi:export
+    #   bin/rails open_loam:openapi:export
     desc "Export the API's OpenAPI JSON + Markdown to doc/"
     task export: :environment do
       require "json"
       dir = ENV["DIR"].presence || "doc"
       FileUtils.mkdir_p(dir)
-      File.write(File.join(dir, "openapi.json"), JSON.pretty_generate(Loam::OpenApi.document))
-      File.write(File.join(dir, "openapi.md"), Loam::OpenApi.markdown)
-      puts "loam:openapi:export — wrote #{dir}/openapi.json and #{dir}/openapi.md."
+      File.write(File.join(dir, "openapi.json"), JSON.pretty_generate(OpenLoam::OpenApi.document))
+      File.write(File.join(dir, "openapi.md"), OpenLoam::OpenApi.markdown)
+      puts "open_loam:openapi:export — wrote #{dir}/openapi.json and #{dir}/openapi.md."
     end
   end
 
   namespace :scheduler do
     # Fire every due recurring job once. Wire to system cron, every minute:
-    #   * * * * * cd /app && bin/rails loam:scheduler:tick
+    #   * * * * * cd /app && bin/rails open_loam:scheduler:tick
     # The claim is atomic, so running this from several hosts never double-fires
     # a job (Postgres SKIP LOCKED; SQLite serializes the single-process claim).
-    desc "Enqueue every due Loam::ScheduledJob (run from cron)"
+    desc "Enqueue every due OpenLoam::ScheduledJob (run from cron)"
     task tick: :environment do
-      fired = Loam::Scheduler.tick
-      puts "loam:scheduler:tick — fired #{fired} scheduled job(s)."
+      fired = OpenLoam::Scheduler.tick
+      puts "open_loam:scheduler:tick — fired #{fired} scheduled job(s)."
     end
   end
 
   namespace :index do
-    # Rebuild the custom-field read-model index (Loam::CustomFieldIndex) for every
+    # Rebuild the custom-field read-model index (OpenLoam::CustomFieldIndex) for every
     # entity with custom fields, in every tenant. Run once after enabling it so
     # existing rows are projected; new/updated records index themselves on save.
     #
-    #   bin/rails loam:index:reindex
+    #   bin/rails open_loam:index:reindex
     desc "Rebuild the custom-field read-model index for every model in every tenant"
     task reindex: :environment do
       Rails.application.eager_load!
-      models = Loam::TenantRecord.descendants.select do |model|
+      models = OpenLoam::TenantRecord.descendants.select do |model|
         model.name.present? && model.respond_to?(:custom_field_definitions)
       end
 
       tenants = 0
-      Loam::Tenant.find_each do |tenant|
-        Loam.as_tenant(tenant) { models.each { |model| Loam::CustomFieldIndex.reindex(model) } }
+      OpenLoam::Tenant.find_each do |tenant|
+        OpenLoam.as_tenant(tenant) { models.each { |model| OpenLoam::CustomFieldIndex.reindex(model) } }
         tenants += 1
       end
-      puts "loam:index:reindex — rebuilt #{models.size} model(s) across #{tenants} tenant(s)."
+      puts "open_loam:index:reindex — rebuilt #{models.size} model(s) across #{tenants} tenant(s)."
     end
 
     # Report custom-field index coverage (indexed vs expected) per model/field
     # per tenant — the trust signal for whether the index is complete or drifting.
     #
-    #   bin/rails loam:index:coverage
+    #   bin/rails open_loam:index:coverage
     desc "Report custom-field index coverage per model/field per tenant"
     task coverage: :environment do
       Rails.application.eager_load!
-      models = Loam::TenantRecord.descendants.select do |model|
+      models = OpenLoam::TenantRecord.descendants.select do |model|
         model.name.present? && model.respond_to?(:custom_field_definitions)
       end
 
-      Loam::Tenant.find_each do |tenant|
-        Loam.as_tenant(tenant) do
+      OpenLoam::Tenant.find_each do |tenant|
+        OpenLoam.as_tenant(tenant) do
           models.each do |model|
             model.custom_field_definitions.find_each do |definition|
-              c = Loam::CustomFieldIndex.coverage(model, definition.name)
+              c = OpenLoam::CustomFieldIndex.coverage(model, definition.name)
               flag = c[:complete] ? "ok" : "GAP"
               puts "  [#{flag}] #{tenant.slug} #{model.name}.#{definition.name}: #{c[:indexed]}/#{c[:expected]} indexed"
             end
@@ -82,24 +82,24 @@ namespace :loam do
   namespace :search do
     # Rebuild the active driver's search index for every searchable model in
     # every tenant. Needed once after switching to a driver that keeps an index
-    # (Loam::Search::TokenDriver): existing rows have no tokens until reindexed,
+    # (OpenLoam::Search::TokenDriver): existing rows have no tokens until reindexed,
     # while new and updated records index themselves on save. A no-op under the
     # default LikeDriver (its reindex does nothing), so it is always safe to run.
     #
-    #   bin/rails loam:search:reindex
+    #   bin/rails open_loam:search:reindex
     desc "Rebuild the search index for every searchable model in every tenant"
     task reindex: :environment do
       Rails.application.eager_load!
-      models = Loam::TenantRecord.descendants.select do |model|
-        model.name.present? && model.respond_to?(:loam_searchable?) && model.loam_searchable?
+      models = OpenLoam::TenantRecord.descendants.select do |model|
+        model.name.present? && model.respond_to?(:open_loam_searchable?) && model.open_loam_searchable?
       end
 
       tenants = 0
-      Loam::Tenant.find_each do |tenant|
-        Loam.as_tenant(tenant) { models.each { |model| Loam::Search.reindex(model) } }
+      OpenLoam::Tenant.find_each do |tenant|
+        OpenLoam.as_tenant(tenant) { models.each { |model| OpenLoam::Search.reindex(model) } }
         tenants += 1
       end
-      puts "loam:search:reindex — rebuilt #{models.size} model(s) across #{tenants} tenant(s) using #{Loam::Search.driver}."
+      puts "open_loam:search:reindex — rebuilt #{models.size} model(s) across #{tenants} tenant(s) using #{OpenLoam::Search.driver}."
     end
   end
 
@@ -110,20 +110,20 @@ namespace :loam do
     # coexist, so this can run incrementally without downtime. Each record is an
     # ordinary audited "[encrypted]" update.
     #
-    #   bin/rails loam:encryption:rotate[Customer,42]
+    #   bin/rails open_loam:encryption:rotate[Customer,42]
     desc "Re-encrypt a model's encrypted fields for one tenant (rotation step)"
     task :rotate, %i[model tenant_id] => :environment do |_task, args|
       model = fetch_encryptable_model(args[:model])
-      tenant = Loam::Tenant.find(args[:tenant_id])
+      tenant = OpenLoam::Tenant.find(args[:tenant_id])
 
       count = 0
-      Loam.as_tenant(tenant) do
+      OpenLoam.as_tenant(tenant) do
         each_record(model) do |record|
-          record.loam_reencrypt!
+          record.open_loam_reencrypt!
           count += 1
         end
       end
-      puts "loam:encryption:rotate — re-encrypted #{count} #{model.name} record(s) in tenant #{tenant.slug}."
+      puts "open_loam:encryption:rotate — re-encrypted #{count} #{model.name} record(s) in tenant #{tenant.slug}."
     end
 
     # Decrypt and print one tenant's encrypted fields, e.g. for a GDPR data
@@ -132,15 +132,15 @@ namespace :loam do
     # a shell history that syncs), and only for a tenant you are authorized to
     # export.
     #
-    #   bin/rails loam:encryption:decrypt_dump[Customer,42]
+    #   bin/rails open_loam:encryption:decrypt_dump[Customer,42]
     desc "Print decrypted encrypted-field values for one tenant (GDPR export; handle with care)"
     task :decrypt_dump, %i[model tenant_id] => :environment do |_task, args|
       require "json"
       model = fetch_encryptable_model(args[:model])
-      tenant = Loam::Tenant.find(args[:tenant_id])
-      fields = model.loam_encrypted_attributes
+      tenant = OpenLoam::Tenant.find(args[:tenant_id])
+      fields = model.open_loam_encrypted_attributes
 
-      Loam.as_tenant(tenant) do
+      OpenLoam.as_tenant(tenant) do
         each_record(model) do |record|
           row = { id: record.id }.merge(fields.index_with { |field| record.public_send(field) })
           puts row.to_json
@@ -150,15 +150,15 @@ namespace :loam do
   end
 end
 
-# Resolve a model name to a class that actually uses Loam::Encryptable — a typo
+# Resolve a model name to a class that actually uses OpenLoam::Encryptable — a typo
 # or a plain model should fail loudly, not silently dump/rotate nothing.
 def fetch_encryptable_model(name)
-  # Force the app's classes (and Loam::TenantRecord, required lazily via the
+  # Force the app's classes (and OpenLoam::TenantRecord, required lazily via the
   # active_record on_load hook) to load before we constantize a model name.
   Rails.application.eager_load!
   model = name.to_s.constantize
-  unless model.respond_to?(:loam_encrypted_attributes) && model.loam_encrypted_attributes.any?
-    abort "#{name} does not `include Loam::Encryptable` with any `encrypts` fields."
+  unless model.respond_to?(:open_loam_encrypted_attributes) && model.open_loam_encrypted_attributes.any?
+    abort "#{name} does not `include OpenLoam::Encryptable` with any `encrypts` fields."
   end
   model
 end

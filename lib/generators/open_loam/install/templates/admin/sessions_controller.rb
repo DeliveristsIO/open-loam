@@ -1,12 +1,12 @@
 module Admin
   # Email + password login for the admin, then (if the user has MFA) a TOTP
-  # challenge, then the tenant pick. A Loam user can belong to several tenants,
+  # challenge, then the tenant pick. A OpenLoam user can belong to several tenants,
   # so: authenticate → second factor → choose a tenant where they hold a
   # membership. The second factor runs BEFORE any tenant is chosen, which is why
-  # the MFA secret is keyed to the user, not a tenant (Loam::MfaCredential).
+  # the MFA secret is keyed to the user, not a tenant (OpenLoam::MfaCredential).
   #
   # Not a BaseController subclass: everything there assumes an established
-  # Loam::Current, which is exactly what this controller is trying to build.
+  # OpenLoam::Current, which is exactly what this controller is trying to build.
   class SessionsController < ActionController::Base
     layout "admin"
 
@@ -14,17 +14,17 @@ module Admin
       return redirect_to mfa_challenge_admin_session_path if session[:mfa_pending]
 
       @user = authenticated_user
-      @tenants = @user ? Loam::Membership.tenants_for(@user) : Loam::Tenant.none
+      @tenants = @user ? OpenLoam::Membership.tenants_for(@user) : OpenLoam::Tenant.none
     end
 
     def create
       email = params[:email]
 
-      # Rate-limit BEFORE touching the password (Loam::AuthThrottle). Throttle by
+      # Rate-limit BEFORE touching the password (OpenLoam::AuthThrottle). Throttle by
       # the submitted identifier whether or not the account exists, and give the
       # SAME generic locked response either way — so a lockout can't become an
       # account-existence oracle.
-      if Loam::AuthThrottle.locked?(email)
+      if OpenLoam::AuthThrottle.locked?(email)
         @error = throttle_message(email)
         return render :new, status: :too_many_requests
       end
@@ -32,20 +32,20 @@ module Admin
       user = User.authenticate_by(email: email, password: params[:password])
 
       if user.nil?
-        Loam::AuthThrottle.record_failure(email, kind: "password", ip: request.remote_ip)
+        OpenLoam::AuthThrottle.record_failure(email, kind: "password", ip: request.remote_ip)
         # One message for both cases on purpose: saying which half was wrong
         # tells an attacker which emails exist.
         @error = "Wrong email or password."
         return render :new, status: :unauthorized
       end
 
-      Loam::AuthThrottle.clear(email) # a successful login resets the counter
+      OpenLoam::AuthThrottle.clear(email) # a successful login resets the counter
       reset_session # a fresh session id at login: no fixation
       session[:user_id] = user.id
 
       # Password is only the first factor when MFA is active — hold the login in
       # a "pending" state (no tenant, no access) until the code checks out.
-      if Loam::MfaCredential.active_for(user)
+      if OpenLoam::MfaCredential.active_for(user)
         session[:mfa_pending] = true
         redirect_to mfa_challenge_admin_session_path
       else
@@ -65,20 +65,20 @@ module Admin
 
       # A 6-digit TOTP (with drift, several codes valid) is the prime brute-force
       # target — lock it out on the user's identifier.
-      if Loam::AuthThrottle.locked?(user.email)
+      if OpenLoam::AuthThrottle.locked?(user.email)
         @user = user
         @error = throttle_message(user.email)
         return render :mfa_challenge, status: :too_many_requests
       end
 
-      credential = Loam::MfaCredential.active_for(user)
+      credential = OpenLoam::MfaCredential.active_for(user)
 
       if credential.verify_totp(params[:code]) || credential.consume_recovery_code(params[:code])
-        Loam::AuthThrottle.clear(user.email)
+        OpenLoam::AuthThrottle.clear(user.email)
         session.delete(:mfa_pending)
         complete_authentication(user)
       else
-        Loam::AuthThrottle.record_failure(user.email, kind: "totp", ip: request.remote_ip)
+        OpenLoam::AuthThrottle.record_failure(user.email, kind: "totp", ip: request.remote_ip)
         # One generic error — never reveal whether a code was close or a
         # recovery code was already spent.
         @user = user
@@ -92,7 +92,7 @@ module Admin
     # back to password login. The `state` is our CSRF token for the round-trip.
     def sso_start
       email = params[:email].to_s
-      provider = Loam::Sso.provider_for(email: email)
+      provider = OpenLoam::Sso.provider_for(email: email)
 
       if provider.nil?
         return redirect_to new_admin_session_path(email: email),
@@ -105,8 +105,8 @@ module Admin
       session[:sso_provider_id] = provider.id
       session[:sso_tenant_id] = provider.tenant_id
 
-      url = Loam.as_tenant(provider.tenant) do
-        Loam::Sso.build(provider, redirect_uri: sso_callback_admin_session_url)
+      url = OpenLoam.as_tenant(provider.tenant) do
+        OpenLoam::Sso.build(provider, redirect_uri: sso_callback_admin_session_url)
                  .authorization_url(state: state, login_hint: email)
       end
       redirect_to url, allow_other_host: true
@@ -124,15 +124,15 @@ module Admin
         return redirect_to new_admin_session_path, alert: "SSO sign-in could not be verified. Please try again."
       end
 
-      tenant = Loam::Tenant.find_by(id: tenant_id)
-      provider = tenant && Loam.as_tenant(tenant) { Loam::SsoProvider.find_by(id: provider_id) }
+      tenant = OpenLoam::Tenant.find_by(id: tenant_id)
+      provider = tenant && OpenLoam.as_tenant(tenant) { OpenLoam::SsoProvider.find_by(id: provider_id) }
       if provider.nil? || !provider.active?
         return redirect_to new_admin_session_path, alert: "That SSO provider is no longer available."
       end
 
-      user = Loam.as_tenant(tenant) do
-        claims = Loam::Sso.build(provider, redirect_uri: sso_callback_admin_session_url).exchange(code: params[:code])
-        Loam::Sso.provision(provider, claims)
+      user = OpenLoam.as_tenant(tenant) do
+        claims = OpenLoam::Sso.build(provider, redirect_uri: sso_callback_admin_session_url).exchange(code: params[:code])
+        OpenLoam::Sso.provision(provider, claims)
       end
 
       reset_session
@@ -141,13 +141,13 @@ module Admin
 
       # SSO establishes primary auth; if the user also runs app-side MFA, still
       # require the second factor (the safe choice — SSO does not waive it).
-      if Loam::MfaCredential.active_for(user)
+      if OpenLoam::MfaCredential.active_for(user)
         session[:mfa_pending] = true
         redirect_to mfa_challenge_admin_session_path
       else
         complete_authentication(user)
       end
-    rescue Loam::Sso::Error
+    rescue OpenLoam::Sso::Error
       # An unverified email, a domain the provider does not own, or any other
       # provisioning refusal: no session, nothing linked, one generic message.
       reset_session
@@ -162,7 +162,7 @@ module Admin
       user = authenticated_user
       return redirect_to new_admin_session_path if user.nil?
 
-      tenant = Loam::Membership.tenants_for(user).find_by(id: params[:tenant_id])
+      tenant = OpenLoam::Membership.tenants_for(user).find_by(id: params[:tenant_id])
 
       # A tenant the user has no membership in is simply not in that list, so
       # picking one is impossible rather than merely forbidden.
@@ -173,7 +173,7 @@ module Admin
 
     def destroy
       reset_session
-      Loam::Current.reset
+      OpenLoam::Current.reset
       redirect_to new_admin_session_path
     end
 
@@ -184,7 +184,7 @@ module Admin
     end
 
     def throttle_message(identifier)
-      minutes = (Loam::AuthThrottle.remaining_lockout(identifier) / 60.0).ceil
+      minutes = (OpenLoam::AuthThrottle.remaining_lockout(identifier) / 60.0).ceil
       "Too many attempts. Try again in about #{[ minutes, 1 ].max} minute(s)."
     end
 
@@ -206,11 +206,11 @@ module Admin
       # SSO knows exactly which tenant to enter (the IdP's), so honor it even for
       # a multi-tenant user rather than showing the picker.
       if (sso_tenant_id = session.delete(:sso_tenant_id))
-        tenant = Loam::Membership.tenants_for(user).find_by(id: sso_tenant_id)
+        tenant = OpenLoam::Membership.tenants_for(user).find_by(id: sso_tenant_id)
         return enter(user, tenant) if tenant
       end
 
-      tenants = Loam::Membership.tenants_for(user)
+      tenants = OpenLoam::Membership.tenants_for(user)
 
       if tenants.one?
         enter(user, tenants.first)
@@ -237,11 +237,11 @@ module Admin
     # resolved in that tenant). If the user's role is on the list and they have
     # no active credential, they are sent to enrollment before they can work.
     def mfa_enrollment_required?(user, tenant)
-      return false if Loam::MfaCredential.active_for(user)
+      return false if OpenLoam::MfaCredential.active_for(user)
 
-      Loam.as_tenant(tenant) do
-        role = Loam::Membership.find_by(user_id: user.id)&.role
-        role.present? && Array(Loam::Configs.get("security.mfa_required_roles", default: [])).include?(role)
+      OpenLoam.as_tenant(tenant) do
+        role = OpenLoam::Membership.find_by(user_id: user.id)&.role
+        role.present? && Array(OpenLoam::Configs.get("security.mfa_required_roles", default: [])).include?(role)
       end
     end
   end

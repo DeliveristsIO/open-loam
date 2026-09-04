@@ -1,17 +1,17 @@
 require "rails/generators"
 require "rails/generators/active_record"
-require "generators/loam/primary_key_options"
+require "generators/open_loam/primary_key_options"
 
-module Loam
+module OpenLoam
   module Generators
-    # `rails g loam:install`
+    # `rails g open_loam:install`
     #
-    # Installs the Loam foundation into a host Rails app: tenants, memberships,
+    # Installs the OpenLoam foundation into a host Rails app: tenants, memberships,
     # audit records, a minimal User, the admin surface, structural guardrail
     # tests, and AGENTS.md — the contract AI agents work against.
     class InstallGenerator < Rails::Generators::Base
       include ActiveRecord::Generators::Migration
-      include Loam::Generators::PrimaryKeyOptions
+      include OpenLoam::Generators::PrimaryKeyOptions
 
       source_root File.expand_path("templates", __dir__)
 
@@ -45,7 +45,7 @@ module Loam
         migration_template "migrations/create_loam_inbound_webhooks.rb", "db/migrate/create_loam_inbound_webhooks.rb"
       end
 
-      # Attachments (Loam::Attachable, included in every generated entity) are
+      # Attachments (OpenLoam::Attachable, included in every generated entity) are
       # ActiveStorage, which needs its own tables. The task copies its
       # migration and says so if it is already there, so running it twice is
       # harmless.
@@ -53,7 +53,7 @@ module Loam
         unless defined?(ActiveStorage::Engine)
           say ""
           say "ActiveStorage is not available in this app — attachments will not work.", :yellow
-          say "  Generated entities `include Loam::Attachable`; either re-create the app without"
+          say "  Generated entities `include OpenLoam::Attachable`; either re-create the app without"
           say "  --skip-active-storage, or remove that include from app/models."
           return
         end
@@ -66,7 +66,7 @@ module Loam
       end
 
       def create_initializer
-        template "initializer.rb", "config/initializers/loam.rb"
+        template "initializer.rb", "config/initializers/open_loam.rb"
       end
 
       def create_agents_md
@@ -186,7 +186,7 @@ module Loam
               post :set_default, on: :member
             end
             delete "record_lock", to: "record_locks#destroy"  # manager take-over of an edit lock
-            get "events/stream", to: "events#stream", as: :events_stream  # SSE push (Loam::EventStream)
+            get "events/stream", to: "events#stream", as: :events_stream  # SSE push (OpenLoam::EventStream)
             resources :business_rules, only: %i[index new create edit update destroy]  # when/then rules
             resources :sso_providers, only: %i[index new create edit update destroy]  # per-tenant OIDC config
             resources :dictionaries, only: %i[index new create edit update destroy] do # managed lookup lists
@@ -236,7 +236,7 @@ module Loam
             delete "features",         to: "features#reset"
             get "search", to: "search#index"
             get "api_docs", to: "api_docs#index", as: :api_docs  # OpenAPI explorer (+ .json)
-            get "overrides", to: "overrides#index", as: :overrides  # Loam::Overrides (read-only)
+            get "overrides", to: "overrides#index", as: :overrides  # OpenLoam::Overrides (read-only)
             get   "translations", to: "translations#index", as: :translations  # per-record content translations
             patch "translations", to: "translations#update"
             get   "dashboard_widgets", to: "dashboard_widgets#index", as: :dashboard_widgets  # dashboard settings
@@ -244,7 +244,7 @@ module Loam
           end
 
           namespace :api do
-            # `rails g loam:entity` injects `resources :<entities>` here.
+            # `rails g open_loam:entity` injects `resources :<entities>` here.
           end
 
           # Public inbound webhook receiver (L-710). No auth middleware — the HMAC
@@ -254,33 +254,33 @@ module Loam
       end
 
       def create_guardrail_tests
-        template "guardrails_test.rb", "test/loam_guardrails_test.rb"
+        template "guardrails_test.rb", "test/open_loam_guardrails_test.rb"
       end
 
       # An app generated with --skip-test has no test/test_helper.rb. Creating
-      # one here would be Loam deciding how the app tests; saying so and moving
+      # one here would be OpenLoam deciding how the app tests; saying so and moving
       # on leaves the install complete either way.
       def wire_test_helpers
         unless File.file?(File.join(destination_root, "test/test_helper.rb"))
           say ""
-          say "No test/test_helper.rb (--skip-test?) — skipping Loam test wiring.", :yellow
-          say "  test/loam_guardrails_test.rb was still written. To run it, add to your test setup:"
-          say "    require \"loam/test_helpers\"   (after the environment is loaded)"
-          say "    include Loam::TestHelpers       (in your base test case)"
+          say "No test/test_helper.rb (--skip-test?) — skipping OpenLoam test wiring.", :yellow
+          say "  test/open_loam_guardrails_test.rb was still written. To run it, add to your test setup:"
+          say "    require \"open_loam/test_helpers\"   (after the environment is loaded)"
+          say "    include OpenLoam::TestHelpers       (in your base test case)"
           return
         end
 
-        inject_into_file "test/test_helper.rb", "require \"loam/test_helpers\"\n",
+        inject_into_file "test/test_helper.rb", "require \"open_loam/test_helpers\"\n",
                          after: /require_relative "\.\.\/config\/environment"\n/
-        inject_into_file "test/test_helper.rb", "    include Loam::TestHelpers\n",
+        inject_into_file "test/test_helper.rb", "    include OpenLoam::TestHelpers\n",
                          after: /class TestCase\n/
       end
 
       def print_next_steps
         say ""
-        say "Loam installed. Next:", :green
+        say "OpenLoam installed. Next:", :green
         say "  1. bin/rails db:migrate"
-        say "  2. rails g loam:entity Equipment name:string daily_rate:decimal status:string --domain rental"
+        say "  2. rails g open_loam:entity Equipment name:string daily_rate:decimal status:string --domain rental"
         say "  3. Read AGENTS.md before pointing an AI agent at this app."
       end
     end

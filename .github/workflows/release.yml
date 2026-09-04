@@ -1,7 +1,7 @@
 name: Release
 
 # Publishing is triggered by the version tag, so the whole release ritual is:
-# bump lib/loam/version.rb, commit, `git tag -a vX.Y.Z`, `git push --follow-tags`.
+# bump lib/open_loam/version.rb, commit, `git tag -a vX.Y.Z`, `git push --follow-tags`.
 #
 # No API key is involved anywhere. rubygems/release-gem exchanges GitHub's OIDC
 # token for short-lived RubyGems credentials (trusted publishing), which is why

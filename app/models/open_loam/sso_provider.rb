@@ -1,20 +1,20 @@
-module Loam
+module OpenLoam
   # A tenant's connection to an external identity provider (OIDC). Per-tenant
   # config: each tenant/org wires its OWN IdP, so the client_secret is encrypted
   # under the tenant key (the default Encryptable scope) — unlike MFA, which is
   # user-keyed. Home-realm discovery matches an email `domain` to the owning
-  # provider at the sign-in page (see Loam::Sso.provider_for).
-  class SsoProvider < Loam::TenantRecord
-    self.table_name = "loam_sso_providers"
+  # provider at the sign-in page (see OpenLoam::Sso.provider_for).
+  class SsoProvider < OpenLoam::TenantRecord
+    self.table_name = "open_loam_sso_providers"
 
-    include Loam::Auditable      # config changes are audited; the secret is redacted
-    include Loam::Encryptable
+    include OpenLoam::Auditable      # config changes are audited; the secret is redacted
+    include OpenLoam::Encryptable
 
     # Tenant-scoped key (default): SSO config belongs to the tenant, and the
     # secret is only ever read inside that tenant's context on callback.
     encrypts :client_secret
 
-    has_many :identities, class_name: "Loam::SsoIdentity",
+    has_many :identities, class_name: "OpenLoam::SsoIdentity",
              foreign_key: :sso_provider_id, dependent: :delete_all
 
     validates :name, :protocol, :domain, :jit_role, presence: true
@@ -27,7 +27,7 @@ module Loam
 
     scope :active, -> { where(active: true) }
 
-    # IdP group -> Loam role, first match wins; falls back to jit_role.
+    # IdP group -> OpenLoam role, first match wins; falls back to jit_role.
     def group_roles
       group_role_map.is_a?(Hash) ? group_role_map : {}
     end

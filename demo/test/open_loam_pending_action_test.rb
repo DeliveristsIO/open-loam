@@ -1,18 +1,18 @@
 require "test_helper"
 
-# Loam::PendingActions: staging an agent's write for human approval. Nothing is
+# OpenLoam::PendingActions: staging an agent's write for human approval. Nothing is
 # mutated until a manager approves; approval is a role-gated workflow transition;
 # the proposal never leaks (encrypted at rest, redacted in preview and audit).
-class LoamPendingActionTest < ActiveSupport::TestCase
+class OpenLoamPendingActionTest < ActiveSupport::TestCase
   setup do
-    @warsaw = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-pa")
-    @krakow = Loam::Tenant.create!(name: "Branch Krakow", slug: "krakow-pa")
+    @warsaw = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-pa")
+    @krakow = OpenLoam::Tenant.create!(name: "Branch Krakow", slug: "krakow-pa")
     @manager = User.create!(name: "Manager", email: "mgr@example.test", password: "password")
     @employee = User.create!(name: "Employee", email: "emp@example.test", password: "password")
 
     with_tenant(@warsaw) do
-      Loam::Membership.create!(user: @manager, role: "manager")
-      Loam::Membership.create!(user: @employee, role: "employee")
+      OpenLoam::Membership.create!(user: @manager, role: "manager")
+      OpenLoam::Membership.create!(user: @employee, role: "employee")
     end
   end
 
@@ -20,7 +20,7 @@ class LoamPendingActionTest < ActiveSupport::TestCase
     with_tenant(@warsaw, actor: @employee) do
       equipment = Equipment.create!(name: "Digger", daily_rate: 950, status: "available")
 
-      pending = Loam::PendingActions.stage(
+      pending = OpenLoam::PendingActions.stage(
         summary: "Raise rate", on: equipment, action: :update, changes: { daily_rate: 1100 }
       )
 
@@ -33,7 +33,7 @@ class LoamPendingActionTest < ActiveSupport::TestCase
   test "preview shows the before/after of each proposed field" do
     with_tenant(@warsaw, actor: @employee) do
       equipment = Equipment.create!(name: "Digger", daily_rate: 950, status: "available")
-      pending = Loam::PendingActions.stage(
+      pending = OpenLoam::PendingActions.stage(
         summary: "Raise rate", on: equipment, action: :update, changes: { daily_rate: 1100 }
       )
 
@@ -44,13 +44,13 @@ class LoamPendingActionTest < ActiveSupport::TestCase
   test "a manager approves and the change is applied; an employee is refused" do
     id = with_tenant(@warsaw, actor: @employee) do
       equipment = Equipment.create!(name: "Digger", daily_rate: 950, status: "available")
-      Loam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 }).id
+      OpenLoam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 }).id
     end
 
     with_tenant(@warsaw) do
-      pending = Loam::PendingAction.find(id)
+      pending = OpenLoam::PendingAction.find(id)
 
-      assert_raises(Loam::NotAuthorizedError) { pending.approve!(by: @employee) }
+      assert_raises(OpenLoam::NotAuthorizedError) { pending.approve!(by: @employee) }
       assert_equal "pending", pending.reload.status, "a refused approval changes nothing"
 
       pending.approve!(by: @manager)
@@ -63,14 +63,14 @@ class LoamPendingActionTest < ActiveSupport::TestCase
   test "the applied change is audited as the approving manager's, not the proposer's" do
     id = with_tenant(@warsaw, actor: @employee) do
       equipment = Equipment.create!(name: "Digger", daily_rate: 950, status: "available")
-      Loam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 }).id
+      OpenLoam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 }).id
     end
 
     with_tenant(@warsaw) do
-      pending = Loam::PendingAction.find(id)
+      pending = OpenLoam::PendingAction.find(id)
       pending.approve!(by: @manager)
 
-      audit = Loam::AuditRecord.where(auditable_type: "Equipment", auditable_id: pending.target_id, action: "update").last
+      audit = OpenLoam::AuditRecord.where(auditable_type: "Equipment", auditable_id: pending.target_id, action: "update").last
       assert_equal @manager.id, audit.actor_id, "the human who approved owns the change"
     end
   end
@@ -78,11 +78,11 @@ class LoamPendingActionTest < ActiveSupport::TestCase
   test "reject never executes" do
     id = with_tenant(@warsaw, actor: @employee) do
       equipment = Equipment.create!(name: "Digger", daily_rate: 950, status: "available")
-      Loam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 }).id
+      OpenLoam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 }).id
     end
 
     with_tenant(@warsaw) do
-      pending = Loam::PendingAction.find(id)
+      pending = OpenLoam::PendingAction.find(id)
       pending.reject!(by: @manager, reason: "too steep")
 
       assert_equal "rejected", pending.reload.status
@@ -95,22 +95,22 @@ class LoamPendingActionTest < ActiveSupport::TestCase
     with_tenant(@warsaw, actor: @employee) do
       equipment = Equipment.create!(name: "Digger", daily_rate: 950, status: "available")
 
-      first = Loam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 })
-      again = Loam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 })
+      first = OpenLoam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 })
+      again = OpenLoam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 })
 
       assert_equal first.id, again.id
-      assert_equal 1, Loam::PendingAction.count
+      assert_equal 1, OpenLoam::PendingAction.count
     end
   end
 
   test "a failed execution rolls back: status failed, target unchanged" do
     id = with_tenant(@warsaw, actor: @employee) do
       equipment = Equipment.create!(name: "Digger", daily_rate: 950, status: "available")
-      Loam::PendingActions.stage(summary: "Bad", on: equipment, action: :update, changes: { nonexistent_field: "x" }).id
+      OpenLoam::PendingActions.stage(summary: "Bad", on: equipment, action: :update, changes: { nonexistent_field: "x" }).id
     end
 
     with_tenant(@warsaw) do
-      pending = Loam::PendingAction.find(id)
+      pending = OpenLoam::PendingAction.find(id)
       pending.approve!(by: @manager)
 
       assert_equal "failed", pending.reload.status
@@ -122,12 +122,12 @@ class LoamPendingActionTest < ActiveSupport::TestCase
   test "a pending action is invisible and unaffectable from another tenant" do
     id = with_tenant(@warsaw, actor: @employee) do
       equipment = Equipment.create!(name: "Digger", daily_rate: 950, status: "available")
-      Loam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 }).id
+      OpenLoam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 }).id
     end
 
     with_tenant(@krakow) do
-      assert_equal 0, Loam::PendingAction.count
-      assert_nil Loam::PendingAction.find_by(id: id)
+      assert_equal 0, OpenLoam::PendingAction.count
+      assert_nil OpenLoam::PendingAction.find_by(id: id)
     end
   end
 
@@ -136,21 +136,21 @@ class LoamPendingActionTest < ActiveSupport::TestCase
   test "a staged change to an encrypted field leaks the value nowhere" do
     id = with_tenant(@warsaw, actor: @manager) do
       customer = Customer.create!(name: "Acme", email: "a@acme.test", tax_id: "PL-OLD")
-      Loam::PendingActions.stage(
+      OpenLoam::PendingActions.stage(
         summary: "Update tax id", on: customer, action: :update, changes: { tax_id: "PL-SECRET-999" }
       ).id
     end
 
     with_tenant(@warsaw) do
-      pending = Loam::PendingAction.find(id)
+      pending = OpenLoam::PendingAction.find(id)
 
       assert_equal({ "from" => "[encrypted]", "to" => "[encrypted]" }, pending.preview["tax_id"])
 
-      raw = Loam::PendingAction.connection.select_value("SELECT changeset FROM loam_pending_actions WHERE id = #{id}")
+      raw = OpenLoam::PendingAction.connection.select_value("SELECT changeset FROM open_loam_pending_actions WHERE id = #{id}")
       assert raw.start_with?("v2:")
       refute_includes raw, "PL-SECRET-999", "no plaintext in the stored changeset"
 
-      audit = Loam::AuditRecord.where(auditable_type: "Loam::PendingAction", auditable_id: id).first
+      audit = OpenLoam::AuditRecord.where(auditable_type: "OpenLoam::PendingAction", auditable_id: id).first
       assert_equal "[encrypted]", audit.changeset["changeset"]
       refute_includes audit.changeset.to_json, "PL-SECRET-999", "no plaintext in the audit trail"
     end
@@ -162,14 +162,14 @@ class LoamPendingActionTest < ActiveSupport::TestCase
     id = staged_price_change
 
     with_tenant(@warsaw) do
-      pending = Loam::PendingAction.find(id)
+      pending = OpenLoam::PendingAction.find(id)
 
       assert_raises(ActiveRecord::RecordInvalid) { pending.update!(status: "executed") }
       assert_raises(ActiveRecord::RecordInvalid) { pending.update!(status: "approved") }
       assert_equal "pending", pending.reload.status
 
       # ...and a forged already-executed row cannot be created either.
-      forged = Loam::PendingAction.new(
+      forged = OpenLoam::PendingAction.new(
         action_type: "update", summary: "forged", idempotency_key: SecureRandom.hex, status: "executed"
       )
       refute forged.valid?
@@ -185,16 +185,16 @@ class LoamPendingActionTest < ActiveSupport::TestCase
   test "self-approval is refused by default and allowed only when opted in" do
     id = with_tenant(@warsaw, actor: @manager) do
       equipment = Equipment.create!(name: "Digger", daily_rate: 950, status: "available")
-      Loam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 }).id
+      OpenLoam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 }).id
     end
 
     with_tenant(@warsaw) do
-      assert_raises(Loam::NotAuthorizedError) { Loam::PendingAction.find(id).approve!(by: @manager) }
-      assert_equal "pending", Loam::PendingAction.find(id).status
+      assert_raises(OpenLoam::NotAuthorizedError) { OpenLoam::PendingAction.find(id).approve!(by: @manager) }
+      assert_equal "pending", OpenLoam::PendingAction.find(id).status
 
-      Loam::Configs.set("approvals.allow_self_approve", true, scope: :global)
-      Loam::PendingAction.find(id).approve!(by: @manager)
-      assert_equal "executed", Loam::PendingAction.find(id).status
+      OpenLoam::Configs.set("approvals.allow_self_approve", true, scope: :global)
+      OpenLoam::PendingAction.find(id).approve!(by: @manager)
+      assert_equal "executed", OpenLoam::PendingAction.find(id).status
     end
   end
 
@@ -203,15 +203,15 @@ class LoamPendingActionTest < ActiveSupport::TestCase
   test "re-staging after a rejection creates a fresh pending row" do
     with_tenant(@warsaw, actor: @employee) do
       equipment = Equipment.create!(name: "Digger", daily_rate: 950, status: "available")
-      first = Loam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 })
+      first = OpenLoam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 })
       first.reject!(by: @manager, reason: "no")
 
-      again = Loam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 })
+      again = OpenLoam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 })
 
       refute_equal first.id, again.id, "a rejected proposal must be re-stageable"
       assert_equal "pending", again.status
-      assert_equal 1, Loam::PendingAction.pending.count
-      assert_equal 2, Loam::PendingAction.count
+      assert_equal 1, OpenLoam::PendingAction.pending.count
+      assert_equal 2, OpenLoam::PendingAction.count
     end
   end
 
@@ -221,7 +221,7 @@ class LoamPendingActionTest < ActiveSupport::TestCase
     id = staged_price_change
 
     with_tenant(@warsaw) do
-      pending = Loam::PendingAction.find(id)
+      pending = OpenLoam::PendingAction.find(id)
 
       # Make the outcome-recording step blow up AFTER execute_change! has written
       # the target inside the transaction.
@@ -238,7 +238,7 @@ class LoamPendingActionTest < ActiveSupport::TestCase
   def staged_price_change
     with_tenant(@warsaw, actor: @employee) do
       equipment = Equipment.create!(name: "Digger", daily_rate: 950, status: "available")
-      Loam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 }).id
+      OpenLoam::PendingActions.stage(summary: "Raise", on: equipment, action: :update, changes: { daily_rate: 1100 }).id
     end
   end
 end
@@ -246,15 +246,15 @@ end
 # The admin approval queue end to end.
 class AdminPendingActionsFlowTest < ActionDispatch::IntegrationTest
   setup do
-    @tenant = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-pa-flow")
+    @tenant = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-pa-flow")
     @anna = User.create!(name: "Anna", email: "anna@example.test", password: "password")
     @tomek = User.create!(name: "Tomek", email: "tomek@example.test", password: "password")
 
     with_tenant(@tenant) do
-      Loam::Membership.create!(user: @anna, role: "manager")
-      Loam::Membership.create!(user: @tomek, role: "employee")
+      OpenLoam::Membership.create!(user: @anna, role: "manager")
+      OpenLoam::Membership.create!(user: @tomek, role: "employee")
       @equipment = Equipment.create!(name: "Digger", daily_rate: 950, status: "available")
-      @pending = Loam::PendingActions.stage(
+      @pending = OpenLoam::PendingActions.stage(
         summary: "Raise rate", on: @equipment, action: :update, changes: { daily_rate: 1100 }, actor: @tomek
       )
     end

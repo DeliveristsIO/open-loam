@@ -46,7 +46,7 @@ module Admin
 
     def edit
       authorize!(policy_for(@record), :update?)
-      @lock = Loam::RecordLocks.acquire(@record, by: current_actor) || Loam::RecordLocks.active_lock(@record)
+      @lock = OpenLoam::RecordLocks.acquire(@record, by: current_actor) || OpenLoam::RecordLocks.active_lock(@record)
     end
 
     def update
@@ -56,14 +56,14 @@ module Admin
       attach_files!(@record, policy)
 
       if @record.update(permitted_params(policy))
-        Loam::RecordLocks.release(@record, by: current_actor)
+        OpenLoam::RecordLocks.release(@record, by: current_actor)
         redirect_to [:admin, @record]
       else
         render :edit, status: :unprocessable_entity
       end
     rescue ActiveRecord::StaleObjectError
       stale_conflict!(@record, FIELDS)
-      @lock = Loam::RecordLocks.acquire(@record, by: current_actor) || Loam::RecordLocks.active_lock(@record)
+      @lock = OpenLoam::RecordLocks.acquire(@record, by: current_actor) || OpenLoam::RecordLocks.active_lock(@record)
       render :edit, status: :conflict
     end
 
@@ -72,7 +72,7 @@ module Admin
     def destroy
       authorize!(policy_for(@record), :destroy?)
       @record.soft_delete!
-      Loam::RecordLocks.release(@record, by: current_actor)
+      OpenLoam::RecordLocks.release(@record, by: current_actor)
       redirect_to [:admin, DamageReport], notice: "Damage report deleted. Restore it from the recycle bin."
     end
 

@@ -1,12 +1,12 @@
 module Admin
-  # Managing saved views (Loam::Perspective) for an entity. A view is CREATED by
+  # Managing saved views (OpenLoam::Perspective) for an entity. A view is CREATED by
   # "save current view" on the entity index (capturing the live filters/sort); it
   # starts private, owned by you. Here you rename it, widen its audience, make it
   # the default, or delete it.
   #
   # Who may manage a view: its owner always; a manager for role/tenant-visibility
   # ones. A private view of someone else's is invisible here by construction
-  # (Loam::Perspectives.visible_to never returns it).
+  # (OpenLoam::Perspectives.visible_to never returns it).
   class PerspectivesController < BaseController
     before_action :set_perspective, only: %i[update destroy set_default]
     before_action :authorize_manage!, only: %i[update destroy set_default]
@@ -18,12 +18,12 @@ module Admin
 
     def index
       @entity_type = params[:entity_type].to_s
-      @perspectives = Loam::Perspectives.visible_to(@entity_type, user: current_actor)
+      @perspectives = OpenLoam::Perspectives.visible_to(@entity_type, user: current_actor)
     end
 
     # From the entity index: save the CURRENT filters/sort as a new private view.
     def create
-      perspective = Loam::Perspective.create!(
+      perspective = OpenLoam::Perspective.create!(
         entity_type: params[:entity_type].to_s,
         name: params[:name].presence || "Saved view",
         visibility: "private",
@@ -38,7 +38,7 @@ module Admin
       # the audience clears the default flag so it is re-chosen deliberately.
       attributes = perspective_params
       if attributes[:visibility].present? && attributes[:visibility] != @perspective.visibility
-        raise Loam::NotAuthorizedError if attributes[:visibility] != "private" && current_role != :manager
+        raise OpenLoam::NotAuthorizedError if attributes[:visibility] != "private" && current_role != :manager
 
         attributes[:is_default] = false
       end
@@ -64,11 +64,11 @@ module Admin
     private
 
     def set_perspective
-      @perspective = Loam::Perspective.find(params[:id])
+      @perspective = OpenLoam::Perspective.find(params[:id])
     end
 
     def authorize_manage!
-      raise Loam::NotAuthorizedError unless can_manage?(@perspective)
+      raise OpenLoam::NotAuthorizedError unless can_manage?(@perspective)
     end
 
     # Owner always; a manager for shared (role/tenant) views. A private view of

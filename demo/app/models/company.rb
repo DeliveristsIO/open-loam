@@ -1,16 +1,16 @@
 # Tenant-scoped, audited, evented — by inheritance, not by remembering.
-class Company < Loam::TenantRecord
-  include Loam::Auditable
-  include Loam::Eventful
-  include Loam::CustomFields
-  include Loam::Commentable
-  include Loam::Attachable
-  include Loam::Searchable
-  include Loam::SoftDeletable
+class Company < OpenLoam::TenantRecord
+  include OpenLoam::Auditable
+  include OpenLoam::Eventful
+  include OpenLoam::CustomFields
+  include OpenLoam::Commentable
+  include OpenLoam::Attachable
+  include OpenLoam::Searchable
+  include OpenLoam::SoftDeletable
 
   event_domain :crm
   searchable_by :name, :industry, :tier
 
   # Business logic goes here. Publish business events explicitly:
-  #   Loam::Events.publish("crm.something.happened", id: id)
+  #   OpenLoam::Events.publish("crm.something.happened", id: id)
 end

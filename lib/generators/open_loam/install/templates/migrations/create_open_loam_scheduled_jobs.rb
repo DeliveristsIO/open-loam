@@ -1,7 +1,7 @@
-class CreateLoamScheduledJobs < ActiveRecord::Migration[<%= ActiveRecord::VERSION::STRING.to_f %>]
+class CreateOpenLoamScheduledJobs < ActiveRecord::Migration[<%= ActiveRecord::VERSION::STRING.to_f %>]
   def change
-    create_table :loam_scheduled_jobs<%= loam_id_option %> do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }<%= loam_type_option %>
+    create_table :open_loam_scheduled_jobs<%= open_loam_id_option %> do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :open_loam_tenants }<%= open_loam_type_option %>
       t.string :key, null: false                        # unique per tenant
       t.string :name, null: false
       t.string :job_class, null: false                  # a whitelisted ActiveJob class name
@@ -14,7 +14,7 @@ class CreateLoamScheduledJobs < ActiveRecord::Migration[<%= ActiveRecord::VERSIO
       t.boolean :active, null: false, default: true
       t.timestamps
     end
-    add_index :loam_scheduled_jobs, %i[tenant_id key], unique: true
-    add_index :loam_scheduled_jobs, %i[active next_run_at locked_until]
+    add_index :open_loam_scheduled_jobs, %i[tenant_id key], unique: true
+    add_index :open_loam_scheduled_jobs, %i[active next_run_at locked_until]
   end
 end

@@ -1,13 +1,13 @@
-module Loam
+module OpenLoam
   # The log of why a business rule did (or did not) act — so the admin can see
-  # WHY something happened. Plumbing, like Loam::RecordLock: NOT audited (a log
+  # WHY something happened. Plumbing, like OpenLoam::RecordLock: NOT audited (a log
   # of a log is noise). Capped per rule so the table stays lean.
-  class BusinessRuleRun < Loam::TenantRecord
-    self.table_name = "loam_business_rule_runs"
+  class BusinessRuleRun < OpenLoam::TenantRecord
+    self.table_name = "open_loam_business_rule_runs"
 
     KEEP_PER_RULE = 50
 
-    belongs_to :business_rule, class_name: "Loam::BusinessRule"
+    belongs_to :business_rule, class_name: "OpenLoam::BusinessRule"
 
     scope :recent, -> { order(created_at: :desc) }
 

@@ -14,27 +14,27 @@ require "shellwords"
 # harness declares its own encoding rather than depending on the caller's.
 Encoding.default_external = Encoding::UTF_8
 
-# Support code for the Loam generator harness.
+# Support code for the OpenLoam generator harness.
 #
 # The harness shells out a lot: it builds a real Rails app in a temp directory
 # and drives the real generators through it. Everything about running those
 # commands correctly lives here, because every one of them has the same three
 # hazards: a leaked Bundler environment, a generator that blocks on stdin, and
 # a failure whose output you cannot see.
-module LoamHarness
+module OpenLoamHarness
   GEM_ROOT = File.expand_path("..", __dir__)
 
-  # Where generated apps go. LOAM_HARNESS_SCRATCH lets a caller put the
+  # Where generated apps go. OPEN_LOAM_HARNESS_SCRATCH lets a caller put the
   # artifacts somewhere it will go looking for them; otherwise the system temp
   # dir. This used to hardcode one machine's session scratchpad, which meant
   # nothing on any other machine and silently fell back anyway.
   SCRATCH_ROOT = begin
-    preferred = ENV["LOAM_HARNESS_SCRATCH"]
+    preferred = ENV["OPEN_LOAM_HARNESS_SCRATCH"]
     preferred && File.directory?(preferred) && File.writable?(preferred) ? preferred : Dir.tmpdir
   end
 
   # The flags the demo app was built with: no git, no deploy tooling, no
-  # frontend, SQLite default. --skip-bundle matters — the loam path gem has to
+  # frontend, SQLite default. --skip-bundle matters — the open_loam path gem has to
   # be in the Gemfile before anything bundles, so we bundle exactly once.
   RAILS_NEW_FLAGS = %w[
     --skip-git --skip-kamal --skip-ci --skip-docker --skip-solid
@@ -102,14 +102,14 @@ module LoamHarness
       )
     end
 
-    # Generate a fresh Rails app wired to the local loam gem, and return its
+    # Generate a fresh Rails app wired to the local open_loam gem, and return its
     # path plus the steps it took to get there. Slow-ish, so callers do this
     # once and assert against the result many times.
     #
     # +extra_flags+ lets a test build a deliberately unusual app — an app
     # generated with --skip-test, say — without duplicating the flag list.
-    def build_app(name: "loam_harness_app", extra_flags: [])
-      parent = Dir.mktmpdir("loam-harness-", SCRATCH_ROOT)
+    def build_app(name: "open_loam_harness_app", extra_flags: [])
+      parent = Dir.mktmpdir("open_loam-harness-", SCRATCH_ROOT)
       app_dirs << parent
       app = File.join(parent, name)
       flags = (RAILS_NEW_FLAGS + extra_flags).join(" ")
@@ -147,8 +147,8 @@ class HarnessCase < Minitest::Test
     # Keep the generated tree only when something actually failed. Some steps
     # tolerate a non-zero exit, so a failing command is not by itself a reason
     # to leave an app behind.
-    LoamHarness.keep! unless passed?
-    LoamHarness.report_timeline(@steps, label: name)
+    OpenLoamHarness.keep! unless passed?
+    OpenLoamHarness.report_timeline(@steps, label: name)
   end
 
   private
@@ -156,7 +156,7 @@ class HarnessCase < Minitest::Test
   # Run a command in the app and assert it succeeded, with its captured
   # stdout+stderr in the failure message.
   def step(label, command, dir, timeout: 180)
-    result = record(LoamHarness.run(label, command, dir: dir, timeout: timeout))
+    result = record(OpenLoamHarness.run(label, command, dir: dir, timeout: timeout))
     assert result.ok?, result.failure_report
     result
   end
@@ -164,7 +164,7 @@ class HarnessCase < Minitest::Test
   # Run a command whose exit status is not itself the assertion — the caller
   # checks the state it left behind.
   def attempt(label, command, dir, timeout: 180)
-    record(LoamHarness.run(label, command, dir: dir, timeout: timeout))
+    record(OpenLoamHarness.run(label, command, dir: dir, timeout: timeout))
   end
 
   def record(result)
@@ -174,14 +174,14 @@ class HarnessCase < Minitest::Test
 
   # Build an app and assert it built. Returns its path.
   def build_app(**options)
-    app, steps = LoamHarness.build_app(**options)
+    app, steps = OpenLoamHarness.build_app(**options)
     steps.each { |s| assert record(s).ok?, s.failure_report }
     app
   end
 
   # Evaluate Ruby inside the generated app, so assertions can be made about
   # real records rather than about files. Going through the app's own boot is
-  # the point: it loads config/initializers/loam.rb the way a real process
+  # the point: it loads config/initializers/open_loam.rb the way a real process
   # would.
   def runner(label, ruby, app, timeout: 180)
     step(label, "bin/rails runner #{Shellwords.escape(ruby)}", app, timeout: timeout).output.strip
@@ -191,7 +191,7 @@ class HarnessCase < Minitest::Test
   # deprecation notices, a version manager, a logger. So a value read back out
   # of the app is fenced with a sentinel rather than scraped off stdout, which
   # would otherwise turn unrelated noise into a baffling parse error.
-  VALUE_SENTINEL = "LOAM_HARNESS_VALUE".freeze
+  VALUE_SENTINEL = "OPEN_LOAM_HARNESS_VALUE".freeze
 
   def runner_integer(label, expression, app)
     output = runner(label, %(print "#{VALUE_SENTINEL}=#{'#{'}#{expression}#{'}'}"), app)
@@ -211,10 +211,10 @@ end
 # Keep the generated app when something failed (its logs and its half-written
 # files are the evidence); delete it when the run was green.
 Minitest.after_run do
-  dirs = LoamHarness.app_dirs
+  dirs = OpenLoamHarness.app_dirs
   next if dirs.empty?
 
-  if LoamHarness.keep?
+  if OpenLoamHarness.keep?
     puts "\nGenerated app kept for inspection:"
     dirs.each { |d| puts "  #{d}" }
   else

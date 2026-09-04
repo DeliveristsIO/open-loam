@@ -1,18 +1,18 @@
-module Loam
-  # Read API for per-tenant managed lookup lists (Loam::Dictionary /
-  # Loam::DictionaryEntry). Everything is tenant-scoped automatically and
-  # memoized per request in Loam::Current.dictionary_cache (keyed with the tenant
+module OpenLoam
+  # Read API for per-tenant managed lookup lists (OpenLoam::Dictionary /
+  # OpenLoam::DictionaryEntry). Everything is tenant-scoped automatically and
+  # memoized per request in OpenLoam::Current.dictionary_cache (keyed with the tenant
   # id, so an as_tenant switch mid-request can't read another tenant's list) —
-  # the same simple prototype cache as Loam::Configs.
+  # the same simple prototype cache as OpenLoam::Configs.
   #
-  #   Loam::Dictionaries.entries("damage_severity")        # active, ordered
-  #   Loam::Dictionaries.default("damage_severity")        # the default entry
-  #   Loam::Dictionaries.label_for("damage_severity", "critical")  # => "Critical"
+  #   OpenLoam::Dictionaries.entries("damage_severity")        # active, ordered
+  #   OpenLoam::Dictionaries.default("damage_severity")        # the default entry
+  #   OpenLoam::Dictionaries.label_for("damage_severity", "critical")  # => "Critical"
   module Dictionaries
     class << self
       # The dictionary for the current tenant, or nil.
       def get(key)
-        memo([:dict, key.to_s]) { Loam::Dictionary.find_by(key: key.to_s) }
+        memo([:dict, key.to_s]) { OpenLoam::Dictionary.find_by(key: key.to_s) }
       end
 
       # Active entries, ordered by position. Empty for an unknown key.
@@ -38,14 +38,14 @@ module Loam
       end
 
       def clear_cache
-        Loam::Current.dictionary_cache = {}
+        OpenLoam::Current.dictionary_cache = {}
       end
 
       private
 
       def memo(subkey)
-        store = (Loam::Current.dictionary_cache ||= {})
-        cache_key = subkey + [ Loam.tenant&.id ]
+        store = (OpenLoam::Current.dictionary_cache ||= {})
+        cache_key = subkey + [ OpenLoam.tenant&.id ]
         return store[cache_key] if store.key?(cache_key)
 
         store[cache_key] = yield

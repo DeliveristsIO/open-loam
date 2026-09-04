@@ -1,72 +1,72 @@
-# Loam configuration, tenant lifecycle hooks, and domain event subscriptions.
+# OpenLoam configuration, tenant lifecycle hooks, and domain event subscriptions.
 
-# Master key for field encryption at rest (Loam::Encryptable). Per-tenant keys
+# Master key for field encryption at rest (OpenLoam::Encryptable). Per-tenant keys
 # are derived from this via HKDF, so it must be stable and secret.
 #
 # !!! DEV/TEST ONLY !!! This literal fallback is committed on purpose so the demo
-# runs out of the box. A REAL deployment MUST set LOAM_MASTER_KEY (or wire
+# runs out of the box. A REAL deployment MUST set OPEN_LOAM_MASTER_KEY (or wire
 # Rails.application.credentials) to a high-entropy secret — `SecureRandom.hex(32)` —
 # and NEVER commit it. Rotating this key without re-encrypting orphans existing data.
-Loam::Encryption.master_key = ENV.fetch("LOAM_MASTER_KEY", "loam-demo-dev-master-key-not-for-production-use-2f8c1a")
+OpenLoam::Encryption.master_key = ENV.fetch("OPEN_LOAM_MASTER_KEY", "open_loam-demo-dev-master-key-not-for-production-use-2f8c1a")
 
 # Roles every branch of this rental company has. A registry read by seeding and
-# admin code — Loam does not create memberships for you, because who gets which
+# admin code — OpenLoam does not create memberships for you, because who gets which
 # role is business logic.
-Loam.default_roles = %w[manager employee]
+OpenLoam.default_roles = %w[manager employee]
 
-# Locales that content translations (Loam::Translatable) may be authored in —
+# Locales that content translations (OpenLoam::Translatable) may be authored in —
 # the admin's language switcher and the per-record Translations screen offer
 # these. English is the base/default; German and Polish are overlay locales.
-Loam.locales = %w[en de pl]
+OpenLoam.locales = %w[en de pl]
 
-# Customization without forking (Loam::Overrides): disable or replace an entry in
-# one of Loam's keyed registries from here. This demo drops the "running tasks"
+# Customization without forking (OpenLoam::Overrides): disable or replace an entry in
+# one of OpenLoam's keyed registries from here. This demo drops the "running tasks"
 # dashboard widget — it disappears from the dashboard with no monkeypatching. A
 # stale override (a key that doesn't exist) is warned about at boot by check!.
-Loam::Overrides.disable(:widgets, "open_progress")
+OpenLoam::Overrides.disable(:widgets, "open_progress")
 
-# Events pushed live to the browser over SSE (Loam::EventStream). Default off;
+# Events pushed live to the browser over SSE (OpenLoam::EventStream). Default off;
 # here the notification pattern is on, so the bell increments without a reload.
 # Add more patterns (e.g. "rental.") to stream domain events to live widgets.
-Loam.broadcast_events = [ "loam.notification.", "loam.progress." ]
+OpenLoam.broadcast_events = [ "open_loam.notification.", "open_loam.progress." ]
 
-# Response enricher (Loam::Enrichers): billing/rental cross-cutting concerns can
+# Response enricher (OpenLoam::Enrichers): billing/rental cross-cutting concerns can
 # attach a computed block onto another entity's response WITHOUT that entity
 # knowing about them. Here: how many damage reports are awaiting approval for a
 # piece of equipment — Equipment knows nothing about DamageReport; the enricher
 # joins them at read time. Uses the BATCH path so an index is one query, not N.
-Loam::Enrichers.register("Equipment", key: "open_damage_reports", batch: ->(equipments) do
+OpenLoam::Enrichers.register("Equipment", key: "open_damage_reports", batch: ->(equipments) do
   counts = DamageReport.where(equipment_id: equipments.map(&:id), state: "pending_approval").group(:equipment_id).count
   equipments.map(&:id).index_with { |id| counts.fetch(id, 0) }
 end)
 
-# Search backend (Loam::Search). The default is a substring LIKE; the demo opts
+# Search backend (OpenLoam::Search). The default is a substring LIKE; the demo opts
 # into the portable word-level TokenDriver so search is order-independent
 # ("excavator cat" finds "CAT 320 Excavator"). `searchable_by` and every
 # `Model.search(q)` call site are unchanged — only this line differs. Existing
-# records need `Loam::Search.reindex(Model)` once (seeds do it; in production run
-# `bin/rails loam:search:reindex`); new/updated records index themselves on save.
-Loam::Search.driver = Loam::Search::TokenDriver
+# records need `OpenLoam::Search.reindex(Model)` once (seeds do it; in production run
+# `bin/rails open_loam:search:reindex`); new/updated records index themselves on save.
+OpenLoam::Search.driver = OpenLoam::Search::TokenDriver
 
-# Recurring jobs (Loam::Scheduler). Modules self-register default schedules at
+# Recurring jobs (OpenLoam::Scheduler). Modules self-register default schedules at
 # file scope; on_tenant_created (below) materializes the tenant-scope ones as
-# rows per tenant. A cron entry runs `bin/rails loam:scheduler:tick` every minute.
+# rows per tenant. A cron entry runs `bin/rails open_loam:scheduler:tick` every minute.
 # Here: touch every equipment nightly at 03:00 (a stand-in for real periodic work).
-Loam::Scheduler.register(key: "nightly_touch", name: "Nightly equipment touch",
+OpenLoam::Scheduler.register(key: "nightly_touch", name: "Nightly equipment touch",
                          job_class: "DemoScheduledJob", schedule: "0 3 * * *", scope: "tenant")
 
-# Durable event subscribers (Loam::DurableEvents) — the persistent twin of
-# Loam::Events.subscribe. Each matching event is persisted as a Loam::EventDelivery
+# Durable event subscribers (OpenLoam::DurableEvents) — the persistent twin of
+# OpenLoam::Events.subscribe. Each matching event is persisted as a OpenLoam::EventDelivery
 # and delivered by a background job with retry (at-least-once; handlers must be
 # idempotent). Here on a demo-only domain so it never fires on real lifecycle
 # events; a real app subscribes to "billing.invoice.paid" and the like.
-Loam::DurableEvents.register(key: "demo_echo", to: "demo.", call: "DurableEventEcho")
+OpenLoam::DurableEvents.register(key: "demo_echo", to: "demo.", call: "DurableEventEcho")
 
-# Feature-string permissions (Loam::Permissions) — a finer capability layer under
+# Feature-string permissions (OpenLoam::Permissions) — a finer capability layer under
 # the coarse role. Deny-by-default; `*` grants all, a trailing `.*` is a prefix.
-# Check with `Loam.can?("equipment.edit")` / `require_permission!` / the `can?`
+# Check with `OpenLoam.can?("equipment.edit")` / `require_permission!` / the `can?`
 # view helper. Orthogonal to roles/policies.
-Loam::Permissions.configure do
+OpenLoam::Permissions.configure do
   role :manager,  allow: "*"
   role :employee, allow: %w[equipment.read damage_report.* company.read lead.*]
 end
@@ -74,8 +74,8 @@ end
 # CRM (L-501): winning a lead notifies the branch's managers — the same
 # event -> notification wiring the rental domain uses on damage-report approval,
 # proving the primitives are domain-agnostic.
-Loam::Events.subscribe("crm.lead.win") do |_name, payload|
-  Loam::Notifications.notify_role(
+OpenLoam::Events.subscribe("crm.lead.win") do |_name, payload|
+  OpenLoam::Notifications.notify_role(
     :manager,
     title: "Lead ##{payload[:id]} won",
     body: "A qualified lead was marked won.",
@@ -83,59 +83,59 @@ Loam::Events.subscribe("crm.lead.win") do |_name, payload|
   )
 end
 
-# SSO (Loam::Sso). The demo has no real identity provider and MUST NOT hit the
+# SSO (OpenLoam::Sso). The demo has no real identity provider and MUST NOT hit the
 # network, so it injects the offline FakeProvider for every SSO round-trip: its
 # authorization_url loops straight back to our callback and it returns verified
 # claims for the email typed at the sign-in box. A real deployment deletes this
 # line and configures a genuine OIDC issuer + client_secret on the SSO screen.
 # (Demo/test only — the FakeProvider is never for production.)
-Loam::Sso.builder = ->(record, redirect_uri) { Loam::Sso::FakeProvider.new(record, redirect_uri: redirect_uri) }
+OpenLoam::Sso.builder = ->(record, redirect_uri) { OpenLoam::Sso::FakeProvider.new(record, redirect_uri: redirect_uri) }
 
-# Roles that MUST use two-factor auth (Loam::MfaCredential). At login, a user
+# Roles that MUST use two-factor auth (OpenLoam::MfaCredential). At login, a user
 # whose role in the chosen branch is on this list and who has not enrolled is
-# sent to set MFA up first. Resolved via Loam::Configs, so it can be global or a
+# sent to set MFA up first. Resolved via OpenLoam::Configs, so it can be global or a
 # per-branch override; left empty here so the demo logs in without MFA.
 #
-#   Loam::Configs.set("security.mfa_required_roles", ["manager"], scope: :global)
+#   OpenLoam::Configs.set("security.mfa_required_roles", ["manager"], scope: :global)
 
-# App-wide setting defaults (Loam::Configs). A key resolves override → global
+# App-wide setting defaults (OpenLoam::Configs). A key resolves override → global
 # row → this declared default, so declaring one here needs no migration and no
 # row — a branch reads the default until someone overrides it in the Settings
 # screen. The currency is the same everywhere; the late fee is just the baseline.
-Loam.config_defaults = {
+OpenLoam.config_defaults = {
   "rental.currency" => "PLN",
   "rental.late_fee_per_day" => 25
 }
 
-# Feature flags (Loam::Features): capabilities toggled per tenant for rollout or
+# Feature flags (OpenLoam::Features): capabilities toggled per tenant for rollout or
 # as a kill-switch, independent of who is signed in. A flag with no row resolves
 # to the declared default here; managers flip a tenant's override at
 # /admin/features. Distinct from roles/policies, which gate a PERSON, not a
 # capability.
-Loam.feature_defaults = {
+OpenLoam.feature_defaults = {
   "beta_dashboard" => { default: false, description: "A branch-manager preview dashboard, rolled out branch by branch." },
   "damage_reports.require_photo" => { default: false, description: "Require a photo attachment before a damage report can be filed." }
 }
 
 # What a brand-new branch (tenant) gets for free. Registered at file scope on
 # purpose: inside `to_prepare` this would re-register on every code reload.
-Loam.on_tenant_created do |tenant|
+OpenLoam.on_tenant_created do |tenant|
   # Every branch tracks an asset tag on its equipment, managers only. This is a
-  # migration-free field (Loam::FieldDefinition), so a new branch is usable the
+  # migration-free field (OpenLoam::FieldDefinition), so a new branch is usable the
   # moment it exists — no seed script, no deploy.
   #
-  # MUST be idempotent — `bin/rails loam:sync` re-runs this for every existing
+  # MUST be idempotent — `bin/rails open_loam:sync` re-runs this for every existing
   # branch, which is how a default added today reaches branches created last
   # year. find_or_create_by!, never create!. The block runs inside
-  # Loam.as_tenant(tenant), so the write needs no extra ceremony.
-  Loam::FieldDefinition.find_or_create_by!(entity_type: "Equipment", name: "asset_tag") do |fd|
+  # OpenLoam.as_tenant(tenant), so the write needs no extra ceremony.
+  OpenLoam::FieldDefinition.find_or_create_by!(entity_type: "Equipment", name: "asset_tag") do |fd|
     fd.field_type = "string"
     fd.writable_roles = [ "manager" ]
   end
 
   # Materialize the registered tenant-scope schedules as rows for this tenant
-  # (idempotent — also re-run for existing tenants by `bin/rails loam:sync`).
-  Loam::Scheduler.sync_tenant(tenant)
+  # (idempotent — also re-run for existing tenants by `bin/rails open_loam:sync`).
+  OpenLoam::Scheduler.sync_tenant(tenant)
 end
 
 # Domain event subscriptions. Subscribe to a single event or a whole domain
@@ -143,16 +143,16 @@ end
 # `to_prepare`: subscriptions are global, so a reload would add a second copy
 # of each one and every event would be handled twice.
 #
-#   Loam::Events.subscribe("rental.") do |name, payload|
-#     Rails.logger.info("[loam event] #{name} #{payload.inspect}")
+#   OpenLoam::Events.subscribe("rental.") do |name, payload|
+#     Rails.logger.info("[open_loam event] #{name} #{payload.inspect}")
 #   end
 
 # Event -> in-app notification: when a manager approves a damage report, the
 # branch's managers find it in their bell at /admin/notifications. The
 # subscriber runs in the publisher's tenant context, so `notify_role` resolves
 # managers of THAT branch and the notifications land in that tenant.
-Loam::Events.subscribe("rental.damage_report.approve") do |_name, payload|
-  Loam::Notifications.notify_role(
+OpenLoam::Events.subscribe("rental.damage_report.approve") do |_name, payload|
+  OpenLoam::Notifications.notify_role(
     :manager,
     title: "Damage report ##{payload[:id]} approved",
     body: "Moved from #{payload[:from]} to #{payload[:to]}. A penalty charge may follow.",

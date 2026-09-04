@@ -10,18 +10,18 @@ module Admin
     def create
       identifier = "#{current_actor.email}:sudo"  # a distinct throttle bucket from login
 
-      if Loam::AuthThrottle.locked?(identifier)
+      if OpenLoam::AuthThrottle.locked?(identifier)
         @error = "Too many attempts. Try again later."
         return render :new, status: :too_many_requests
       end
 
       if reauthenticated?
-        Loam::AuthThrottle.clear(identifier)
+        OpenLoam::AuthThrottle.clear(identifier)
         session[:sudo_at] = Time.now.to_i
         redirect_to(session.delete(:sudo_return_to).presence || admin_root_path,
                     notice: "Re-authenticated — you can complete the action now.")
       else
-        Loam::AuthThrottle.record_failure(identifier, kind: "sudo", ip: request.remote_ip)
+        OpenLoam::AuthThrottle.record_failure(identifier, kind: "sudo", ip: request.remote_ip)
         @error = "That did not verify. Try again."
         render :new, status: :unauthorized
       end
@@ -32,9 +32,9 @@ module Admin
     # If the user has MFA, step-up takes a TOTP code — NOT a recovery code:
     # recovery codes are single-use and reserved for LOGIN, so a routine sudo
     # must never silently burn one. Otherwise fall back to the password. Either
-    # way it is the SAME person in Loam::Current re-confirming.
+    # way it is the SAME person in OpenLoam::Current re-confirming.
     def reauthenticated?
-      credential = Loam::MfaCredential.active_for(current_actor)
+      credential = OpenLoam::MfaCredential.active_for(current_actor)
       if credential
         credential.verify_totp(params[:code])
       else

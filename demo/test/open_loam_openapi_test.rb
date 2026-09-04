@@ -1,8 +1,8 @@
 require "test_helper"
 
-# Loam::OpenApi: the auto-generated OpenAPI 3.1 document for the JSON API.
-class LoamOpenApiTest < ActiveSupport::TestCase
-  setup { @doc = Loam::OpenApi.document }
+# OpenLoam::OpenApi: the auto-generated OpenAPI 3.1 document for the JSON API.
+class OpenLoamOpenApiTest < ActiveSupport::TestCase
+  setup { @doc = OpenLoam::OpenApi.document }
 
   test "the document has the OpenAPI 3.1 top-level shape" do
     assert_equal "3.1.0", @doc["openapi"]
@@ -14,7 +14,7 @@ class LoamOpenApiTest < ActiveSupport::TestCase
   end
 
   test "every entity with an api controller has all five CRUD operations, bearer-secured" do
-    Loam::OpenApi.api_entities.each do |model|
+    OpenLoam::OpenApi.api_entities.each do |model|
       plural = model.model_name.plural
       collection = @doc["paths"]["/#{plural}"]
       member = @doc["paths"]["/#{plural}/{id}"]
@@ -55,13 +55,13 @@ class LoamOpenApiTest < ActiveSupport::TestCase
   end
 
   test "the document builds even when an anonymous TenantRecord subclass exists" do
-    # A nameless Class.new(Loam::TenantRecord) leaks into TenantRecord.descendants
+    # A nameless Class.new(OpenLoam::TenantRecord) leaks into TenantRecord.descendants
     # (from tests or metaprogramming); model_name would raise "Class name cannot
     # be blank". Discovery must skip it, not crash — this was a CI-order flake.
-    Class.new(Loam::TenantRecord) { self.table_name = "loam_translations" }
+    Class.new(OpenLoam::TenantRecord) { self.table_name = "open_loam_translations" }
 
-    assert_nothing_raised { Loam::OpenApi.document }
-    refute_includes Loam::OpenApi.api_entities.map(&:name), nil
+    assert_nothing_raised { OpenLoam::OpenApi.document }
+    refute_includes OpenLoam::OpenApi.api_entities.map(&:name), nil
   end
 
   test "the tenancy guarantee is documented" do
@@ -70,7 +70,7 @@ class LoamOpenApiTest < ActiveSupport::TestCase
   end
 
   test "the markdown export renders the endpoints" do
-    md = Loam::OpenApi.markdown
+    md = OpenLoam::OpenApi.markdown
     assert_match(/# .+ API/, md)
     assert_match(%r{GET /api/equipment}, md)
     assert_match(/bearer token/, md)
@@ -80,12 +80,12 @@ end
 # The admin OpenAPI explorer.
 class AdminApiDocsTest < ActionDispatch::IntegrationTest
   setup do
-    @tenant = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-apidocs")
+    @tenant = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-apidocs")
     @mgr = User.create!(name: "Anna", email: "anna@example.test", password: "password")
     @emp = User.create!(name: "Tomek", email: "tomek@example.test", password: "password")
     with_tenant(@tenant) do
-      Loam::Membership.create!(user: @mgr, role: "manager")
-      Loam::Membership.create!(user: @emp, role: "employee")
+      OpenLoam::Membership.create!(user: @mgr, role: "manager")
+      OpenLoam::Membership.create!(user: @emp, role: "employee")
     end
   end
 

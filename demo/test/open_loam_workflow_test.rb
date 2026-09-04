@@ -1,16 +1,16 @@
 require "test_helper"
 
-# Loam::Workflow on a real entity: DamageReport moves
+# OpenLoam::Workflow on a real entity: DamageReport moves
 # open -> pending_approval -> approved/rejected, and only a manager decides.
-class LoamWorkflowTest < ActiveSupport::TestCase
+class OpenLoamWorkflowTest < ActiveSupport::TestCase
   setup do
-    @tenant = Loam::Tenant.create!(name: "Tenant A", slug: "a-workflow")
+    @tenant = OpenLoam::Tenant.create!(name: "Tenant A", slug: "a-workflow")
     @manager = User.create!(name: "Manager", email: "manager@example.test", password: "password")
     @employee = User.create!(name: "Employee", email: "employee@example.test", password: "password")
 
     with_tenant(@tenant) do
-      Loam::Membership.create!(user: @manager, role: "manager")
-      Loam::Membership.create!(user: @employee, role: "employee")
+      OpenLoam::Membership.create!(user: @manager, role: "manager")
+      OpenLoam::Membership.create!(user: @employee, role: "employee")
     end
   end
 
@@ -25,7 +25,7 @@ class LoamWorkflowTest < ActiveSupport::TestCase
 
   test "a legal transition moves the record and publishes from/to" do
     received = []
-    subscription = Loam::Events.subscribe("rental.damage_report.submit") { |_name, payload| received << payload }
+    subscription = OpenLoam::Events.subscribe("rental.damage_report.submit") { |_name, payload| received << payload }
 
     with_tenant(@tenant, actor: @employee) do
       report = DamageReport.create!(equipment_id: 1, description: "Cracked casing")
@@ -45,7 +45,7 @@ class LoamWorkflowTest < ActiveSupport::TestCase
     with_tenant(@tenant, actor: @manager) do
       report = DamageReport.create!(equipment_id: 1, description: "Cracked casing")
 
-      assert_raises(Loam::InvalidTransitionError) { report.approve! }
+      assert_raises(OpenLoam::InvalidTransitionError) { report.approve! }
       assert_equal "open", report.reload.state, "the illegal transition must not have written anything"
     end
   end
@@ -59,7 +59,7 @@ class LoamWorkflowTest < ActiveSupport::TestCase
 
     with_tenant(@tenant, actor: @employee) do
       report = DamageReport.find(report_id)
-      assert_raises(Loam::NotAuthorizedError) { report.approve! }
+      assert_raises(OpenLoam::NotAuthorizedError) { report.approve! }
       assert_equal "pending_approval", report.reload.state
     end
 
@@ -77,7 +77,7 @@ class LoamWorkflowTest < ActiveSupport::TestCase
     end
 
     report = with_tenant(@tenant) { DamageReport.first }
-    with_tenant(@tenant) { assert_raises(Loam::NotAuthorizedError) { report.reject! } }
+    with_tenant(@tenant) { assert_raises(OpenLoam::NotAuthorizedError) { report.reject! } }
   end
 
   test "the workflow column only accepts declared states" do
@@ -122,7 +122,7 @@ class LoamWorkflowTest < ActiveSupport::TestCase
   end
 
   test "the definition is frozen and introspectable" do
-    definition = DamageReport.loam_workflow
+    definition = DamageReport.open_loam_workflow
 
     assert definition.frozen?
     assert_equal "state", definition.column
@@ -140,7 +140,7 @@ class LoamWorkflowTest < ActiveSupport::TestCase
       report = DamageReport.create!(equipment_id: 1, description: "Cracked casing")
       report.submit!
 
-      audits = Loam::AuditRecord.where(auditable_type: "DamageReport", auditable_id: report.id, action: "update")
+      audits = OpenLoam::AuditRecord.where(auditable_type: "DamageReport", auditable_id: report.id, action: "update")
       assert_equal 1, audits.count
       assert_equal [ "open", "pending_approval" ], audits.first.changeset["state"]
     end

@@ -5,15 +5,15 @@ require "test_helper"
 # otherwise only be found by opening a browser.
 class AdminNotificationsTest < ActionDispatch::IntegrationTest
   setup do
-    @tenant = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-admin-notify")
+    @tenant = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-admin-notify")
     @anna = User.create!(name: "Anna", email: "anna@example.test", password: "password")
     @tomek = User.create!(name: "Tomek", email: "tomek@example.test", password: "password")
 
     with_tenant(@tenant) do
-      Loam::Membership.create!(user: @anna, role: "manager")
-      Loam::Membership.create!(user: @tomek, role: "employee")
-      @notification = Loam::Notifications.notify(@anna, title: "Approval needed", body: "Damage report").first
-      Loam::Notifications.notify(@tomek, title: "Not for Anna")
+      OpenLoam::Membership.create!(user: @anna, role: "manager")
+      OpenLoam::Membership.create!(user: @tomek, role: "employee")
+      @notification = OpenLoam::Notifications.notify(@anna, title: "Approval needed", body: "Damage report").first
+      OpenLoam::Notifications.notify(@tomek, title: "Not for Anna")
     end
 
     # Anna belongs to this tenant only, so signing in selects it for her.
@@ -33,7 +33,7 @@ class AdminNotificationsTest < ActionDispatch::IntegrationTest
     post mark_read_admin_notification_path(@notification)
 
     assert_redirected_to admin_notifications_path
-    with_tenant(@tenant) { assert Loam::Notification.find(@notification.id).read? }
+    with_tenant(@tenant) { assert OpenLoam::Notification.find(@notification.id).read? }
 
     follow_redirect!
     assert_select "nav a", text: "Notifications (0)"

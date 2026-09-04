@@ -1,15 +1,15 @@
 require "test_helper"
 
-# Loam::Encryptable on a real entity: Customer.email (encrypted + searchable)
+# OpenLoam::Encryptable on a real entity: Customer.email (encrypted + searchable)
 # and Customer.tax_id (encrypted, not searchable). These are security tests —
 # they assert what a DB dump leaks, that one tenant's key never opens another's
 # data, and that the plaintext never reaches the audit trail.
-class LoamEncryptionTest < ActiveSupport::TestCase
+class OpenLoamEncryptionTest < ActiveSupport::TestCase
   setup do
-    @warsaw = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-enc")
-    @krakow = Loam::Tenant.create!(name: "Branch Krakow", slug: "krakow-enc")
+    @warsaw = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-enc")
+    @krakow = OpenLoam::Tenant.create!(name: "Branch Krakow", slug: "krakow-enc")
     @anna = User.create!(name: "Anna", email: "anna@example.test", password: "password")
-    with_tenant(@warsaw) { Loam::Membership.create!(user: @anna, role: "manager") }
+    with_tenant(@warsaw) { OpenLoam::Membership.create!(user: @anna, role: "manager") }
   end
 
   test "an encrypted field round-trips: plaintext in, plaintext out" do
@@ -39,9 +39,9 @@ class LoamEncryptionTest < ActiveSupport::TestCase
 
     fresh = with_tenant(@warsaw) { Customer.new }
 
-    Loam::Current.reset
-    assert_raises(Loam::MissingTenantError) { record.email }     # read needs the tenant's key
-    assert_raises(Loam::MissingTenantError) { fresh.email = "x" } # and so does write
+    OpenLoam::Current.reset
+    assert_raises(OpenLoam::MissingTenantError) { record.email }     # read needs the tenant's key
+    assert_raises(OpenLoam::MissingTenantError) { fresh.email = "x" } # and so does write
   end
 
   test "one tenant's ciphertext cannot be decrypted in another tenant's context" do
@@ -57,7 +57,7 @@ class LoamEncryptionTest < ActiveSupport::TestCase
     # rather than quietly decrypting Warsaw's data under Krakow's key.
     with_tenant(@krakow) do
       leaked = Customer.unscoped.find(id)
-      assert_raises(Loam::Encryption::DecryptionError) { leaked.email }
+      assert_raises(OpenLoam::Encryption::DecryptionError) { leaked.email }
     end
   end
 
@@ -80,20 +80,20 @@ class LoamEncryptionTest < ActiveSupport::TestCase
   end
 
   test "the blind index of the same value differs across tenants" do
-    w = Loam::Encryption.blind_index("same@x.test", @warsaw.id)
-    k = Loam::Encryption.blind_index("same@x.test", @krakow.id)
+    w = OpenLoam::Encryption.blind_index("same@x.test", @warsaw.id)
+    k = OpenLoam::Encryption.blind_index("same@x.test", @krakow.id)
     refute_equal w, k
-    assert_equal w, Loam::Encryption.blind_index("same@x.test", @warsaw.id), "stable within a tenant"
+    assert_equal w, OpenLoam::Encryption.blind_index("same@x.test", @warsaw.id), "stable within a tenant"
   end
 
   # Regression: a nil tenant makes the scope "tenant/", a nil owner makes
   # "user/" — a degenerate scope that must be refused, not keyed to a real key
   # shared across every such record.
   test "a nil tenant or degenerate scope refuses to derive a key" do
-    assert_raises(ArgumentError) { Loam::Encryption.encrypt("x", nil) }
-    assert_raises(ArgumentError) { Loam::Encryption.decrypt("v1:whatever", nil) }
-    assert_raises(ArgumentError) { Loam::Encryption.blind_index("x", nil) }
-    assert_raises(ArgumentError) { Loam::Encryption.encrypt_scoped("x", "user/") }
+    assert_raises(ArgumentError) { OpenLoam::Encryption.encrypt("x", nil) }
+    assert_raises(ArgumentError) { OpenLoam::Encryption.decrypt("v1:whatever", nil) }
+    assert_raises(ArgumentError) { OpenLoam::Encryption.blind_index("x", nil) }
+    assert_raises(ArgumentError) { OpenLoam::Encryption.encrypt_scoped("x", "user/") }
   end
 
   test "the audit trail records the fact of change, never the plaintext or ciphertext" do
@@ -101,7 +101,7 @@ class LoamEncryptionTest < ActiveSupport::TestCase
       c = Customer.create!(name: "Acme", email: "old@acme.test", tax_id: "PL-1")
       c.update!(email: "new@acme.test")
 
-      audits = Loam::AuditRecord.where(auditable_type: "Customer", auditable_id: c.id)
+      audits = OpenLoam::AuditRecord.where(auditable_type: "Customer", auditable_id: c.id)
       dump = audits.map { |a| a.changeset.to_json }.join
 
       refute_includes dump, "old@acme.test", "no plaintext in the audit trail"
@@ -117,23 +117,23 @@ class LoamEncryptionTest < ActiveSupport::TestCase
   end
 
   test "declaring a field both searchable_by and encrypts raises at class load" do
-    # Plain classes, NOT Loam::TenantRecord subclasses: an anonymous AR subclass
+    # Plain classes, NOT OpenLoam::TenantRecord subclasses: an anonymous AR subclass
     # would linger in TenantRecord.descendants and leak into the global search.
     # The conflict is caught at DSL time, before any database access, so no real
     # model is needed to prove it — in either declaration order.
-    assert_raises(Loam::Error) do
+    assert_raises(OpenLoam::Error) do
       Class.new do
-        include Loam::Searchable
-        include Loam::Encryptable
+        include OpenLoam::Searchable
+        include OpenLoam::Encryptable
         searchable_by :email
         encrypts :email, searchable: true
       end
     end
 
-    assert_raises(Loam::Error) do
+    assert_raises(OpenLoam::Error) do
       Class.new do
-        include Loam::Searchable
-        include Loam::Encryptable
+        include OpenLoam::Searchable
+        include OpenLoam::Encryptable
         encrypts :email, searchable: true
         searchable_by :email
       end
@@ -145,9 +145,9 @@ end
 # renders the decrypted values, and the encrypted email is findable by exact match.
 class AdminEncryptionFlowTest < ActionDispatch::IntegrationTest
   setup do
-    @tenant = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-enc-flow")
+    @tenant = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-enc-flow")
     @anna = User.create!(name: "Anna", email: "anna@example.test", password: "password")
-    with_tenant(@tenant) { Loam::Membership.create!(user: @anna, role: "manager") }
+    with_tenant(@tenant) { OpenLoam::Membership.create!(user: @anna, role: "manager") }
     post admin_session_path, params: { email: "anna@example.test", password: "password" }
   end
 

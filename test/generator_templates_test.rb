@@ -9,8 +9,8 @@ require "erb"
 # structure, never the text inside a template — templates are meant to change.
 class GeneratorTemplatesTest < Minitest::Test
   GENERATORS = {
-    "loam:install" => File.join(LoamHarness::GEM_ROOT, "lib/generators/loam/install"),
-    "loam:entity" => File.join(LoamHarness::GEM_ROOT, "lib/generators/loam/entity")
+    "open_loam:install" => File.join(OpenLoamHarness::GEM_ROOT, "lib/generators/open_loam/install"),
+    "open_loam:entity" => File.join(OpenLoamHarness::GEM_ROOT, "lib/generators/open_loam/entity")
   }.freeze
 
   def test_both_generators_are_present_with_a_templates_directory
@@ -65,7 +65,7 @@ class GeneratorTemplatesTest < Minitest::Test
         compiled = ERB.new(File.read(file), trim_mode: "-").src
         RubyVM::InstructionSequence.compile(compiled)
       rescue SyntaxError => e
-        broken << "#{file.delete_prefix("#{LoamHarness::GEM_ROOT}/")}: #{e.message.lines.first.strip}"
+        broken << "#{file.delete_prefix("#{OpenLoamHarness::GEM_ROOT}/")}: #{e.message.lines.first.strip}"
       end
     end
 
@@ -77,13 +77,13 @@ class GeneratorTemplatesTest < Minitest::Test
   # vanish from a packaged release while still working from a path: source —
   # i.e. this harness would stay green and real users would break.
   def test_the_packaged_gem_would_include_the_generators
-    gemspec = Gem::Specification.load(File.join(LoamHarness::GEM_ROOT, "open-loam.gemspec"))
+    gemspec = Gem::Specification.load(File.join(OpenLoamHarness::GEM_ROOT, "open-loam.gemspec"))
     refute_nil gemspec, "open-loam.gemspec did not load"
 
-    Dir.chdir(LoamHarness::GEM_ROOT) do
+    Dir.chdir(OpenLoamHarness::GEM_ROOT) do
       packaged = gemspec.files.to_set
       GENERATORS.each_value do |dir|
-        rel = dir.delete_prefix("#{LoamHarness::GEM_ROOT}/")
+        rel = dir.delete_prefix("#{OpenLoamHarness::GEM_ROOT}/")
         expected = Dir[File.join(rel, "**", "*")].select { |f| File.file?(f) }
         missing = expected.reject { |f| packaged.include?(f) }
         assert_empty missing, "gemspec.files would not ship: #{missing.join(', ')}"

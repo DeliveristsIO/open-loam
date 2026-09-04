@@ -1,6 +1,6 @@
 require "base64"
 
-module Loam
+module OpenLoam
   module Sso
     # An OFFLINE stand-in for a real IdP — for the demo and the test suite ONLY,
     # NEVER production. `authorization_url` loops straight back to our own

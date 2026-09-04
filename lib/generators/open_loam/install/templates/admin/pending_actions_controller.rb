@@ -1,5 +1,5 @@
 module Admin
-  # The approval queue: staged mutations (Loam::PendingAction) waiting on a
+  # The approval queue: staged mutations (OpenLoam::PendingAction) waiting on a
   # human. Manager-only — approving EXECUTES the change. The workflow's role gate
   # is the deeper enforcement (approve!/reject! raise for a non-manager); this
   # screen is a manager screen on top of it.
@@ -8,7 +8,7 @@ module Admin
     before_action :set_pending_action, only: %i[approve reject]
 
     def index
-      @pending = Loam::PendingAction.pending.order(created_at: :desc)
+      @pending = OpenLoam::PendingAction.pending.order(created_at: :desc)
     end
 
     def approve
@@ -24,7 +24,7 @@ module Admin
     private
 
     def set_pending_action
-      @pending_action = Loam::PendingAction.find(params[:id])
+      @pending_action = OpenLoam::PendingAction.find(params[:id])
     end
 
     def approval_notice(pending)

@@ -1,21 +1,21 @@
 require "bcrypt"
 
-module Loam
+module OpenLoam
   # A user's multi-factor credential: a TOTP secret plus single-use recovery
   # codes. Deliberately NOT tenant-scoped — MFA belongs to the PERSON, who spans
   # tenants, and the second-factor challenge runs at login BEFORE any tenant is
-  # chosen. So the secret is encrypted under a USER-scoped key (Loam::Encryptable
+  # chosen. So the secret is encrypted under a USER-scoped key (OpenLoam::Encryptable
   # `scope:`), which decrypts in any tenant and with no tenant at all — the whole
   # reason a per-tenant key would be a lockout bug here.
   class MfaCredential < ApplicationRecord
-    include Loam::GeneratedKey
-    self.table_name = "loam_mfa_credentials"
+    include OpenLoam::GeneratedKey
+    self.table_name = "open_loam_mfa_credentials"
 
     RECOVERY_CODE_COUNT = 10
 
     belongs_to :user
 
-    include Loam::Encryptable
+    include OpenLoam::Encryptable
     encrypts :totp_secret, scope: ->(credential) { "user/#{credential.user_id}" }
 
     # Recovery codes are stored HASHED (BCrypt), never in the clear: [{ "digest",
@@ -46,7 +46,7 @@ module Loam
     # if the code is wrong. The old secret stays valid until this succeeds, so a
     # half-finished re-enrollment never downgrades an active credential.
     def activate_with!(candidate_secret, code)
-      step = Loam::Totp.matching_step(candidate_secret, code)
+      step = OpenLoam::Totp.matching_step(candidate_secret, code)
       return nil unless step
 
       self.totp_secret = candidate_secret
@@ -66,7 +66,7 @@ module Loam
       return false unless activated?
 
       with_lock do
-        step = Loam::Totp.matching_step(totp_secret, code)
+        step = OpenLoam::Totp.matching_step(totp_secret, code)
         if step && (last_totp_step.nil? || step > last_totp_step)
           update!(last_totp_step: step)
           true
@@ -100,7 +100,7 @@ module Loam
     end
 
     def provisioning_uri(issuer:)
-      Loam::Totp.provisioning_uri(totp_secret, account: user.email, issuer: issuer)
+      OpenLoam::Totp.provisioning_uri(totp_secret, account: user.email, issuer: issuer)
     end
 
     private

@@ -24,7 +24,7 @@ module Admin
     private
 
     def api_tokens
-      Loam::ApiToken.where(user_id: current_actor.id)
+      OpenLoam::ApiToken.where(user_id: current_actor.id)
     end
   end
 end

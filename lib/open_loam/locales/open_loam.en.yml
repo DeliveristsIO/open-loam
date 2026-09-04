@@ -1,11 +1,11 @@
-# Loam's own UI strings (the framework chrome). Shipped inside lib/ so the gem
-# packages it, and added to the app's I18n load path by Loam::Engine. An app
-# localizes Loam by adding its own `config/locales/loam.<locale>.yml` overriding
-# these keys — distinct from Loam::Translatable, which localizes record DATA.
+# OpenLoam's own UI strings (the framework chrome). Shipped inside lib/ so the gem
+# packages it, and added to the app's I18n load path by OpenLoam::Engine. An app
+# localizes OpenLoam by adding its own `config/locales/open_loam.<locale>.yml` overriding
+# these keys — distinct from OpenLoam::Translatable, which localizes record DATA.
 # Entity and field names come from Rails' own activerecord.models /
 # activerecord.attributes (via model_name.human / human_attribute_name).
 en:
-  loam:
+  open_loam:
     chrome:
       tenant: "Tenant"
       user: "User"

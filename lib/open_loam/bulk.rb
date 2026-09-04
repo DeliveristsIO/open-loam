@@ -1,11 +1,11 @@
-module Loam
+module OpenLoam
   # Datatable bulk actions over selected records — policy-checked PER record and
   # tenant-scoped. The ids are resolved THROUGH the tenant scope
   # (`model.where(id: ids)`), so a forged cross-tenant id is simply not found —
   # a bulk op can never reach another tenant's rows.
   #
-  #   Loam::Bulk.soft_delete(Equipment, params[:ids])
-  #   Loam::Bulk.set_field(Equipment, params[:ids], field: "status", value: "retired")
+  #   OpenLoam::Bulk.soft_delete(Equipment, params[:ids])
+  #   OpenLoam::Bulk.set_field(Equipment, params[:ids], field: "status", value: "retired")
   #
   # Returns the number of records actually affected (a record the actor may not
   # touch, or an id from another tenant, is silently skipped).
@@ -32,7 +32,7 @@ module Loam
     end
 
     # A relation for "export selected" — tenant-scoped, so it composes with
-    # Loam::Export.csv and can't leak another tenant's rows.
+    # OpenLoam::Export.csv and can't leak another tenant's rows.
     def selected(model, ids)
       model.where(id: Array(ids))
     end
@@ -40,20 +40,20 @@ module Loam
     def each_permitted(model, ids)
       count = 0
       selected(model, ids).find_each do |record|
-        count += 1 if yield(record, Loam::Policy.for(record))
+        count += 1 if yield(record, OpenLoam::Policy.for(record))
       end
       count
     end
 
     def writable_column?(model, field)
-      model.column_names.include?(field) && Loam::Import::PLUMBING.exclude?(field) && !workflow_column?(model, field)
+      model.column_names.include?(field) && OpenLoam::Import::PLUMBING.exclude?(field) && !workflow_column?(model, field)
     end
 
     # A workflow status column may ONLY change through a transition (role-gated).
     # Skip it here so a bulk set-field can't self-"approve" (the model guard is
     # the backstop; this keeps the bulk op a clean no-op rather than an error).
     def workflow_column?(model, field)
-      model.respond_to?(:loam_workflow) && model.loam_workflow&.column == field
+      model.respond_to?(:open_loam_workflow) && model.open_loam_workflow&.column == field
     end
   end
 end

@@ -1,27 +1,27 @@
 require "test_helper"
 
 # The REST API: a bearer token identifies one user in one tenant, and from
-# there every ordinary Loam rule applies — tenant isolation, policies, field
+# there every ordinary OpenLoam rule applies — tenant isolation, policies, field
 # level permissions, custom fields.
-class LoamApiTest < ActionDispatch::IntegrationTest
+class OpenLoamApiTest < ActionDispatch::IntegrationTest
   setup do
-    @warsaw = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-api")
-    @krakow = Loam::Tenant.create!(name: "Branch Krakow", slug: "krakow-api")
+    @warsaw = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-api")
+    @krakow = OpenLoam::Tenant.create!(name: "Branch Krakow", slug: "krakow-api")
     @anna = User.create!(name: "Anna", email: "anna@example.test", password: "password")
     @tomek = User.create!(name: "Tomek", email: "tomek@example.test", password: "password")
 
     with_tenant(@warsaw) do
-      Loam::Membership.create!(user: @anna, role: "manager")
-      Loam::Membership.create!(user: @tomek, role: "employee")
-      @manager_token = Loam::ApiToken.create!(user: @anna, label: "ops script").token
-      @employee_token = Loam::ApiToken.create!(user: @tomek, label: "scanner").token
+      OpenLoam::Membership.create!(user: @anna, role: "manager")
+      OpenLoam::Membership.create!(user: @tomek, role: "employee")
+      @manager_token = OpenLoam::ApiToken.create!(user: @anna, label: "ops script").token
+      @employee_token = OpenLoam::ApiToken.create!(user: @tomek, label: "scanner").token
       Equipment.create!(name: "Excavator", daily_rate: 950, status: "available")
-      Loam::FieldDefinition.create!(entity_type: "Equipment", name: "serial_number", field_type: "string")
+      OpenLoam::FieldDefinition.create!(entity_type: "Equipment", name: "serial_number", field_type: "string")
     end
 
     with_tenant(@krakow) do
-      Loam::Membership.create!(user: @anna, role: "manager")
-      @krakow_token = Loam::ApiToken.create!(user: @anna, label: "krakow ops").token
+      OpenLoam::Membership.create!(user: @anna, role: "manager")
+      @krakow_token = OpenLoam::ApiToken.create!(user: @anna, label: "krakow ops").token
       Equipment.create!(name: "Scaffolding", daily_rate: 80, status: "available")
     end
   end
@@ -51,12 +51,12 @@ class LoamApiTest < ActionDispatch::IntegrationTest
   end
 
   test "using a token records when it was last used" do
-    token = with_tenant(@warsaw) { Loam::ApiToken.find_by(token: @manager_token) }
+    token = with_tenant(@warsaw) { OpenLoam::ApiToken.find_by(token: @manager_token) }
     assert_nil token.last_used_at
 
     get "/api/equipment", headers: bearer(@manager_token)
 
-    assert with_tenant(@warsaw) { Loam::ApiToken.find_by(token: @manager_token).last_used_at }
+    assert with_tenant(@warsaw) { OpenLoam::ApiToken.find_by(token: @manager_token).last_used_at }
   end
 
   test "a manager may set a manager-only field" do

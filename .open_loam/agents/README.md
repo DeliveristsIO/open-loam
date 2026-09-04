@@ -1,8 +1,8 @@
-# The Loam agent pack (L-301)
+# The OpenLoam agent pack (L-301)
 
-Everything an AI coding agent needs to extend a Loam app **correctly** —
+Everything an AI coding agent needs to extend a OpenLoam app **correctly** —
 assembled in one place so a harness (Claude Code, Cursor, Codex, an SDK agent)
-can load it as a unit. Loam is designed to be *agent-legible*: there is one way
+can load it as a unit. OpenLoam is designed to be *agent-legible*: there is one way
 to do each thing, the invariants are enforced by tests, and this pack points at
 each piece.
 
@@ -25,16 +25,16 @@ each piece.
 
 ## The one rule that matters most
 
-**Add features through the generators, not free-form.** `rails g loam:entity Name
+**Add features through the generators, not free-form.** `rails g open_loam:entity Name
 field:type …` scaffolds a tenant-scoped, audited, evented entity with its admin,
 API, and policy — every invariant wired in. Editing generated code is fine;
-hand-rolling a model that skips `Loam::TenantRecord`, or a controller that skips
+hand-rolling a model that skips `OpenLoam::TenantRecord`, or a controller that skips
 the policy, is what the guardrail tests catch.
 
 ## Proving an agent works: the benchmark
 
 - **[`ai/golden_tasks.md`](../../ai/golden_tasks.md)** — the permanent task suite.
-  Each task is given to an agent against a *fresh* Loam app (the generator harness
+  Each task is given to an agent against a *fresh* OpenLoam app (the generator harness
   in `test/` builds one) with only `AGENTS.md` and the task text. A task passes
   only when the full suite (including guardrails) is green and no invariant was
   violated.
@@ -49,7 +49,7 @@ as a failing test, not a subtle bug:
 
 - **Tenancy**: no query, job, or event crosses a tenant; a missing tenant context
   raises. A lint bans `.unscoped` in `app/`.
-- **Authorization**: field-level writes go through `Loam::Policy`; the permit list
+- **Authorization**: field-level writes go through `OpenLoam::Policy`; the permit list
   comes from the policy, never the form.
 - **Auditability**: changes are recorded; encrypted values never leak into the
   audit.

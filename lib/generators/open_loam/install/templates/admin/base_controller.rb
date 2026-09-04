@@ -7,19 +7,19 @@ module Admin
     before_action :set_loam_context
     before_action :set_locale
 
-    rescue_from Loam::NotAuthorizedError do
+    rescue_from OpenLoam::NotAuthorizedError do
       render plain: "403 Forbidden — your role does not permit this action.", status: :forbidden
     end
 
     # A disabled feature is "not here" for this tenant, so it 404s — unlike a
     # policy refusal (403), which is "you may not". Capability vs. person.
-    rescue_from Loam::FeatureDisabledError do
+    rescue_from OpenLoam::FeatureDisabledError do
       render plain: "404 Not Found — this feature is not enabled for your tenant.", status: :not_found
     end
 
     # A business rule (or any code) can veto a workflow transition from
-    # `loam_perform_transition!`. Surface it as a clean 422, never a 500.
-    rescue_from Loam::TransitionVetoedError do |error|
+    # `open_loam_perform_transition!`. Surface it as a clean 422, never a 500.
+    rescue_from OpenLoam::TransitionVetoedError do |error|
       render plain: "422 — #{error.message}", status: :unprocessable_entity
     end
 
@@ -41,49 +41,49 @@ module Admin
     end
 
     # Locale is request state like the tenant: from the switcher (param),
-    # remembered in the session, defaulting to Loam.default_locale. Content
-    # translations (Loam::Translatable) overlay onto it.
+    # remembered in the session, defaulting to OpenLoam.default_locale. Content
+    # translations (OpenLoam::Translatable) overlay onto it.
     def set_locale
-      session[:locale] = params[:locale] if params[:locale].present? && Loam.locales.include?(params[:locale])
-      Loam::Current.locale = session[:locale] || Loam.default_locale
+      session[:locale] = params[:locale] if params[:locale].present? && OpenLoam.locales.include?(params[:locale])
+      OpenLoam::Current.locale = session[:locale] || OpenLoam.default_locale
       # Drive Rails i18n (UI strings) off the same choice, so the switcher moves
       # both the chrome and the content — but only to a locale that actually has
       # translations, so an unlisted locale keeps English UI (data still overlays).
-      chosen = Loam::Current.locale.to_s
+      chosen = OpenLoam::Current.locale.to_s
       I18n.locale = chosen if I18n.available_locales.map(&:to_s).include?(chosen)
     end
 
-    def current_locale = Loam::Current.locale
+    def current_locale = OpenLoam::Current.locale
 
-    def current_tenant = Loam::Current.tenant
-    def current_actor = Loam::Current.actor
+    def current_tenant = OpenLoam::Current.tenant
+    def current_actor = OpenLoam::Current.actor
 
-    # Establishes Loam::Current from the session, then proves the actor is
+    # Establishes OpenLoam::Current from the session, then proves the actor is
     # allowed to be here.
     #
-    # The order is load-bearing. Loam::Membership is itself tenant-scoped, so
+    # The order is load-bearing. OpenLoam::Membership is itself tenant-scoped, so
     # "is this actor a member?" is a question you can only ask from inside a
-    # tenant — the tenant has to be in Loam::Current first, or the check raises
-    # Loam::MissingTenantError instead of answering. The `&&` chain below
+    # tenant — the tenant has to be in OpenLoam::Current first, or the check raises
+    # OpenLoam::MissingTenantError instead of answering. The `&&` chain below
     # guarantees that: membership is only consulted once both are set.
     #
     # If anything fails, BOTH halves of the context are cleared before the
     # redirect, so a half-established context can never leak into the next
     # request or into a job enqueued from it.
     def set_loam_context
-      Loam::Current.tenant = Loam::Tenant.find_by(id: session[:tenant_id])
-      Loam::Current.actor = User.find_by(id: session[:user_id])
+      OpenLoam::Current.tenant = OpenLoam::Tenant.find_by(id: session[:tenant_id])
+      OpenLoam::Current.actor = User.find_by(id: session[:user_id])
 
       return if current_tenant && current_actor && member_of_current_tenant?
 
-      Loam::Current.reset
+      OpenLoam::Current.reset
       redirect_to new_admin_session_path
     end
 
-    # Scoped to the current tenant by Loam::TenantRecord, which is the whole
+    # Scoped to the current tenant by OpenLoam::TenantRecord, which is the whole
     # point: a membership in some other tenant is not membership here.
     def member_of_current_tenant?
-      Loam::Membership.exists?(user_id: current_actor.id)
+      OpenLoam::Membership.exists?(user_id: current_actor.id)
     end
 
     # Drives the bell in the admin layout. One COUNT per admin page render,
@@ -91,54 +91,54 @@ module Admin
     def unread_notification_count
       return 0 unless current_actor
 
-      Loam::Notification.unread.where(user_id: current_actor.id).count
+      OpenLoam::Notification.unread.where(user_id: current_actor.id).count
     end
 
     # Staged changes awaiting review, for the "Approvals (N)" nav badge.
     def pending_approval_count
       return 0 unless current_tenant
 
-      Loam::PendingAction.pending.count
+      OpenLoam::PendingAction.pending.count
     end
 
     def policy_for(record)
-      Loam::Policy.for(record)
+      OpenLoam::Policy.for(record)
     end
 
     def authorize!(policy, action)
-      raise Loam::NotAuthorizedError unless policy.public_send(action)
+      raise OpenLoam::NotAuthorizedError unless policy.public_send(action)
     end
 
     # For admin screens with no per-record policy (e.g. field definitions,
     # which apply to a whole entity_type rather than one record).
     def current_role
-      Loam::Membership.find_by(user_id: current_actor&.id)&.role&.to_sym
+      OpenLoam::Membership.find_by(user_id: current_actor&.id)&.role&.to_sym
     end
 
     def require_role!(*roles)
-      raise Loam::NotAuthorizedError unless roles.include?(current_role)
+      raise OpenLoam::NotAuthorizedError unless roles.include?(current_role)
     end
 
-    # Feature-string permission gate (Loam::Permissions) — a finer capability
+    # Feature-string permission gate (OpenLoam::Permissions) — a finer capability
     # check than require_role!. `can?` is a helper_method so views hide UI a role
     # lacks; require_permission! enforces it (403) server-side.
     def can?(permission)
-      Loam.can?(permission)
+      OpenLoam.can?(permission)
     end
 
     def require_permission!(permission)
-      raise Loam::NotAuthorizedError unless Loam.can?(permission)
+      raise OpenLoam::NotAuthorizedError unless OpenLoam.can?(permission)
     end
 
     # Feature guards. These gate a CAPABILITY (is the feature on for this
     # tenant), orthogonal to require_role! / policies, which gate a PERSON.
     # `feature_on?` is a helper_method, so views can hide UI a flag turns off.
     def feature_on?(name)
-      Loam::Features.on?(name)
+      OpenLoam::Features.on?(name)
     end
 
     def require_feature!(name)
-      raise Loam::FeatureDisabledError unless Loam::Features.on?(name)
+      raise OpenLoam::FeatureDisabledError unless OpenLoam::Features.on?(name)
     end
 
     # Optimistic-locking conflict handling: someone saved this record between the
@@ -146,13 +146,13 @@ module Admin
     # StaleObjectError). Build a field-level diff of what the user tried to write
     # vs the current saved values, then RELOAD to fresh data so the retry carries
     # the new lock_version — never a 500, never a silent clobber. lock_version is
-    # the guarantee; the advisory Loam::RecordLock is only a courtesy warning.
+    # the guarantee; the advisory OpenLoam::RecordLock is only a courtesy warning.
     #
     # Encrypted fields are compared and shown via the reader (decrypted); the raw
     # column is ciphertext that never matches (random IV), so a byte compare would
     # be a false conflict every time.
     def stale_conflict!(record, fields)
-      encrypted = record.class.respond_to?(:loam_encrypted_attributes) ? record.class.loam_encrypted_attributes.map(&:to_s) : []
+      encrypted = record.class.respond_to?(:open_loam_encrypted_attributes) ? record.class.open_loam_encrypted_attributes.map(&:to_s) : []
       attempted = fields.map(&:to_s).index_with { |field| conflict_value(record, field, encrypted) }
 
       record.reload
@@ -199,12 +199,12 @@ module Admin
       submitted = Array(params.dig(record.model_name.param_key, :files)).reject(&:blank?)
       return if submitted.empty?
 
-      raise Loam::NotAuthorizedError unless policy.update?
+      raise OpenLoam::NotAuthorizedError unless policy.update?
 
       record.files.attach(submitted)
     end
 
-    # Runtime custom fields (see Loam::CustomFields) go through the same
+    # Runtime custom fields (see OpenLoam::CustomFields) go through the same
     # field-level enforcement as real columns: only a writable definition's
     # value is ever assigned.
     def assign_custom_fields!(record, params, policy)

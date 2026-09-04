@@ -1,12 +1,12 @@
-module Loam
+module OpenLoam
   # Rate-limiting + lockout for authentication, to blunt online brute-force of
   # passwords and (especially) 6-digit TOTP codes. A DB-backed counter keyed by
   # the submitted identifier: after N failures within a window, the identifier is
   # locked; a success clears the counter.
   #
-  #   Loam::AuthThrottle.locked?(email)                      # refuse if true
-  #   Loam::AuthThrottle.record_failure(email, kind: "password", ip: request.ip)
-  #   Loam::AuthThrottle.clear(email)                        # on success
+  #   OpenLoam::AuthThrottle.locked?(email)                      # refuse if true
+  #   OpenLoam::AuthThrottle.record_failure(email, kind: "password", ip: request.ip)
+  #   OpenLoam::AuthThrottle.clear(email)                        # on success
   #
   # PER-IDENTIFIER is the primary defense (an attacker targets one account /
   # code). A per-ip throttle to blunt spraying across accounts is a clean
@@ -15,7 +15,7 @@ module Loam
   # (needs a cache store + a gem); this DB counter is the portable,
   # single-process-correct prototype.
   #
-  # Thresholds come from Loam::Configs (per-tenant-overridable, but read globally
+  # Thresholds come from OpenLoam::Configs (per-tenant-overridable, but read globally
   # here at the auth layer with sane defaults):
   #   security.max_auth_attempts   (default 10)
   #   security.auth_window_minutes (default 15) — failures counted in this window
@@ -24,15 +24,15 @@ module Loam
     module_function
 
     def max_attempts
-      Loam::Configs.get("security.max_auth_attempts", default: 10).to_i
+      OpenLoam::Configs.get("security.max_auth_attempts", default: 10).to_i
     end
 
     def window
-      Loam::Configs.get("security.auth_window_minutes", default: 15).to_i.minutes
+      OpenLoam::Configs.get("security.auth_window_minutes", default: 15).to_i.minutes
     end
 
     def lockout
-      Loam::Configs.get("security.auth_lockout_minutes", default: 15).to_i.minutes
+      OpenLoam::Configs.get("security.auth_lockout_minutes", default: 15).to_i.minutes
     end
 
     # Log a failed attempt. Recorded for ANY submitted identifier — existing or
@@ -41,7 +41,7 @@ module Loam
       identifier = normalize(identifier)
       return if identifier.blank?
 
-      Loam::AuthAttempt.create!(identifier: identifier, kind: kind.to_s, ip: ip)
+      OpenLoam::AuthAttempt.create!(identifier: identifier, kind: kind.to_s, ip: ip)
     end
 
     # Locked if there are >= max failures within the window. Old attempts age out
@@ -73,7 +73,7 @@ module Loam
     end
 
     def attempts(identifier)
-      Loam::AuthAttempt.where(identifier: normalize(identifier))
+      OpenLoam::AuthAttempt.where(identifier: normalize(identifier))
     end
 
     def normalize(identifier)

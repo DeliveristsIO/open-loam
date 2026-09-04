@@ -1,7 +1,7 @@
-class CreateLoamPendingActions < ActiveRecord::Migration[8.1]
+class CreateOpenLoamPendingActions < ActiveRecord::Migration[8.1]
   def change
-    create_table :loam_pending_actions do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }
+    create_table :open_loam_pending_actions do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :open_loam_tenants }
       t.bigint :actor_id                       # who staged it (the proposer)
       t.string :status, null: false, default: "pending"
       t.string :action_type, null: false       # create / update / destroy
@@ -17,7 +17,7 @@ class CreateLoamPendingActions < ActiveRecord::Migration[8.1]
       t.timestamps
     end
     # One row per distinct proposal per tenant.
-    add_index :loam_pending_actions, %i[tenant_id idempotency_key], unique: true
-    add_index :loam_pending_actions, %i[tenant_id status]
+    add_index :open_loam_pending_actions, %i[tenant_id idempotency_key], unique: true
+    add_index :open_loam_pending_actions, %i[tenant_id status]
   end
 end

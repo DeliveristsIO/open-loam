@@ -1,8 +1,8 @@
-class CreateLoamEventDeliveries < ActiveRecord::Migration[8.1]
+class CreateOpenLoamEventDeliveries < ActiveRecord::Migration[8.1]
   def change
-    create_table :loam_event_deliveries do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }
-      t.string :subscriber_key, null: false            # a registered Loam::DurableEvents subscriber
+    create_table :open_loam_event_deliveries do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :open_loam_tenants }
+      t.string :subscriber_key, null: false            # a registered OpenLoam::DurableEvents subscriber
       t.string :event_name, null: false
       t.json :payload, null: false                     # JSON-scalar event payload
       t.string :status, null: false, default: "pending" # pending | delivered | dead
@@ -12,6 +12,6 @@ class CreateLoamEventDeliveries < ActiveRecord::Migration[8.1]
       t.datetime :delivered_at
       t.timestamps
     end
-    add_index :loam_event_deliveries, %i[tenant_id status next_attempt_at]
+    add_index :open_loam_event_deliveries, %i[tenant_id status next_attempt_at]
   end
 end

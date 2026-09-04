@@ -1,18 +1,18 @@
-module Loam
+module OpenLoam
   # The one way to read and write per-tenant settings.
   #
-  #   Loam::Configs.get("rental.late_fee_per_day")          # resolved for the current tenant
-  #   Loam::Configs.set("rental.late_fee_per_day", 45)      # this tenant's override
-  #   Loam::Configs.set("rental.currency", "PLN", scope: :global)
-  #   Loam::Configs.reset("rental.late_fee_per_day")        # drop the override → fall back
+  #   OpenLoam::Configs.get("rental.late_fee_per_day")          # resolved for the current tenant
+  #   OpenLoam::Configs.set("rental.late_fee_per_day", 45)      # this tenant's override
+  #   OpenLoam::Configs.set("rental.currency", "PLN", scope: :global)
+  #   OpenLoam::Configs.reset("rental.late_fee_per_day")        # drop the override → fall back
   #
   # Resolution order, most specific first:
   #   1. the current tenant's OVERRIDE row (tenant_id = current tenant)
   #   2. the GLOBAL row (tenant_id NULL)
-  #   3. the declared default in Loam.config_defaults[key]
+  #   3. the declared default in OpenLoam.config_defaults[key]
   #   4. the `default:` argument (nil)
   #
-  # Reads are memoized per request in Loam::Current.config_cache, keyed by
+  # Reads are memoized per request in OpenLoam::Current.config_cache, keyed by
   # [key, tenant_id], and the whole cache is dropped on any write. That is the
   # deliberately-simple prototype cache; a Rails.cache-backed layer shared across
   # requests is the scaling path, and it would slot in behind this same API.
@@ -36,7 +36,7 @@ module Loam
       end
 
       # Write a setting. scope: :tenant writes the current tenant's override and
-      # requires a tenant in context (a missing one raises, like every Loam
+      # requires a tenant in context (a missing one raises, like every OpenLoam
       # write); scope: :global writes the app-wide row (tenant_id NULL). Upsert.
       def set(key, value, scope: :tenant)
         key = key.to_s
@@ -66,8 +66,8 @@ module Loam
       # defaults, plus any global or current-tenant rows already written. Sorted
       # and de-duplicated, for the settings screen.
       def defined_keys
-        rows = Loam::Config.where(tenant_id: [nil, Loam.tenant&.id]).distinct.pluck(:key)
-        (Loam.config_defaults.keys + rows).map(&:to_s).uniq.sort
+        rows = OpenLoam::Config.where(tenant_id: [nil, OpenLoam.tenant&.id]).distinct.pluck(:key)
+        (OpenLoam.config_defaults.keys + rows).map(&:to_s).uniq.sort
       end
 
       private
@@ -76,39 +76,39 @@ module Loam
       # the caller then applies its own `default:` without caching it.
       def resolve(key)
         if (tenant_id = current_tenant_id)
-          override = Loam::Config.find_by(key: key, tenant_id: tenant_id)
+          override = OpenLoam::Config.find_by(key: key, tenant_id: tenant_id)
           return [true, override.value_json] if override
         end
 
-        global = Loam::Config.find_by(key: key, tenant_id: nil)
+        global = OpenLoam::Config.find_by(key: key, tenant_id: nil)
         return [true, global.value_json] if global
 
-        return [true, Loam.config_defaults[key]] if Loam.config_defaults.key?(key)
+        return [true, OpenLoam.config_defaults[key]] if OpenLoam.config_defaults.key?(key)
 
         [false, nil]
       end
 
       # The row(s) a write/read targets. :global is the tenant_id NULL row;
       # :tenant is the current tenant's — which requires a tenant in context,
-      # so Loam.tenant! raises MissingTenantError when there is none.
+      # so OpenLoam.tenant! raises MissingTenantError when there is none.
       def row_for(key, scope)
         case scope
-        when :global then Loam::Config.where(key: key, tenant_id: nil)
-        when :tenant then Loam::Config.where(key: key, tenant_id: Loam.tenant!.id)
+        when :global then OpenLoam::Config.where(key: key, tenant_id: nil)
+        when :tenant then OpenLoam::Config.where(key: key, tenant_id: OpenLoam.tenant!.id)
         else raise ArgumentError, "unknown config scope #{scope.inspect} (use :tenant or :global)"
         end
       end
 
       def current_tenant_id
-        Loam.tenant&.id
+        OpenLoam.tenant&.id
       end
 
       def cache
-        Loam::Current.config_cache ||= {}
+        OpenLoam::Current.config_cache ||= {}
       end
 
       def clear_cache
-        Loam::Current.config_cache = {}
+        OpenLoam::Current.config_cache = {}
       end
     end
   end

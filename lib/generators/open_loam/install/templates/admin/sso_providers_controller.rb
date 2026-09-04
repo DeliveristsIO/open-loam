@@ -1,6 +1,6 @@
 module Admin
   # Configure this tenant's SSO (OIDC) provider — manager-only, since it governs
-  # who can sign in and at what role. Tenant-scoped by Loam::SsoProvider's default
+  # who can sign in and at what role. Tenant-scoped by OpenLoam::SsoProvider's default
   # scope, so a manager only ever sees and edits their own tenant's connection.
   # The client_secret is WRITE-ONLY: it is encrypted at rest and never rendered
   # back, so editing without retyping it leaves the stored secret untouched.
@@ -10,20 +10,20 @@ module Admin
 
     rescue_from JSON::ParserError do |error|
       flash.now[:alert] = "The group→role map must be valid JSON: #{error.message}"
-      @provider ||= Loam::SsoProvider.new
+      @provider ||= OpenLoam::SsoProvider.new
       render(@provider.persisted? ? :edit : :new, status: :unprocessable_entity)
     end
 
     def index
-      @providers = Loam::SsoProvider.order(:domain)
+      @providers = OpenLoam::SsoProvider.order(:domain)
     end
 
     def new
-      @provider = Loam::SsoProvider.new(protocol: "oidc", active: true, jit_role: "employee")
+      @provider = OpenLoam::SsoProvider.new(protocol: "oidc", active: true, jit_role: "employee")
     end
 
     def create
-      @provider = Loam::SsoProvider.new(provider_params)
+      @provider = OpenLoam::SsoProvider.new(provider_params)
       if @provider.save
         redirect_to admin_sso_providers_path, notice: "SSO provider created."
       else
@@ -49,7 +49,7 @@ module Admin
     private
 
     def set_provider
-      @provider = Loam::SsoProvider.find(params[:id])
+      @provider = OpenLoam::SsoProvider.find(params[:id])
     end
 
     def provider_params

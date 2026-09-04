@@ -1,7 +1,7 @@
-class CreateLoamProgressJobs < ActiveRecord::Migration[8.1]
+class CreateOpenLoamProgressJobs < ActiveRecord::Migration[8.1]
   def change
-    create_table :loam_progress_jobs do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }
+    create_table :open_loam_progress_jobs do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :open_loam_tenants }
       t.string :key                                   # optional caller-chosen id (e.g. "reindex:Equipment")
       t.string :name, null: false                     # human label
       t.string :status, null: false, default: "running"  # running / completed / failed / cancelled
@@ -14,6 +14,6 @@ class CreateLoamProgressJobs < ActiveRecord::Migration[8.1]
       t.datetime :finished_at
       t.timestamps                                    # updated_at is the heartbeat
     end
-    add_index :loam_progress_jobs, %i[tenant_id status]
+    add_index :open_loam_progress_jobs, %i[tenant_id status]
   end
 end

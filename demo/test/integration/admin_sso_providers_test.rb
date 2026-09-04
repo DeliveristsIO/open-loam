@@ -6,12 +6,12 @@ require "test_helper"
 # back and is only overwritten when retyped.
 class AdminSsoProvidersTest < ActionDispatch::IntegrationTest
   setup do
-    @tenant = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-sso-admin")
+    @tenant = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-sso-admin")
     @manager = User.create!(name: "Anna", email: "anna@example.test", password: "password")
     @employee = User.create!(name: "Tomek", email: "tomek@example.test", password: "password")
     with_tenant(@tenant) do
-      Loam::Membership.create!(user: @manager, role: "manager")
-      Loam::Membership.create!(user: @employee, role: "employee")
+      OpenLoam::Membership.create!(user: @manager, role: "manager")
+      OpenLoam::Membership.create!(user: @employee, role: "employee")
     end
   end
 
@@ -22,7 +22,7 @@ class AdminSsoProvidersTest < ActionDispatch::IntegrationTest
   test "a manager creates a provider through the form" do
     sign_in("anna@example.test")
 
-    assert_difference -> { with_tenant(@tenant) { Loam::SsoProvider.count } }, 1 do
+    assert_difference -> { with_tenant(@tenant) { OpenLoam::SsoProvider.count } }, 1 do
       post admin_sso_providers_path, params: { sso_provider: {
         name: "Corp IdP", protocol: "oidc", issuer: "https://idp.corp.example", client_id: "cid",
         client_secret: "top-secret", domain: "Corp.Example", jit_role: "employee", active: "1",
@@ -31,7 +31,7 @@ class AdminSsoProvidersTest < ActionDispatch::IntegrationTest
     end
 
     assert_redirected_to admin_sso_providers_path
-    provider = with_tenant(@tenant) { Loam::SsoProvider.find_by(name: "Corp IdP") }
+    provider = with_tenant(@tenant) { OpenLoam::SsoProvider.find_by(name: "Corp IdP") }
     assert_equal "corp.example", provider.domain, "domain is normalized"
     assert_equal({ "admins" => "manager" }, provider.group_roles)
     assert_equal "top-secret", with_tenant(@tenant) { provider.client_secret }
@@ -39,7 +39,7 @@ class AdminSsoProvidersTest < ActionDispatch::IntegrationTest
 
   test "the client secret is write-only: a blank edit keeps the stored one" do
     provider = with_tenant(@tenant) do
-      Loam::SsoProvider.create!(name: "Corp", protocol: "oidc", client_id: "cid",
+      OpenLoam::SsoProvider.create!(name: "Corp", protocol: "oidc", client_id: "cid",
                                 client_secret: "original-secret", domain: "corp.example", jit_role: "employee")
     end
     sign_in("anna@example.test")
@@ -70,7 +70,7 @@ class AdminSsoProvidersTest < ActionDispatch::IntegrationTest
   test "malformed group-map JSON re-renders the form as 422" do
     sign_in("anna@example.test")
 
-    assert_no_difference -> { with_tenant(@tenant) { Loam::SsoProvider.count } } do
+    assert_no_difference -> { with_tenant(@tenant) { OpenLoam::SsoProvider.count } } do
       post admin_sso_providers_path, params: { sso_provider: {
         name: "Broken", protocol: "oidc", domain: "broken.example", jit_role: "employee",
         group_role_map: "{ not json"

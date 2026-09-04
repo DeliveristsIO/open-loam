@@ -4,12 +4,12 @@ require "test_helper"
 # full filter state (search / saved view / custom-field filter / sort) across
 # pagination and export — and the sort column is whitelisted, so a crafted
 # `sort` param can never reach ORDER BY.
-class LoamIndexSortTest < ActionDispatch::IntegrationTest
+class OpenLoamIndexSortTest < ActionDispatch::IntegrationTest
   setup do
-    @tenant = Loam::Tenant.create!(name: "Branch", slug: "warsaw-sort")
+    @tenant = OpenLoam::Tenant.create!(name: "Branch", slug: "warsaw-sort")
     @anna = User.create!(name: "Anna", email: "anna-sort@example.test", password: "password")
     with_tenant(@tenant) do
-      Loam::Membership.create!(user: @anna, role: "manager")
+      OpenLoam::Membership.create!(user: @anna, role: "manager")
       Equipment.create!(name: "Zeta digger", daily_rate: 10, status: "available")
       Equipment.create!(name: "Alpha crane", daily_rate: 99, status: "available")
     end
@@ -36,13 +36,13 @@ class LoamIndexSortTest < ActionDispatch::IntegrationTest
   end
 
   test "a crafted sort param is ignored, not injected into ORDER BY" do
-    get "/admin/equipment", params: { sort: "name); DROP TABLE loam_tenants;--", dir: "asc" }
+    get "/admin/equipment", params: { sort: "name); DROP TABLE open_loam_tenants;--", dir: "asc" }
     assert_response :success  # falls back to the default order, no SQL error, no 500
-    assert Loam::Tenant.exists?(@tenant.id)
+    assert OpenLoam::Tenant.exists?(@tenant.id)
   end
 
   test "a crafted dir param cannot inject either" do
-    get "/admin/equipment", params: { sort: "name", dir: "asc); DROP TABLE loam_tenants;--" }
+    get "/admin/equipment", params: { sort: "name", dir: "asc); DROP TABLE open_loam_tenants;--" }
     assert_response :success  # dir is constrained to asc/desc
   end
 

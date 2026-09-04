@@ -1,15 +1,15 @@
 require "test_helper"
 
-# Loam::SoftDeletable on a real entity: destroying hides a record instead of
+# OpenLoam::SoftDeletable on a real entity: destroying hides a record instead of
 # erasing it, restore brings it back, and the recycle bin stays tenant-scoped.
-class LoamSoftDeleteTest < ActiveSupport::TestCase
+class OpenLoamSoftDeleteTest < ActiveSupport::TestCase
   setup do
-    @warsaw = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-softdelete")
-    @krakow = Loam::Tenant.create!(name: "Branch Krakow", slug: "krakow-softdelete")
+    @warsaw = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-softdelete")
+    @krakow = OpenLoam::Tenant.create!(name: "Branch Krakow", slug: "krakow-softdelete")
     @anna = User.create!(name: "Anna", email: "anna@example.test", password: "password")
 
-    with_tenant(@warsaw) { Loam::Membership.create!(user: @anna, role: "manager") }
-    with_tenant(@krakow) { Loam::Membership.create!(user: @anna, role: "manager") }
+    with_tenant(@warsaw) { OpenLoam::Membership.create!(user: @anna, role: "manager") }
+    with_tenant(@krakow) { OpenLoam::Membership.create!(user: @anna, role: "manager") }
   end
 
   test "soft_delete hides a record from the default scope but keeps the row" do
@@ -71,11 +71,11 @@ class LoamSoftDeleteTest < ActiveSupport::TestCase
       excavator = Equipment.create!(name: "Excavator", daily_rate: 950, status: "available")
       excavator.soft_delete
 
-      audit = Loam::AuditRecord.find_by(auditable_type: "Equipment", auditable_id: excavator.id, action: "soft_delete")
+      audit = OpenLoam::AuditRecord.find_by(auditable_type: "Equipment", auditable_id: excavator.id, action: "soft_delete")
       assert audit, "a soft-delete must leave a soft_delete audit record, not an update"
       assert_equal @anna.id, audit.actor_id
       assert audit.changeset.key?("deleted_at")
-      assert_equal 0, Loam::AuditRecord.where(auditable_id: excavator.id, action: "update").count,
+      assert_equal 0, OpenLoam::AuditRecord.where(auditable_id: excavator.id, action: "update").count,
         "the soft-delete must NOT also be recorded as an ordinary update"
     end
   end
@@ -86,7 +86,7 @@ class LoamSoftDeleteTest < ActiveSupport::TestCase
       excavator.soft_delete
       excavator.restore
 
-      assert Loam::AuditRecord.exists?(auditable_type: "Equipment", auditable_id: excavator.id, action: "restore")
+      assert OpenLoam::AuditRecord.exists?(auditable_type: "Equipment", auditable_id: excavator.id, action: "restore")
     end
   end
 
@@ -97,7 +97,7 @@ class LoamSoftDeleteTest < ActiveSupport::TestCase
       excavator.soft_delete
       excavator.soft_delete
 
-      assert_equal 1, Loam::AuditRecord.where(auditable_id: excavator.id, action: "soft_delete").count,
+      assert_equal 1, OpenLoam::AuditRecord.where(auditable_id: excavator.id, action: "soft_delete").count,
         "re-deleting an already-deleted record must not write a second audit record"
     end
   end
@@ -109,7 +109,7 @@ class LoamSoftDeleteTest < ActiveSupport::TestCase
       excavator.destroy!
 
       assert_equal 0, Equipment.with_deleted.count, "destroy really removes the row"
-      assert Loam::AuditRecord.exists?(auditable_type: "Equipment", auditable_id: excavator.id, action: "destroy")
+      assert OpenLoam::AuditRecord.exists?(auditable_type: "Equipment", auditable_id: excavator.id, action: "destroy")
     end
   end
 end
@@ -118,11 +118,11 @@ end
 # deleted screen renders, and Restore brings the record back.
 class AdminSoftDeleteFlowTest < ActionDispatch::IntegrationTest
   setup do
-    @tenant = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-softdelete-flow")
+    @tenant = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-softdelete-flow")
     @anna = User.create!(name: "Anna", email: "anna@example.test", password: "password")
 
     with_tenant(@tenant) do
-      Loam::Membership.create!(user: @anna, role: "manager")
+      OpenLoam::Membership.create!(user: @anna, role: "manager")
       @excavator = Equipment.create!(name: "Excavator", daily_rate: 950, status: "available")
     end
 

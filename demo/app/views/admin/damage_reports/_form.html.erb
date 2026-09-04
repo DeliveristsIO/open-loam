@@ -1,4 +1,4 @@
-<% policy = Loam::Policy.for(@record) %>
+<% policy = OpenLoam::Policy.for(@record) %>
 
 <%# Optimistic-locking conflict: what the user typed vs what is now saved. %>
 <% if @conflict.present? %>
@@ -70,7 +70,7 @@
     </p>
   <% end %>
 
-  <%= render "loam/custom_fields/fields", record: @record, policy: policy, mode: :edit %>
+  <%= render "open_loam/custom_fields/fields", record: @record, policy: policy, mode: :edit %>
 
   <% if policy.update? %>
     <p>

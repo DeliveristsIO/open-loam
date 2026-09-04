@@ -1,4 +1,4 @@
-module Loam
+module OpenLoam
   # RFC 4648 Base32 — the encoding authenticator apps expect for a TOTP secret.
   # Ruby ships Base64 but not Base32, and this is ~15 lines, so no dependency.
   # No padding on encode (authenticators don't want it); decode ignores case,

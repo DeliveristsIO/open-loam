@@ -1,5 +1,5 @@
 module Admin
-  # Durable event deliveries (Loam::EventDelivery) — the dead-letter view.
+  # Durable event deliveries (OpenLoam::EventDelivery) — the dead-letter view.
   # Manager-only. Lists deliveries parked as `dead` (handler removed, or retries
   # exhausted) and lets an operator requeue one after fixing the handler. Pending
   # deliveries drain on their own; a small sample is shown for visibility.
@@ -7,14 +7,14 @@ module Admin
     before_action { require_role!(:manager) }
 
     def index
-      @dead = Loam::EventDelivery.dead.order(updated_at: :desc).limit(200)
-      @pending = Loam::EventDelivery.pending.order(Arel.sql("next_attempt_at IS NULL DESC, next_attempt_at ASC")).limit(50)
+      @dead = OpenLoam::EventDelivery.dead.order(updated_at: :desc).limit(200)
+      @pending = OpenLoam::EventDelivery.pending.order(Arel.sql("next_attempt_at IS NULL DESC, next_attempt_at ASC")).limit(50)
     end
 
     def redeliver
-      delivery = Loam::EventDelivery.find(params[:id])
+      delivery = OpenLoam::EventDelivery.find(params[:id])
       delivery.update!(status: "pending", attempts: 0, next_attempt_at: nil, last_error: nil)
-      Loam::EventDeliveryJob.perform_later(delivery.tenant_id, delivery.id)
+      OpenLoam::EventDeliveryJob.perform_later(delivery.tenant_id, delivery.id)
       redirect_to admin_event_deliveries_path, notice: "Delivery requeued."
     end
   end

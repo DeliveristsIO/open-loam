@@ -1,5 +1,5 @@
 module Admin
-  # Manages Loam::FieldDefinition records: the "migration-free field" screen.
+  # Manages OpenLoam::FieldDefinition records: the "migration-free field" screen.
   # Structural, not per-entity — gated on the manager role rather than a
   # generated entity policy, since a field definition applies to a whole
   # entity_type, not one record.
@@ -9,16 +9,16 @@ module Admin
 
     def index
       @entity_type = params[:entity_type]
-      @records = Loam::FieldDefinition.order(:entity_type, :name)
+      @records = OpenLoam::FieldDefinition.order(:entity_type, :name)
       @records = @records.where(entity_type: @entity_type) if @entity_type.present?
     end
 
     def new
-      @record = Loam::FieldDefinition.new(entity_type: params[:entity_type])
+      @record = OpenLoam::FieldDefinition.new(entity_type: params[:entity_type])
     end
 
     def create
-      @record = Loam::FieldDefinition.new(permitted_params)
+      @record = OpenLoam::FieldDefinition.new(permitted_params)
       @record.writable_roles = parse_roles(params.dig(:field_definition, :writable_roles))
       @record.readable_roles = parse_roles(params.dig(:field_definition, :readable_roles))
 
@@ -38,7 +38,7 @@ module Admin
     private
 
     def set_record
-      @record = Loam::FieldDefinition.find(params[:id])
+      @record = OpenLoam::FieldDefinition.find(params[:id])
     end
 
     def permitted_params

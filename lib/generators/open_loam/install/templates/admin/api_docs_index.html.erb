@@ -1,7 +1,7 @@
 <h1><%%= @doc["info"]["title"] %></h1>
 
 <p><%%= @doc["info"]["description"] %></p>
-<p><strong>Auth:</strong> bearer token (<code>Authorization: Bearer &lt;token&gt;</code>) — a <code>Loam::ApiToken</code>.
+<p><strong>Auth:</strong> bearer token (<code>Authorization: Bearer &lt;token&gt;</code>) — a <code>OpenLoam::ApiToken</code>.
 <strong>Tenancy:</strong> <%%= @doc["x-tenancy"] %></p>
 <p><%%= link_to "Download OpenAPI JSON", admin_api_docs_path(format: :json) %></p>
 

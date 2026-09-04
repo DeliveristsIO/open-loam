@@ -16,9 +16,9 @@ module Admin
     end
 
     # The first searchable column that has a value, plus the id — enough to
-    # recognise a record without Loam having to know what a "title" is.
+    # recognise a record without OpenLoam having to know what a "title" is.
     def search_result_label(record)
-      value = record.class.loam_searchable_columns.filter_map { |column| record.public_send(column).presence }.first
+      value = record.class.open_loam_searchable_columns.filter_map { |column| record.public_send(column).presence }.first
 
       [ value || record.model_name.human, "##{record.id}" ].join(" ")
     end
@@ -32,7 +32,7 @@ module Admin
       end.to_h
     end
 
-    # Every Loam entity that opted into search, in name order.
+    # Every OpenLoam entity that opted into search, in name order.
     #
     # This eager loads, unlike Admin::CommentsController, and for the opposite
     # reason: there is no user-supplied class name to check here, we need the
@@ -41,8 +41,8 @@ module Admin
     def searchable_models
       Rails.application.eager_load!
 
-      Loam::TenantRecord.descendants.select do |model|
-        model.name.present? && model.respond_to?(:loam_searchable?) && model.loam_searchable?
+      OpenLoam::TenantRecord.descendants.select do |model|
+        model.name.present? && model.respond_to?(:open_loam_searchable?) && model.open_loam_searchable?
       end.sort_by(&:name)
     end
   end

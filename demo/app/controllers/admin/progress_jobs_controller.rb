@@ -1,11 +1,11 @@
 module Admin
-  # Long-running task progress (Loam::ProgressJob). A tenant-scoped list of recent
-  # jobs with a live bar (the loam.progress.updated SSE event updates it). Any
+  # Long-running task progress (OpenLoam::ProgressJob). A tenant-scoped list of recent
+  # jobs with a live bar (the open_loam.progress.updated SSE event updates it). Any
   # member can watch; "Run a demo job" enqueues DemoProgressJob, and a running
   # job can be cancelled cooperatively.
   class ProgressJobsController < BaseController
     def index
-      @jobs = Loam::ProgressJob.recent.limit(20)
+      @jobs = OpenLoam::ProgressJob.recent.limit(20)
     end
 
     def run
@@ -14,9 +14,9 @@ module Admin
     end
 
     def cancel
-      job = Loam::ProgressJob.find(params[:id])
+      job = OpenLoam::ProgressJob.find(params[:id])
       # Manager-or-owner: a member must not cancel another user's job.
-      raise Loam::NotAuthorizedError unless current_role == :manager || job.actor_id == current_actor&.id
+      raise OpenLoam::NotAuthorizedError unless current_role == :manager || job.actor_id == current_actor&.id
       job.cancel! if job.running?
       redirect_to admin_progress_jobs_path, notice: "Job cancelled."
     end

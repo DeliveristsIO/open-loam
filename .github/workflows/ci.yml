@@ -39,7 +39,7 @@ jobs:
       - uses: actions/checkout@v7
 
       # working-directory points setup-ruby at demo/.ruby-version and
-      # demo/Gemfile.lock. The `loam` gem resolves through `path: ".."`, which
+      # demo/Gemfile.lock. The `open_loam` gem resolves through `path: ".."`, which
       # the checkout already provides.
       - uses: ruby/setup-ruby@v1
         with:

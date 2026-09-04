@@ -4,18 +4,18 @@ require "test_helper"
 # pagination on the per-entity lists.
 class AdminSearchTest < ActionDispatch::IntegrationTest
   setup do
-    @warsaw = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-admin-search")
-    @krakow = Loam::Tenant.create!(name: "Branch Krakow", slug: "krakow-admin-search")
+    @warsaw = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-admin-search")
+    @krakow = OpenLoam::Tenant.create!(name: "Branch Krakow", slug: "krakow-admin-search")
     @anna = User.create!(name: "Anna", email: "anna@example.test", password: "password123")
 
     with_tenant(@warsaw) do
-      Loam::Membership.create!(user: @anna, role: "manager")
+      OpenLoam::Membership.create!(user: @anna, role: "manager")
       Equipment.create!(name: "Excavator CAT 320", daily_rate: 950, status: "available")
       DamageReport.create!(equipment_id: 1, description: "Excavator boom cracked")
     end
 
     with_tenant(@krakow) do
-      Loam::Membership.create!(user: @anna, role: "manager")
+      OpenLoam::Membership.create!(user: @anna, role: "manager")
       Equipment.create!(name: "Excavator CAT 400", daily_rate: 990, status: "available")
     end
 

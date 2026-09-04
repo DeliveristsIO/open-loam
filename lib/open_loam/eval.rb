@@ -1,6 +1,6 @@
-module Loam
+module OpenLoam
   # Scripted evaluation scoring for the golden tasks (L-303). An agent (or a
-  # human) implements a task against a fresh Loam app; this scores the RESULT
+  # human) implements a task against a fresh OpenLoam app; this scores the RESULT
   # consistently — the test outcome plus the structural invariants — into a
   # machine-readable scorecard, so runs are comparable over time
   # (ai/benchmark_runs/). Driving the agent is out of scope; consistent scoring

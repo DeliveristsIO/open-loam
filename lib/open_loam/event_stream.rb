@@ -1,14 +1,14 @@
-module Loam
-  # The real-time bridge: pushes selected Loam events to a browser over
+module OpenLoam
+  # The real-time bridge: pushes selected OpenLoam events to a browser over
   # Server-Sent Events, so the admin updates live instead of polling.
   #
   # SECURITY POSTURE — default OFF. An event reaches a browser only if ALL hold:
-  #   * its name matches a declared Loam.broadcast_events pattern (opt-in), AND
+  #   * its name matches a declared OpenLoam.broadcast_events pattern (opt-in), AND
   #   * its tenant matches the connected tenant (isolation), AND
   #   * its audience includes the connected actor (a payload `user_id`, if any,
   #     is the sole recipient; no `user_id` means tenant-wide).
   #
-  # FAN-OUT is behind a swappable broadcaster seam (Loam::EventStream.broadcaster).
+  # FAN-OUT is behind a swappable broadcaster seam (OpenLoam::EventStream.broadcaster).
   # The default in-process broadcaster only sees events published in THIS process
   # — fine for the single-process prototype; a multi-process deploy swaps in a
   # Redis/SolidCable-backed broadcaster with no controller change (see
@@ -24,10 +24,10 @@ module Loam
       # Is this event name allowed to reach browsers at all? Empty allow-list →
       # false, always (nothing leaks by default).
       def broadcastable?(event_name)
-        Loam.broadcast_events.any? do |pattern|
-          next false if Loam::Overrides.disabled?(:broadcast_events, pattern) # an app can turn a default pattern off
+        OpenLoam.broadcast_events.any? do |pattern|
+          next false if OpenLoam::Overrides.disabled?(:broadcast_events, pattern) # an app can turn a default pattern off
 
-          Loam::Events.pattern_matches?(pattern, event_name)
+          OpenLoam::Events.pattern_matches?(pattern, event_name)
         end
       end
 
@@ -42,9 +42,9 @@ module Loam
         recipient.nil? || recipient == actor&.id
       end
 
-      # One SSE message: an `event:` line (the Loam event name) and a `data:`
+      # One SSE message: an `event:` line (the OpenLoam event name) and a `data:`
       # line (JSON), ended by a blank line. Only small id-ish keys ride along —
-      # Loam events carry no attribute values, and this slices to a safe set as
+      # OpenLoam events carry no attribute values, and this slices to a safe set as
       # belt-and-suspenders (tenant_id is dropped; it is implied by the connection).
       def frame(event_name, payload)
         "event: #{event_name}\ndata: #{safe_payload(payload).to_json}\n\n"
@@ -54,21 +54,21 @@ module Loam
 
       def safe_payload(payload)
         # id-ish keys only — never attribute values. percent/status ride along for
-        # the progress bar (Loam::ProgressJob); both are non-sensitive.
+        # the progress bar (OpenLoam::ProgressJob); both are non-sensitive.
         payload.symbolize_keys.slice(:id, :type, :user_id, :from, :to, :percent, :status).compact
       end
     end
 
-    # The default fan-out: subscribe to Loam::Events in THIS process and forward
+    # The default fan-out: subscribe to OpenLoam::Events in THIS process and forward
     # the events deliverable to (tenant, actor) to a sink. A `sink` is anything
     # answering #call(sse_string) — the controller's is a Queue push.
     class InProcessBroadcaster
       # Returns an opaque handle to pass back to #unsubscribe.
       def subscribe(tenant:, actor:, &sink)
-        Loam::Events.subscribe_all do |event_name, payload|
-          next unless Loam::EventStream.deliverable?(event_name, payload, tenant: tenant, actor: actor)
+        OpenLoam::Events.subscribe_all do |event_name, payload|
+          next unless OpenLoam::EventStream.deliverable?(event_name, payload, tenant: tenant, actor: actor)
 
-          sink.call(Loam::EventStream.frame(event_name, payload))
+          sink.call(OpenLoam::EventStream.frame(event_name, payload))
         end
       end
 

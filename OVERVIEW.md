@@ -1,8 +1,8 @@
-# Loam — Overview
+# OpenLoam — Overview
 
 ## Executive summary
 
-Loam is an open-source foundation for building secure business software with
+OpenLoam is an open-source foundation for building secure business software with
 Ruby on Rails and AI coding agents. It provides the common infrastructure that
 most business applications need—tenant isolation, access control, audit trails,
 workflows, integrations, administration, and operational tooling—before a
@@ -10,10 +10,10 @@ product team starts writing its domain-specific features.
 
 The premise is simple: teams should spend their time building the part of a
 product that customers value, not repeatedly rebuilding the same application
-plumbing. Loam turns that plumbing into one coherent, documented set of
+plumbing. OpenLoam turns that plumbing into one coherent, documented set of
 conventions that both developers and AI agents can follow.
 
-Loam is currently a working, tested prototype. It demonstrates the technical
+OpenLoam is currently a working, tested prototype. It demonstrates the technical
 foundation and the AI-assisted development workflow end to end. It has not yet
 been validated in a production customer deployment, so the next milestone is a
 measured real-world build rather than another large feature expansion.
@@ -41,9 +41,9 @@ way to add a feature. In an inconsistent application, the agent must guess how
 tenancy, authorization, events, and testing are supposed to work. A wrong guess
 can become a security defect.
 
-## The Loam solution
+## The OpenLoam solution
 
-Loam packages the shared foundation as a Rails engine, code generators, and an
+OpenLoam packages the shared foundation as a Rails engine, code generators, and an
 agent-readable development contract. The foundation makes important decisions
 once and applies them consistently across the application.
 
@@ -52,12 +52,12 @@ database migration, policy, admin screens, API controller, and guardrail tests
 in the expected structure. The team then adds the business-specific workflow
 instead of designing the surrounding infrastructure from scratch.
 
-The result remains a normal Rails application. Loam is not a closed low-code
+The result remains a normal Rails application. OpenLoam is not a closed low-code
 platform and does not hide the source code behind a proprietary builder. Teams
 can inspect, test, extend, and operate the generated application using familiar
 Rails practices.
 
-## What Loam provides
+## What OpenLoam provides
 
 ### Secure application foundation
 
@@ -107,9 +107,9 @@ Rails practices.
 - A repeatable golden-task benchmark measures whether agents complete common
   changes without violating architecture or access controls.
 
-## What Loam can be used for
+## What OpenLoam can be used for
 
-Loam is intended for multi-user business software in which permissions,
+OpenLoam is intended for multi-user business software in which permissions,
 traceability, and operational workflows matter. Examples include:
 
 | Product category | Example uses |
@@ -122,17 +122,17 @@ traceability, and operational workflows matter. Examples include:
 | Agency delivery | A repeatable base for building and maintaining client business applications |
 | AI-assisted products | Applications where agents add features or propose controlled changes to business records |
 
-Loam is a foundation, not a finished CRM, ERP, accounting package, or ecommerce
+OpenLoam is a foundation, not a finished CRM, ERP, accounting package, or ecommerce
 product. Those can be built as domain products or reusable packs on top of it.
 
 ## How it works
 
-Loam sits between Rails and the product's business-specific code:
+OpenLoam sits between Rails and the product's business-specific code:
 
 ```text
 Product workflows and domain features
                  ↓
-Loam conventions, security, admin, events, and integrations
+OpenLoam conventions, security, admin, events, and integrations
                  ↓
 Ruby on Rails
 ```
@@ -148,7 +148,7 @@ legible to an AI agent.
 
 ## Why the approach is differentiated
 
-Loam combines three properties that are usually offered separately:
+OpenLoam combines three properties that are usually offered separately:
 
 1. A broad business-application foundation rather than a narrow starter
    template.
@@ -169,7 +169,7 @@ As of 2026-08-22:
   demonstration application.
 - The demo suite passes 454 tests and 1,534 assertions with no failures or
   errors.
-- The generator harness builds fresh Rails applications, installs Loam,
+- The generator harness builds fresh Rails applications, installs OpenLoam,
   generates entities, migrates databases, and exercises the generated result.
 - Recorded golden-task evaluation completed 10 out of 10 tasks without tenant
   isolation or authorization violations; a recorded vanilla-Rails control
@@ -184,7 +184,7 @@ production reliability at scale, or a measurable reduction in delivery cost.
 
 ## Direction
 
-The intended shape is open core: Loam Core stays MIT-licensed and self-hostable,
+The intended shape is open core: OpenLoam Core stays MIT-licensed and self-hostable,
 with room later for optional governance, compliance, and support offerings, a
 managed option for teams that would rather not operate it, and distributable
 domain packs.
@@ -197,7 +197,7 @@ happened.
 
 The roadmap prioritizes validation over feature count:
 
-1. Build one real business process with Loam and AI assistance.
+1. Build one real business process with OpenLoam and AI assistance.
 2. Measure delivery time, human intervention, test outcomes, and architecture
    violations against a credible conventional-Rails baseline.
 3. Use the observed workflow to decide which AI tools and integration surfaces
@@ -223,9 +223,9 @@ complete, it should be treated as a target rather than an achieved result.
 
 ## The bet
 
-Loam is a bet that AI-assisted software delivery needs more than a capable model:
+OpenLoam is a bet that AI-assisted software delivery needs more than a capable model:
 it needs an application foundation designed to make correct implementation
-predictable. If validated, Loam can help product teams and agencies deliver
+predictable. If validated, OpenLoam can help product teams and agencies deliver
 serious business software faster while retaining readable code, human control,
 and security boundaries.
 

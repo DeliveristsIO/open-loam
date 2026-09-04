@@ -3,10 +3,10 @@ require "test_helper"
 # L-924: AES-GCM ciphertext is BOUND to its (tenant, table, column) via AAD (v2
 # format), so a blob can't be transplanted to another column/table/tenant. Old
 # v1 blobs (no AAD) stay readable.
-class LoamEncryptionAadTest < ActiveSupport::TestCase
+class OpenLoamEncryptionAadTest < ActiveSupport::TestCase
   setup do
-    @warsaw = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-aad")
-    @krakow = Loam::Tenant.create!(name: "Branch Krakow", slug: "krakow-aad")
+    @warsaw = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-aad")
+    @krakow = OpenLoam::Tenant.create!(name: "Branch Krakow", slug: "krakow-aad")
   end
 
   def raw(id, column)
@@ -33,7 +33,7 @@ class LoamEncryptionAadTest < ActiveSupport::TestCase
       # Transplant the email blob into the tax_id column.
       Customer.connection.execute("UPDATE customers SET tax_id = #{Customer.connection.quote(email_blob)} WHERE id = #{c.id}")
 
-      error = assert_raises(Loam::Encryption::DecryptionError) { Customer.find(c.id).tax_id }
+      error = assert_raises(OpenLoam::Encryption::DecryptionError) { Customer.find(c.id).tax_id }
       assert_match(/wrong key or corrupt data/, error.message)
       # And it certainly did NOT decrypt to the email's plaintext.
       refute_equal "secret@x.test", (Customer.find(c.id).tax_id rescue nil)
@@ -42,8 +42,8 @@ class LoamEncryptionAadTest < ActiveSupport::TestCase
 
   test "a legacy v1 ciphertext (no AAD) still decrypts — existing data isn't bricked" do
     with_tenant(@warsaw) do
-      key = Loam::Encryption.send(:data_key, "tenant/#{@warsaw.id}", :encryption)
-      v1_blob = Loam::Encryption::Cipher.seal("legacy-value", key) # no aad -> v1
+      key = OpenLoam::Encryption.send(:data_key, "tenant/#{@warsaw.id}", :encryption)
+      v1_blob = OpenLoam::Encryption::Cipher.seal("legacy-value", key) # no aad -> v1
       assert v1_blob.start_with?("v1:")
 
       c = Customer.create!(name: "Old", email: "o@x.test", tax_id: "x")
@@ -55,12 +55,12 @@ class LoamEncryptionAadTest < ActiveSupport::TestCase
 
   test "rotation upgrades a v1 row to v2 (AAD-bound)" do
     with_tenant(@warsaw) do
-      key = Loam::Encryption.send(:data_key, "tenant/#{@warsaw.id}", :encryption)
+      key = OpenLoam::Encryption.send(:data_key, "tenant/#{@warsaw.id}", :encryption)
       c = Customer.create!(name: "Rot", email: "r@x.test", tax_id: "x")
-      Customer.connection.execute("UPDATE customers SET tax_id = #{Customer.connection.quote(Loam::Encryption::Cipher.seal('rotate-me', key))} WHERE id = #{c.id}")
+      Customer.connection.execute("UPDATE customers SET tax_id = #{Customer.connection.quote(OpenLoam::Encryption::Cipher.seal('rotate-me', key))} WHERE id = #{c.id}")
       assert raw(c.id, "tax_id").start_with?("v1:")
 
-      Customer.find(c.id).loam_reencrypt!
+      Customer.find(c.id).open_loam_reencrypt!
 
       assert raw(c.id, "tax_id").start_with?("v2:"), "rotate re-encrypts to v2"
       assert_equal "rotate-me", Customer.find(c.id).tax_id
@@ -75,14 +75,14 @@ class LoamEncryptionAadTest < ActiveSupport::TestCase
       # a different AAD).
       k = Customer.create!(name: "K", email: "k@x.test", tax_id: "x")
       Customer.connection.execute("UPDATE customers SET tax_id = #{Customer.connection.quote(warsaw_blob)} WHERE id = #{k.id}")
-      assert_raises(Loam::Encryption::DecryptionError) { Customer.find(k.id).tax_id }
+      assert_raises(OpenLoam::Encryption::DecryptionError) { Customer.find(k.id).tax_id }
     end
   end
 
   test "the audit trail still redacts encrypted fields (AAD didn't regress redaction)" do
     with_tenant(@warsaw) do
       Customer.create!(name: "Acme", email: "leak@x.test", tax_id: "PL-LEAK")
-      dump = Loam::AuditRecord.where(auditable_type: "Customer").map { |a| a.changeset.to_json }.join
+      dump = OpenLoam::AuditRecord.where(auditable_type: "Customer").map { |a| a.changeset.to_json }.join
       refute_includes dump, "leak@x.test"
       refute_includes dump, "PL-LEAK"
       assert_includes dump, "[encrypted]"

@@ -1,16 +1,16 @@
 require "test_helper"
 
 # Regression tests for the LATER-batch security review (2 HIGH + MEDs + LOWs).
-class LoamSecurityFixesTest < ActiveSupport::TestCase
+class OpenLoamSecurityFixesTest < ActiveSupport::TestCase
   setup do
-    @warsaw = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-sec")
-    @krakow = Loam::Tenant.create!(name: "Branch Krakow", slug: "krakow-sec")
+    @warsaw = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-sec")
+    @krakow = OpenLoam::Tenant.create!(name: "Branch Krakow", slug: "krakow-sec")
     @mgr = User.create!(name: "M", email: "m@example.test", password: "password")
     @emp = User.create!(name: "E", email: "e@example.test", password: "password")
     [ @warsaw, @krakow ].each do |t|
       with_tenant(t) do
-        Loam::Membership.create!(user: @mgr, role: "manager")
-        Loam::Membership.create!(user: @emp, role: "employee")
+        OpenLoam::Membership.create!(user: @mgr, role: "manager")
+        OpenLoam::Membership.create!(user: @emp, role: "employee")
       end
     end
   end
@@ -26,7 +26,7 @@ class LoamSecurityFixesTest < ActiveSupport::TestCase
       assert_equal "open", report.reload.state
 
       # Bulk.set_field on the workflow column — refused (0 affected, unchanged)
-      count = Loam::Bulk.set_field(DamageReport, [ report.id ], field: "state", value: "approved")
+      count = OpenLoam::Bulk.set_field(DamageReport, [ report.id ], field: "state", value: "approved")
       assert_equal 0, count
       assert_equal "open", report.reload.state
 
@@ -40,22 +40,22 @@ class LoamSecurityFixesTest < ActiveSupport::TestCase
 
   # MED 1 — only allowlisted job classes are schedulable.
   test "a non-allowlisted ActiveJob class cannot be scheduled" do
-    saved = Loam.schedulable_jobs
-    Loam.schedulable_jobs = %w[DemoScheduledJob]
+    saved = OpenLoam.schedulable_jobs
+    OpenLoam.schedulable_jobs = %w[DemoScheduledJob]
     with_tenant(@warsaw) do
-      bad = Loam::ScheduledJob.new(key: "purge", name: "x", job_class: "ActiveStorage::PurgeJob", schedule: "0 0 * * *")
+      bad = OpenLoam::ScheduledJob.new(key: "purge", name: "x", job_class: "ActiveStorage::PurgeJob", schedule: "0 0 * * *")
       refute bad.valid?, "a real ActiveJob that isn't allowlisted is refused"
-      assert Loam::ScheduledJob.new(key: "ok", name: "ok", job_class: "DemoScheduledJob", schedule: "0 0 * * *").valid?
+      assert OpenLoam::ScheduledJob.new(key: "ok", name: "ok", job_class: "DemoScheduledJob", schedule: "0 0 * * *").valid?
     end
   ensure
-    Loam.schedulable_jobs = saved
+    OpenLoam.schedulable_jobs = saved
   end
 
   # MED 2 — a failed import row must not persist raw cell values (PII) in the result.
   test "import error rows carry only row + message, never the raw cell values" do
     with_tenant(@warsaw, actor: @mgr) do
       csv = "Desc,State\nSENSITIVE-PII,NOPE\n"  # NOPE fails the state validation
-      result = Loam::Import.run(csv, model: DamageReport, mapping: { "Desc" => "description", "State" => "state" }, actor: @mgr)
+      result = OpenLoam::Import.run(csv, model: DamageReport, mapping: { "Desc" => "description", "State" => "state" }, actor: @mgr)
 
       assert_equal 1, result.failed
       assert_equal %w[row message], result.errors.first.keys, "only row + message"
@@ -65,21 +65,21 @@ class LoamSecurityFixesTest < ActiveSupport::TestCase
 
   # MED 3 — the translates/encrypts guard is order-independent.
   test "translates + encrypts on the same field is refused in BOTH declaration orders" do
-    assert_raises(Loam::Error) do
-      Class.new(Loam::TenantRecord) do
-        self.table_name = "loam_translations"
-        include Loam::Encryptable
-        include Loam::Translatable
+    assert_raises(OpenLoam::Error) do
+      Class.new(OpenLoam::TenantRecord) do
+        self.table_name = "open_loam_translations"
+        include OpenLoam::Encryptable
+        include OpenLoam::Translatable
         translates :value
         encrypts :value          # translates-then-encrypts
       end
     end
 
-    assert_raises(Loam::Error) do
-      Class.new(Loam::TenantRecord) do
-        self.table_name = "loam_translations"
-        include Loam::Encryptable
-        include Loam::Translatable
+    assert_raises(OpenLoam::Error) do
+      Class.new(OpenLoam::TenantRecord) do
+        self.table_name = "open_loam_translations"
+        include OpenLoam::Encryptable
+        include OpenLoam::Translatable
         encrypts :value
         translates :value        # encrypts-then-translates
       end
@@ -90,7 +90,7 @@ class LoamSecurityFixesTest < ActiveSupport::TestCase
   test "a formula-looking cell is neutralized in CSV export" do
     with_tenant(@warsaw, actor: @mgr) do
       Equipment.create!(name: "=HYPERLINK(\"http://evil\")", daily_rate: 1, status: "available")
-      csv = Loam::Export.csv(Equipment.all, actor: @mgr)
+      csv = OpenLoam::Export.csv(Equipment.all, actor: @mgr)
       refute_match(/^=HYPERLINK/, csv, "a leading = is escaped")
       assert_match(/'=HYPERLINK/, csv, "prefixed with a single quote")
     end
@@ -99,13 +99,13 @@ class LoamSecurityFixesTest < ActiveSupport::TestCase
   # LOW 2 — the OpenAPI column fallback never surfaces an encrypted/_hash column.
   test "OpenApi column fallback excludes encrypted and blind-index columns" do
     # Customer has a searchable-encrypted email -> an email_hash blind-index column.
-    fallback = Customer.column_names - Loam::OpenApi.plumbing(Customer) -
-               Customer.loam_encrypted_attributes - Customer.loam_searchable_encrypted_attributes.map { |a| "#{a}_hash" }
+    fallback = Customer.column_names - OpenLoam::OpenApi.plumbing(Customer) -
+               Customer.open_loam_encrypted_attributes - Customer.open_loam_searchable_encrypted_attributes.map { |a| "#{a}_hash" }
     refute_includes fallback, "email_hash", "the blind index is not exposed"
     refute_includes fallback, "email", "the encrypted column is not exposed"
 
     # And the generated document's Customer schema never carries the hash.
-    schema = Loam::OpenApi.document["components"]["schemas"]["Customer"]["properties"]
+    schema = OpenLoam::OpenApi.document["components"]["schemas"]["Customer"]["properties"]
     refute schema.key?("email_hash")
   end
 end
@@ -113,12 +113,12 @@ end
 # Controller-level regressions.
 class AdminSecurityFixesTest < ActionDispatch::IntegrationTest
   setup do
-    @tenant = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-sec-adm")
+    @tenant = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-sec-adm")
     @mgr = User.create!(name: "Anna", email: "anna@example.test", password: "password")
     @emp = User.create!(name: "Tomek", email: "tomek@example.test", password: "password")
     with_tenant(@tenant) do
-      Loam::Membership.create!(user: @mgr, role: "manager")
-      Loam::Membership.create!(user: @emp, role: "employee")
+      OpenLoam::Membership.create!(user: @mgr, role: "manager")
+      OpenLoam::Membership.create!(user: @emp, role: "employee")
     end
   end
 
@@ -128,19 +128,19 @@ class AdminSecurityFixesTest < ActionDispatch::IntegrationTest
 
   # HIGH 1 — a tenant manager can't create a scope:"system" schedule.
   test "a manager's scope:system schedule is forced to tenant" do
-    saved = Loam.schedulable_jobs
-    Loam.schedulable_jobs = %w[DemoScheduledJob]
+    saved = OpenLoam.schedulable_jobs
+    OpenLoam.schedulable_jobs = %w[DemoScheduledJob]
     sign_in("anna@example.test")
 
     post admin_scheduled_jobs_path, params: { scheduled_job: {
       key: "x", name: "x", job_class: "DemoScheduledJob", schedule: "0 3 * * *", scope: "system", active: "1"
     } }
 
-    job = with_tenant(@tenant) { Loam::ScheduledJob.find_by(key: "x") }
+    job = with_tenant(@tenant) { OpenLoam::ScheduledJob.find_by(key: "x") }
     assert job
     assert_equal "tenant", job.scope, "scope is forced to tenant, not the submitted system"
   ensure
-    Loam.schedulable_jobs = saved
+    OpenLoam.schedulable_jobs = saved
   end
 
   # MED 4 — the bulk export branch is manager-gated.
@@ -154,7 +154,7 @@ class AdminSecurityFixesTest < ActionDispatch::IntegrationTest
 
   # LOW 3 — a member can't cancel another user's job.
   test "an employee cannot cancel a job they do not own" do
-    job = with_tenant(@tenant, actor: @mgr) { Loam::Progress.start(name: "mgr job", total: 5) }
+    job = with_tenant(@tenant, actor: @mgr) { OpenLoam::Progress.start(name: "mgr job", total: 5) }
     sign_in("tomek@example.test")
 
     post cancel_admin_progress_job_path(job)

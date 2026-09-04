@@ -4,7 +4,7 @@ inherit_gem: { rubocop-rails-omakase: rubocop.yml }
 # Overwrite or add rules to create your own house style
 
 # Use `[a, [b, c]]` not `[ a, [ b, c ] ]` — matches every generated
-# controller/policy (loam:entity's templates write compact literals) and
+# controller/policy (open_loam:entity's templates write compact literals) and
 # rubocop-rails-omakase's own default (EnforcedStyle: space) fights that.
 Layout/SpaceInsideArrayLiteralBrackets:
   Enabled: false

@@ -1,15 +1,15 @@
 # A CRM sales lead — the SAME primitives that run the rental domain, in a
 # different domain: tenant-scoped, audited, evented, with a role-gated pipeline
-# workflow. Proof that Loam is domain-agnostic (L-501).
-class Lead < Loam::TenantRecord
-  include Loam::Auditable
-  include Loam::Eventful
-  include Loam::CustomFields
-  include Loam::Commentable
-  include Loam::Attachable
-  include Loam::Searchable
-  include Loam::SoftDeletable
-  include Loam::Workflow
+# workflow. Proof that OpenLoam is domain-agnostic (L-501).
+class Lead < OpenLoam::TenantRecord
+  include OpenLoam::Auditable
+  include OpenLoam::Eventful
+  include OpenLoam::CustomFields
+  include OpenLoam::Commentable
+  include OpenLoam::Attachable
+  include OpenLoam::Searchable
+  include OpenLoam::SoftDeletable
+  include OpenLoam::Workflow
 
   belongs_to :company, optional: true
 

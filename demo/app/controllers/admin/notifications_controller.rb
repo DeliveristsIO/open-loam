@@ -1,8 +1,8 @@
 module Admin
   # The bell. Every query here is scoped to the current actor, so there is no
   # "read someone else's notifications" path to authorize and no per-record
-  # policy to write: tenancy is structural (Loam::Notification is a
-  # Loam::TenantRecord) and BaseController has already established that this
+  # policy to write: tenancy is structural (OpenLoam::Notification is a
+  # OpenLoam::TenantRecord) and BaseController has already established that this
   # actor is signed in to this tenant. Recipient scoping is the whole rule.
   class NotificationsController < BaseController
     def index
@@ -17,7 +17,7 @@ module Admin
     private
 
     def notifications
-      Loam::Notification.where(user_id: current_actor.id)
+      OpenLoam::Notification.where(user_id: current_actor.id)
     end
   end
 end

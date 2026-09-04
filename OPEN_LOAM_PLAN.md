@@ -1,15 +1,15 @@
-# Loam — 90-Day Product & Business Plan
+# OpenLoam — 90-Day Product & Business Plan
 
 ## Positioning
 
-**Loam**  
+**OpenLoam**  
 > The Rails foundation for AI-built business software.
 
 Alternative, more sales-oriented:
 
 > Build serious business software. Skip the boilerplate.
 
-Loam should be positioned as:
+OpenLoam should be positioned as:
 
 - a **Rails framework**
 - for **business applications**
@@ -22,7 +22,7 @@ It should **not** start as:
 - an ecommerce engine
 - a low-code platform
 
-Loam should be the foundation for building:
+OpenLoam should be the foundation for building:
 
 - CRM systems
 - ERP-like systems
@@ -38,7 +38,7 @@ Loam should be the foundation for building:
 
 # Core Thesis
 
-Loam should not be “Open Mercato rewritten in Rails”.
+OpenLoam should not be “Open Mercato rewritten in Rails”.
 
 The stronger thesis is:
 
@@ -51,13 +51,13 @@ The product should optimize for two things:
 1. **faster delivery for developers and agencies**
 2. **predictable implementation by AI agents**
 
-The first 90 days should prove that Loam can materially accelerate a real Deliverists project.
+The first 90 days should prove that OpenLoam can materially accelerate a real Deliverists project.
 
 ---
 
 # 90-Day Plan
 
-## Days 1–14 — Loam Core
+## Days 1–14 — OpenLoam Core
 
 Build only the foundation.
 
@@ -110,12 +110,12 @@ The repository should already look like a real product:
 
 ## Days 15–30 — Developer Experience
 
-Developer experience should become one of Loam's main advantages.
+Developer experience should become one of OpenLoam's main advantages.
 
 Target something like:
 
 ```bash
-bin/rails generate loam:resource Opportunity \
+bin/rails generate open_loam:resource Opportunity \
   name:string \
   value:decimal \
   stage:string
@@ -145,13 +145,13 @@ The generator should create as much of the complete business feature as possible
 - notifications
 - actions
 
-The goal is to make the “correct Loam way” the easiest way to implement a feature.
+The goal is to make the “correct OpenLoam way” the easiest way to implement a feature.
 
 ---
 
 ## Days 31–45 — AI Layer
 
-This is where Loam should start differentiating itself from a standard Rails starter kit.
+This is where OpenLoam should start differentiating itself from a standard Rails starter kit.
 
 ### Add
 
@@ -210,7 +210,7 @@ Recommended: **CRM**
 
 The goal is not to compete with HubSpot.
 
-The CRM exists to prove that the Loam primitives work together.
+The CRM exists to prove that the OpenLoam primitives work together.
 
 ### Entities
 
@@ -246,7 +246,7 @@ Keep the module intentionally small.
 
 ## Days 61–75 — Deliverists Dogfooding
 
-Use Loam in a real application.
+Use OpenLoam in a real application.
 
 Preferably:
 
@@ -263,7 +263,7 @@ For every meaningful feature, compare:
 ```text
 Vanilla Rails estimate
 vs
-Loam + AI actual
+OpenLoam + AI actual
 ```
 
 Track:
@@ -277,7 +277,7 @@ Track:
 
 ### Target
 
-Loam should reduce implementation time by at least:
+OpenLoam should reduce implementation time by at least:
 
 > **25–30%**
 
@@ -291,7 +291,7 @@ If it does not save meaningful development time, rethink the architecture before
 
 ## Days 76–90 — Public Launch
 
-Launch Loam publicly.
+Launch OpenLoam publicly.
 
 ### Release
 
@@ -341,11 +341,11 @@ The agent should correctly create:
 - UI
 - tests
 
-This should become one of Loam's strongest product demonstrations.
+This should become one of OpenLoam's strongest product demonstrations.
 
 ---
 
-# Loam Core — V1 Scope
+# OpenLoam Core — V1 Scope
 
 | Area | V1 |
 |---|---|
@@ -386,12 +386,12 @@ Every one of these can become a module later.
 
 # Suggested Repository Structure
 
-Avoid splitting Loam into many gems too early.
+Avoid splitting OpenLoam into many gems too early.
 
 Start with a monorepo and maintain strong internal boundaries.
 
 ```text
-loam/
+open_loam/
 ├── core/
 │   ├── accounts/
 │   ├── identity/
@@ -432,7 +432,7 @@ It is not workflow.
 
 It is:
 
-> **AI can safely modify a Loam application because Loam gives the agent strong conventions.**
+> **AI can safely modify a OpenLoam application because OpenLoam gives the agent strong conventions.**
 
 For a prompt such as:
 
@@ -465,13 +465,13 @@ UI
 tests
 ```
 
-and implement all of them according to Loam conventions.
+and implement all of them according to OpenLoam conventions.
 
-That predictability can become Loam's moat.
+That predictability can become OpenLoam's moat.
 
 ---
 
-# Loam AI Benchmark
+# OpenLoam AI Benchmark
 
 Maintain a permanent set of business-development tasks.
 
@@ -500,7 +500,7 @@ Modify existing workflow
 | Human intervention | decreasing |
 | Development speed vs vanilla Rails | +30–50% |
 
-Do not market speed claims publicly until Loam has enough real measurements to support them.
+Do not market speed claims publicly until OpenLoam has enough real measurements to support them.
 
 ---
 
@@ -508,12 +508,12 @@ Do not market speed claims publicly until Loam has enough real measurements to s
 
 ## Phase 1 — OSS as a Delivery Accelerator
 
-Initially, Loam does not need to monetize the developer community.
+Initially, OpenLoam does not need to monetize the developer community.
 
 The first business model is:
 
 ```text
-Loam OSS
+OpenLoam OSS
     ↓
 GitHub / Rails community
     ↓
@@ -524,7 +524,7 @@ Deliverists
 client implementations
 ```
 
-Loam should make Deliverists:
+OpenLoam should make Deliverists:
 
 - faster
 - more repeatable
@@ -536,9 +536,9 @@ Loam should make Deliverists:
 
 A strong first commercial offer:
 
-## Loam Build Sprint
+## OpenLoam Build Sprint
 
-> We build your internal business platform on Loam in 4–6 weeks.
+> We build your internal business platform on OpenLoam in 4–6 weeks.
 
 Potential projects:
 
@@ -551,11 +551,11 @@ Potential projects:
 
 The client receives custom software.
 
-Loam receives production testing and reusable improvements.
+OpenLoam receives production testing and reusable improvements.
 
 ---
 
-# Phase 2 — Loam Enterprise
+# Phase 2 — OpenLoam Enterprise
 
 Once there are several real installations, introduce enterprise capabilities.
 
@@ -578,8 +578,8 @@ Possible packaging to test:
 
 | Product | Shape |
 |---|---|
-| Loam Core | Free / MIT |
-| Loam Enterprise | Annual subscription |
+| OpenLoam Core | Free / MIT |
+| OpenLoam Enterprise | Annual subscription |
 | Support | Retainer |
 | Implementation | Per project |
 | Architecture / AI customization | Per project |
@@ -610,7 +610,7 @@ Rails agencies may become excellent early adopters.
 
 Pitch:
 
-> Use Loam as the foundation for your client applications.
+> Use OpenLoam as the foundation for your client applications.
 
 Talk to at least:
 
@@ -622,14 +622,14 @@ during the first 90 days.
 
 ## Deliverists Clients
 
-Use Loam in real Deliverists work as early as possible.
+Use OpenLoam in real Deliverists work as early as possible.
 
 That is the best validation loop:
 
 ```text
 client work
     ↓
-Loam improvements
+OpenLoam improvements
     ↓
 open source
     ↓
@@ -639,7 +639,7 @@ inbound leads
     ↓
 enterprise projects
     ↓
-Loam improvements
+OpenLoam improvements
 ```
 
 ---
@@ -648,17 +648,17 @@ Loam improvements
 
 | KPI | Goal |
 |---|---:|
-| Applications built with Loam | 2 |
+| Applications built with OpenLoam | 2 |
 | Real client project | ≥ 1 |
 | Development time reduction | ≥ 30% |
 | Golden AI tasks | ≥ 20 |
 | AI task completion | ≥ 80% |
-| External developers installing Loam | 10+ |
+| External developers installing OpenLoam | 10+ |
 | Rails agency interviews | 15–20 |
 | Design partners | 3–5 |
-| Paid Loam-based project | ≥ 1 |
+| Paid OpenLoam-based project | ≥ 1 |
 
-One company paying for a real Loam-based implementation is more valuable than 1,000 GitHub stars.
+One company paying for a real OpenLoam-based implementation is more valuable than 1,000 GitHub stars.
 
 ---
 
@@ -666,7 +666,7 @@ One company paying for a real Loam-based implementation is more valuable than 1,
 
 After 90–120 days, answer three questions.
 
-## 1. Does Loam accelerate development?
+## 1. Does OpenLoam accelerate development?
 
 Target:
 
@@ -676,7 +676,7 @@ If not, stop expanding features and fix the foundation.
 
 ---
 
-## 2. Can an external Rails developer use Loam without Deliverists support?
+## 2. Can an external Rails developer use OpenLoam without Deliverists support?
 
 If not:
 
@@ -687,9 +687,9 @@ If not:
 
 ---
 
-## 3. Does anyone outside Deliverists want to build a real application with Loam?
+## 3. Does anyone outside Deliverists want to build a real application with OpenLoam?
 
-If not, Loam may still be valuable as an internal accelerator.
+If not, OpenLoam may still be valuable as an internal accelerator.
 
 That outcome can still make business sense if it materially improves how
 Deliverists delivers client work.
@@ -698,7 +698,7 @@ Deliverists delivers client work.
 
 # First Technical Milestone
 
-The first Loam milestone should not be CRM.
+The first OpenLoam milestone should not be CRM.
 
 Start with:
 
@@ -712,7 +712,7 @@ AuditEvent
 
 Then define the first end-to-end AI benchmark:
 
-> **An agent receives the prompt “Add Companies to Loam” and independently builds a complete tenant-aware, permission-aware, audited CRUD with tests.**
+> **An agent receives the prompt “Add Companies to OpenLoam” and independently builds a complete tenant-aware, permission-aware, audited CRUD with tests.**
 
 Expected output:
 
@@ -728,7 +728,7 @@ Expected output:
 - API
 - tests
 
-If Loam can make this workflow extremely reliable, it has the beginnings of a defensible product.
+If OpenLoam can make this workflow extremely reliable, it has the beginnings of a defensible product.
 
 ---
 
@@ -737,7 +737,7 @@ If Loam can make this workflow extremely reliable, it has the beginnings of a de
 ## Week 1
 
 - create repository
-- define Loam conventions
+- define OpenLoam conventions
 - implement Organization
 - implement User
 - implement Membership
@@ -775,8 +775,8 @@ If Loam can make this workflow extremely reliable, it has the beginnings of a de
 
 For every feature, ask:
 
-> **Does this make Loam better at building business software repeatedly and predictably?**
+> **Does this make OpenLoam better at building business software repeatedly and predictably?**
 
 If the answer is no, it probably does not belong in the core.
 
-Loam should remain small at the center and extensible at the edges.
+OpenLoam should remain small at the center and extensible at the edges.

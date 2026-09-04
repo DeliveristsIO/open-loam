@@ -7,7 +7,7 @@
       "message": "Unsafe reflection method `safe_constantize` called on parameter value",
       "file": "app/controllers/admin/comments_controller.rb",
       "line": 30,
-      "note": "safe_constantize's result is checked immediately after: `klass.is_a?(Class) && klass < Loam::TenantRecord && klass.include?(Loam::Commentable)`, raising Loam::NotAuthorizedError otherwise. Brakeman can't see the runtime allowlist check that follows; this is the same guarded pattern used by history_controller.rb and record_locks_controller.rb (see their ignore entries below)."
+      "note": "safe_constantize's result is checked immediately after: `klass.is_a?(Class) && klass < OpenLoam::TenantRecord && klass.include?(OpenLoam::Commentable)`, raising OpenLoam::NotAuthorizedError otherwise. Brakeman can't see the runtime allowlist check that follows; this is the same guarded pattern used by history_controller.rb and record_locks_controller.rb (see their ignore entries below)."
     },
     {
       "warning_type": "Remote Code Execution",
@@ -16,7 +16,7 @@
       "message": "Unsafe reflection method `safe_constantize` called on parameter value",
       "file": "app/controllers/admin/history_controller.rb",
       "line": 31,
-      "note": "safe_constantize's result is checked immediately after: `raise Loam::NotAuthorizedError unless klass.is_a?(Class) && klass < Loam::TenantRecord`. Only a real Loam entity class can ever be returned to the caller; anything else raises before it's used."
+      "note": "safe_constantize's result is checked immediately after: `raise OpenLoam::NotAuthorizedError unless klass.is_a?(Class) && klass < OpenLoam::TenantRecord`. Only a real OpenLoam entity class can ever be returned to the caller; anything else raises before it's used."
     },
     {
       "warning_type": "Remote Code Execution",
@@ -25,7 +25,7 @@
       "message": "Unsafe reflection method `safe_constantize` called on parameter value",
       "file": "app/controllers/admin/record_locks_controller.rb",
       "line": 10,
-      "note": "safe_constantize's result is checked immediately after: `raise Loam::NotAuthorizedError unless klass && klass < Loam::TenantRecord`, and the action itself is already gated to managers only (`before_action { require_role!(:manager) }`)."
+      "note": "safe_constantize's result is checked immediately after: `raise OpenLoam::NotAuthorizedError unless klass && klass < OpenLoam::TenantRecord`, and the action itself is already gated to managers only (`before_action { require_role!(:manager) }`)."
     },
     {
       "warning_type": "Mass Assignment",
@@ -34,7 +34,7 @@
       "message": "Potentially dangerous key allowed for mass assignment",
       "file": "app/controllers/admin/perspectives_controller.rb",
       "line": 81,
-      "note": "`:role` here is Loam::Perspective#role — which membership role a SAVED VIEW (filters/sort/columns) is shared with, not the current user's own role. `authorize_manage!` already restricts update to the view's owner (always) or a manager (for shared views); the model docs and controller comments confirm an owner reassigning their own view's sharing audience is the intended behavior, not a privilege escalation. Brakeman flags the attribute name `:role` heuristically regardless of what it actually controls."
+      "note": "`:role` here is OpenLoam::Perspective#role — which membership role a SAVED VIEW (filters/sort/columns) is shared with, not the current user's own role. `authorize_manage!` already restricts update to the view's owner (always) or a manager (for shared views); the model docs and controller comments confirm an owner reassigning their own view's sharing audience is the intended behavior, not a privilege escalation. Brakeman flags the attribute name `:role` heuristically regardless of what it actually controls."
     },
     {
       "warning_type": "HTTP Verb Confusion",

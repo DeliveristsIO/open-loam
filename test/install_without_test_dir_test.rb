@@ -2,7 +2,7 @@ require "test_helper"
 
 # Regression: `rails new --skip-test` produces an app with no test/test_helper.rb.
 #
-# loam:install wires its helpers into that file, and it does so after it has
+# open_loam:install wires its helpers into that file, and it does so after it has
 # already written migrations, models and the whole admin surface. When that
 # injection assumed the file existed, the generator died at the last step and
 # left a half-installed app behind — the worst possible outcome, because the
@@ -13,7 +13,7 @@ require "test_helper"
 class InstallWithoutTestDirTest < HarnessCase
   REQUIRED_AFTER_INSTALL = %w[
     AGENTS.md
-    config/initializers/loam.rb
+    config/initializers/open_loam.rb
     app/models/user.rb
     app/controllers/admin/base_controller.rb
     app/controllers/admin/sessions_controller.rb
@@ -23,17 +23,17 @@ class InstallWithoutTestDirTest < HarnessCase
   ].freeze
 
   def test_install_completes_in_an_app_generated_without_a_test_directory
-    app = build_app(name: "loam_no_test_app", extra_flags: %w[--skip-test])
+    app = build_app(name: "open_loam_no_test_app", extra_flags: %w[--skip-test])
 
     refute File.exist?(File.join(app, "test/test_helper.rb")),
            "this app was supposed to be built with --skip-test, but it has a test_helper.rb — " \
            "the regression it guards against cannot happen and the test proves nothing"
 
-    install = step("rails g loam:install (no test dir)", "bin/rails g loam:install", app)
+    install = step("rails g open_loam:install (no test dir)", "bin/rails g open_loam:install", app)
 
     missing = REQUIRED_AFTER_INSTALL.reject { |f| File.file?(File.join(app, f)) }
     assert_empty missing,
-                 "loam:install stopped early and left a half-installed app — missing: #{missing.join(', ')}" \
+                 "open_loam:install stopped early and left a half-installed app — missing: #{missing.join(', ')}" \
                  "#{install.failure_report}"
 
     # Proof the generator took the guarded path rather than quietly getting
@@ -41,10 +41,10 @@ class InstallWithoutTestDirTest < HarnessCase
     # that used to be fatal), and it did not invent a test_helper.rb to inject
     # into. Asserted as state rather than as the warning's wording, which is
     # free to change.
-    assert File.file?(File.join(app, "test/loam_guardrails_test.rb")),
+    assert File.file?(File.join(app, "test/open_loam_guardrails_test.rb")),
            "the guardrail test was not written, so install stopped before it#{install.failure_report}"
     refute File.exist?(File.join(app, "test/test_helper.rb")),
-           "loam:install fabricated a test_helper.rb in an app that opted out of tests#{install.failure_report}"
+           "open_loam:install fabricated a test_helper.rb in an app that opted out of tests#{install.failure_report}"
 
     migrations = Dir[File.join(app, "db/migrate/*.rb")]
     assert_equal 28, migrations.size,

@@ -1,27 +1,27 @@
-module Loam
+module OpenLoam
   # A registered external system allowed to POST webhooks INTO this tenant — the
-  # inbound sibling of Loam::WebhookEndpoint (which delivers events OUT). The
+  # inbound sibling of OpenLoam::WebhookEndpoint (which delivers events OUT). The
   # `token` is the unguessable URL id (`/webhooks/:token`) that identifies the
   # source; the `secret` is the HMAC key that AUTHENTICATES each call. Identity is
   # not authority: rotating either is supported from the admin.
   #
-  # On a verified delivery, Loam publishes `event_name` onto the domain event bus
-  # with a reference to the stored Loam::InboundWebhookDelivery, so durable
-  # subscribers (Loam::DurableEvents) react — the payload itself lives on the row.
-  class InboundWebhookSource < Loam::TenantRecord
-    self.table_name = "loam_inbound_webhook_sources"
+  # On a verified delivery, OpenLoam publishes `event_name` onto the domain event bus
+  # with a reference to the stored OpenLoam::InboundWebhookDelivery, so durable
+  # subscribers (OpenLoam::DurableEvents) react — the payload itself lives on the row.
+  class InboundWebhookSource < OpenLoam::TenantRecord
+    self.table_name = "open_loam_inbound_webhook_sources"
 
-    DEFAULT_SIGNATURE_HEADER = "X-Loam-Signature".freeze
+    DEFAULT_SIGNATURE_HEADER = "X-OpenLoam-Signature".freeze
     DEFAULT_TOLERANCE = 300 # seconds
 
-    has_many :deliveries, class_name: "Loam::InboundWebhookDelivery",
+    has_many :deliveries, class_name: "OpenLoam::InboundWebhookDelivery",
                           foreign_key: :source_id, dependent: :destroy, inverse_of: :source
 
     validates :name, presence: true
     validates :token, presence: true, uniqueness: true
     validates :secret, presence: true
     validates :event_name, presence: true,
-              format: { with: Loam::Events::NAME_FORMAT, message: "must follow domain.thing.happened" }
+              format: { with: OpenLoam::Events::NAME_FORMAT, message: "must follow domain.thing.happened" }
 
     scope :active, -> { where(active: true) }
 
@@ -32,9 +32,9 @@ module Loam
       self.active = true if active.nil?
     end
 
-    # THE blessed cross-tenant lookup (see Loam::ApiToken.authenticate): a public
+    # THE blessed cross-tenant lookup (see OpenLoam::ApiToken.authenticate): a public
     # inbound request arrives with no tenant context — the token in the URL is how
-    # it discovers its tenant. Establishes Loam::Current.tenant (never an actor:
+    # it discovers its tenant. Establishes OpenLoam::Current.tenant (never an actor:
     # the sender is a machine, not a user) and returns the ACTIVE source, or nil.
     def self.resolve(raw_token)
       return nil if raw_token.blank?
@@ -42,7 +42,7 @@ module Loam
       source = unscoped.find_by(token: raw_token)
       return nil unless source&.active?
 
-      Loam::Current.tenant = source.tenant
+      OpenLoam::Current.tenant = source.tenant
       source
     end
 

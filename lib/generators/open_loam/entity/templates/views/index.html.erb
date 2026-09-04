@@ -1,59 +1,59 @@
 <h1><%%= <%= class_name %>.model_name.human(count: 2) %></h1>
 
 <%% if @index_partial %>
-  <p style="color:#b00"><%%= t("loam.index.incomplete") %></p>
+  <p style="color:#b00"><%%= t("open_loam.index.incomplete") %></p>
 <%% end %>
 
 <p>
-  <%%= link_to t("loam.actions.new", name: <%= class_name %>.model_name.human), new_polymorphic_path([:admin, <%= class_name %>]) %>
-  <%%= link_to t("loam.actions.deleted", name: <%= class_name %>.model_name.human(count: 2)), polymorphic_path([:deleted, :admin, <%= class_name %>]) %>
+  <%%= link_to t("open_loam.actions.new", name: <%= class_name %>.model_name.human), new_polymorphic_path([:admin, <%= class_name %>]) %>
+  <%%= link_to t("open_loam.actions.deleted", name: <%= class_name %>.model_name.human(count: 2)), polymorphic_path([:deleted, :admin, <%= class_name %>]) %>
   <%% if current_role == :manager %>
-    <%%= link_to t("loam.actions.export_csv"), url_for(action: :export, **current_index_params) %>
-    <%%= link_to t("loam.actions.import_csv"), new_admin_import_path(entity_type: "<%= class_name %>") %>
+    <%%= link_to t("open_loam.actions.export_csv"), url_for(action: :export, **current_index_params) %>
+    <%%= link_to t("open_loam.actions.import_csv"), new_admin_import_path(entity_type: "<%= class_name %>") %>
   <%% end %>
 </p>
 
-<%%# Saved views (Loam::Perspectives): pick one to apply, or save the current one. %>
+<%%# Saved views (OpenLoam::Perspectives): pick one to apply, or save the current one. %>
 <%% if @perspectives.any? %>
   <%%= form_with url: [:admin, <%= class_name %>], method: :get do %>
     <%%= select_tag :perspective_id,
-          options_for_select([[t("loam.views.all", name: <%= class_name %>.model_name.human(count: 2)), "none"]] + @perspectives.map { |p| [p.name, p.id] }, @perspective&.id),
+          options_for_select([[t("open_loam.views.all", name: <%= class_name %>.model_name.human(count: 2)), "none"]] + @perspectives.map { |p| [p.name, p.id] }, @perspective&.id),
           onchange: "this.form.submit()" %>
-    <%%= link_to t("loam.views.manage"), admin_perspectives_path(entity_type: "<%= class_name %>") %>
+    <%%= link_to t("open_loam.views.manage"), admin_perspectives_path(entity_type: "<%= class_name %>") %>
   <%% end %>
 <%% else %>
-  <p><%%= link_to t("loam.views.manage_saved"), admin_perspectives_path(entity_type: "<%= class_name %>") %></p>
+  <p><%%= link_to t("open_loam.views.manage_saved"), admin_perspectives_path(entity_type: "<%= class_name %>") %></p>
 <%% end %>
 
 <%%= form_with url: admin_perspectives_path, method: :post do %>
   <%%= hidden_field_tag :entity_type, "<%= class_name %>" %>
   <%%= hidden_field_tag :q, params[:q] %>
-  <%%= text_field_tag :name, nil, placeholder: t("loam.views.name_placeholder") %>
-  <%%= submit_tag t("loam.views.save_current") %>
+  <%%= text_field_tag :name, nil, placeholder: t("open_loam.views.name_placeholder") %>
+  <%%= submit_tag t("open_loam.views.save_current") %>
 <%% end %>
 <% if searchable_attributes.any? -%>
 
 <%%= form_with url: [:admin, <%= class_name %>], method: :get do |f| %>
-  <%%= text_field_tag :q, params[:q], placeholder: t("loam.views.filter_placeholder", name: <%= class_name %>.model_name.human(count: 2)) %>
-  <%%= f.submit t("loam.actions.filter") %>
+  <%%= text_field_tag :q, params[:q], placeholder: t("open_loam.views.filter_placeholder", name: <%= class_name %>.model_name.human(count: 2)) %>
+  <%%= f.submit t("open_loam.actions.filter") %>
 <%% end %>
 <% end -%>
 
-<%%# Bulk actions on selected rows (Loam::Bulk). Zero selection = no-op; each
+<%%# Bulk actions on selected rows (OpenLoam::Bulk). Zero selection = no-op; each
     action is policy-checked per record server-side. %>
 <%%= form_with url: url_for(action: :bulk), method: :post do %>
   <p>
-    <%%= select_tag :bulk_action, options_for_select([[t("loam.bulk.delete_selected"), "soft_delete"], [t("loam.bulk.set_field"), "set_field"], [t("loam.bulk.export_selected"), "export"]]) %>
+    <%%= select_tag :bulk_action, options_for_select([[t("open_loam.bulk.delete_selected"), "soft_delete"], [t("open_loam.bulk.set_field"), "set_field"], [t("open_loam.bulk.export_selected"), "export"]]) %>
     <%%= select_tag :field, options_for_select(%i[<%= field_names.join(" ") %>]) %>
-    <%%= text_field_tag :value, nil, placeholder: t("loam.bulk.new_value") %>
-    <%%= submit_tag t("loam.bulk.apply"), data: { turbo_confirm: t("loam.bulk.confirm") } %>
+    <%%= text_field_tag :value, nil, placeholder: t("open_loam.bulk.new_value") %>
+    <%%= submit_tag t("open_loam.bulk.apply"), data: { turbo_confirm: t("open_loam.bulk.confirm") } %>
   </p>
 
   <table>
     <thead>
       <tr>
         <th><input type="checkbox" onclick="document.querySelectorAll('.bulk-select').forEach(function(c){c.checked=this.checked}.bind(this))"></th>
-        <th><%%= t("loam.labels.id") %></th>
+        <th><%%= t("open_loam.labels.id") %></th>
 <% attributes.each do |attribute| -%>
         <th><%%= sort_link("<%= attribute.name %>", <%= class_name %>.human_attribute_name("<%= attribute.name %>")) %></th>
 <% end -%>
@@ -69,8 +69,8 @@
           <td><%%= record.<%= attribute.name %> %></td>
 <% end -%>
           <td>
-            <%%= link_to t("loam.actions.show"), [:admin, record] %>
-            <%%= link_to t("loam.actions.edit"), edit_polymorphic_path([:admin, record]) %>
+            <%%= link_to t("open_loam.actions.show"), [:admin, record] %>
+            <%%= link_to t("open_loam.actions.edit"), edit_polymorphic_path([:admin, record]) %>
           </td>
         </tr>
       <%% end %>
@@ -81,10 +81,10 @@
 <%%# Page links carry the full filter state, or page 2 would quietly drop it. %>
 <p>
   <%% if @page > 1 %>
-    <%%= link_to t("loam.pagination.previous"), polymorphic_path([:admin, <%= class_name %>], **current_index_params, page: @page - 1) %>
+    <%%= link_to t("open_loam.pagination.previous"), polymorphic_path([:admin, <%= class_name %>], **current_index_params, page: @page - 1) %>
   <%% end %>
-  <%%= t("loam.pagination.page", page: @page) %>
+  <%%= t("open_loam.pagination.page", page: @page) %>
   <%% if @has_next %>
-    <%%= link_to t("loam.pagination.next"), polymorphic_path([:admin, <%= class_name %>], **current_index_params, page: @page + 1) %>
+    <%%= link_to t("open_loam.pagination.next"), polymorphic_path([:admin, <%= class_name %>], **current_index_params, page: @page + 1) %>
   <%% end %>
 </p>

@@ -1,17 +1,17 @@
 require "test_helper"
 
 # Concurrent-edit safety: optimistic locking (lock_version) is the guarantee,
-# advisory Loam::RecordLocks the courtesy.
-class LoamRecordLockTest < ActiveSupport::TestCase
+# advisory OpenLoam::RecordLocks the courtesy.
+class OpenLoamRecordLockTest < ActiveSupport::TestCase
   setup do
-    @warsaw = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-lock")
-    @krakow = Loam::Tenant.create!(name: "Branch Krakow", slug: "krakow-lock")
+    @warsaw = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-lock")
+    @krakow = OpenLoam::Tenant.create!(name: "Branch Krakow", slug: "krakow-lock")
     @anna = User.create!(name: "Anna", email: "anna@example.test", password: "password")
     @bob = User.create!(name: "Bob", email: "bob@example.test", password: "password")
 
     with_tenant(@warsaw) do
-      Loam::Membership.create!(user: @anna, role: "manager")
-      Loam::Membership.create!(user: @bob, role: "employee")
+      OpenLoam::Membership.create!(user: @anna, role: "manager")
+      OpenLoam::Membership.create!(user: @bob, role: "employee")
     end
   end
 
@@ -32,19 +32,19 @@ class LoamRecordLockTest < ActiveSupport::TestCase
     with_tenant(@warsaw) do
       equipment = Equipment.create!(name: "Digger", daily_rate: 100, status: "available")
 
-      assert Loam::RecordLocks.acquire(equipment, by: @anna)
-      assert_nil Loam::RecordLocks.acquire(equipment, by: @bob), "Bob is blocked while Anna holds it"
-      assert_equal @anna.id, Loam::RecordLocks.holder(equipment).id
+      assert OpenLoam::RecordLocks.acquire(equipment, by: @anna)
+      assert_nil OpenLoam::RecordLocks.acquire(equipment, by: @bob), "Bob is blocked while Anna holds it"
+      assert_equal @anna.id, OpenLoam::RecordLocks.holder(equipment).id
     end
   end
 
   test "a heartbeat by the same holder extends the TTL" do
     with_tenant(@warsaw) do
       equipment = Equipment.create!(name: "Digger", daily_rate: 100, status: "available")
-      first = Loam::RecordLocks.acquire(equipment, by: @anna).expires_at
+      first = OpenLoam::RecordLocks.acquire(equipment, by: @anna).expires_at
 
       travel 1.minute do
-        assert Loam::RecordLocks.acquire(equipment, by: @anna).expires_at > first, "re-acquiring extends the lock"
+        assert OpenLoam::RecordLocks.acquire(equipment, by: @anna).expires_at > first, "re-acquiring extends the lock"
       end
     end
   end
@@ -52,18 +52,18 @@ class LoamRecordLockTest < ActiveSupport::TestCase
   test "an expired lock is free; release and manager force-release both clear it" do
     with_tenant(@warsaw) do
       equipment = Equipment.create!(name: "Digger", daily_rate: 100, status: "available")
-      Loam::RecordLocks.acquire(equipment, by: @anna)
+      OpenLoam::RecordLocks.acquire(equipment, by: @anna)
 
       travel 6.minutes do
-        assert Loam::RecordLocks.acquire(equipment, by: @bob), "Bob may take an expired lock"
-        assert_equal @bob.id, Loam::RecordLocks.holder(equipment).id
+        assert OpenLoam::RecordLocks.acquire(equipment, by: @bob), "Bob may take an expired lock"
+        assert_equal @bob.id, OpenLoam::RecordLocks.holder(equipment).id
 
-        Loam::RecordLocks.release(equipment, by: @bob)
-        assert_nil Loam::RecordLocks.holder(equipment)
+        OpenLoam::RecordLocks.release(equipment, by: @bob)
+        assert_nil OpenLoam::RecordLocks.holder(equipment)
 
-        Loam::RecordLocks.acquire(equipment, by: @bob)
-        Loam::RecordLocks.force_release(equipment) # manager override
-        assert_nil Loam::RecordLocks.holder(equipment)
+        OpenLoam::RecordLocks.acquire(equipment, by: @bob)
+        OpenLoam::RecordLocks.force_release(equipment) # manager override
+        assert_nil OpenLoam::RecordLocks.holder(equipment)
       end
     end
   end
@@ -71,24 +71,24 @@ class LoamRecordLockTest < ActiveSupport::TestCase
   test "a lock auto-frees when its record is soft-deleted" do
     with_tenant(@warsaw) do
       equipment = Equipment.create!(name: "Digger", daily_rate: 100, status: "available")
-      Loam::RecordLocks.acquire(equipment, by: @anna)
+      OpenLoam::RecordLocks.acquire(equipment, by: @anna)
 
       equipment.soft_delete!
 
-      assert_nil Loam::RecordLocks.holder(equipment), "the lock is gone with the record"
-      assert_equal 0, Loam::RecordLock.where(lockable_type: "Equipment", lockable_id: equipment.id).count
+      assert_nil OpenLoam::RecordLocks.holder(equipment), "the lock is gone with the record"
+      assert_equal 0, OpenLoam::RecordLock.where(lockable_type: "Equipment", lockable_id: equipment.id).count
     end
   end
 
   test "record locks are tenant-isolated" do
     warsaw_id = with_tenant(@warsaw) do
       equipment = Equipment.create!(name: "Digger", daily_rate: 100, status: "available")
-      Loam::RecordLocks.acquire(equipment, by: @anna)
+      OpenLoam::RecordLocks.acquire(equipment, by: @anna)
       equipment.id
     end
 
     with_tenant(@krakow) do
-      assert_equal 0, Loam::RecordLock.count, "Warsaw's lock is invisible from Krakow"
+      assert_equal 0, OpenLoam::RecordLock.count, "Warsaw's lock is invisible from Krakow"
     end
   end
 end
@@ -96,13 +96,13 @@ end
 # The optimistic-conflict web flow and the advisory-lock take-over.
 class AdminRecordLockFlowTest < ActionDispatch::IntegrationTest
   setup do
-    @tenant = Loam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-lock-flow")
+    @tenant = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-lock-flow")
     @anna = User.create!(name: "Anna", email: "anna@example.test", password: "password")
     @tomek = User.create!(name: "Tomek", email: "tomek@example.test", password: "password")
 
     with_tenant(@tenant) do
-      Loam::Membership.create!(user: @anna, role: "manager")
-      Loam::Membership.create!(user: @tomek, role: "employee")
+      OpenLoam::Membership.create!(user: @anna, role: "manager")
+      OpenLoam::Membership.create!(user: @tomek, role: "employee")
       @excavator = Equipment.create!(name: "Excavator", daily_rate: 900, status: "available")
     end
   end
@@ -145,7 +145,7 @@ class AdminRecordLockFlowTest < ActionDispatch::IntegrationTest
   test "a manager sees the lock banner for another editor and can take over; an employee cannot" do
     sign_in(@tomek)
     get edit_polymorphic_path([:admin, @excavator]) # Tomek acquires the lock
-    assert_equal @tomek.id, with_tenant(@tenant) { Loam::RecordLocks.holder(@excavator).id }
+    assert_equal @tomek.id, with_tenant(@tenant) { OpenLoam::RecordLocks.holder(@excavator).id }
 
     sign_in(@anna)
     get edit_polymorphic_path([:admin, @excavator])
@@ -154,11 +154,11 @@ class AdminRecordLockFlowTest < ActionDispatch::IntegrationTest
 
     delete admin_record_lock_path(lockable_type: "Equipment", lockable_id: @excavator.id)
     assert_response :redirect
-    assert_nil with_tenant(@tenant) { Loam::RecordLocks.holder(@excavator) }, "the manager force-released it"
+    assert_nil with_tenant(@tenant) { OpenLoam::RecordLocks.holder(@excavator) }, "the manager force-released it"
   end
 
   test "an employee cannot force-release, and a non-entity lockable_type is refused" do
-    with_tenant(@tenant) { Loam::RecordLocks.acquire(@excavator, by: @anna) }
+    with_tenant(@tenant) { OpenLoam::RecordLocks.acquire(@excavator, by: @anna) }
 
     sign_in(@tomek)
     delete admin_record_lock_path(lockable_type: "Equipment", lockable_id: @excavator.id)

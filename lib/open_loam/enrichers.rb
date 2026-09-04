@@ -1,14 +1,14 @@
-module Loam
+module OpenLoam
   # Response enrichers: one module attaches a computed block onto ANOTHER
   # module's entity in admin/API responses, with no foreign-key coupling.
   #
   #   # billing knows about equipment; equipment knows nothing about billing:
-  #   Loam::Enrichers.register("Equipment", key: "outstanding_balance") do |equipment|
+  #   OpenLoam::Enrichers.register("Equipment", key: "outstanding_balance") do |equipment|
   #     Invoice.where(equipment_id: equipment.id).sum(:balance)
   #   end
   #
-  #   Loam::Enrichers.enrich(equipment)        # => { "outstanding_balance" => 1200 }
-  #   Loam::Enrichers.enrich_many(equipments)  # => { id => { key => value }, ... }
+  #   OpenLoam::Enrichers.enrich(equipment)        # => { "outstanding_balance" => 1200 }
+  #   OpenLoam::Enrichers.enrich_many(equipments)  # => { id => { key => value }, ... }
   #
   # Distinct from custom fields: a custom field is STORED on the record; an
   # enricher is COMPUTED at read time by different (possibly cross-module) code.
@@ -97,7 +97,7 @@ module Loam
 
       def warn_failure(enricher, error)
         Rails.logger&.warn(
-          "[Loam::Enrichers] #{enricher.entity_type}/#{enricher.key} raised #{error.class}: #{error.message} — key omitted"
+          "[OpenLoam::Enrichers] #{enricher.entity_type}/#{enricher.key} raised #{error.class}: #{error.message} — key omitted"
         )
       end
     end

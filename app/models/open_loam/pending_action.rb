@@ -1,21 +1,21 @@
-module Loam
+module OpenLoam
   # A staged mutation awaiting human approval. When a caller runs under
-  # confirm-mode (an MCP tool acting for an AI agent — see Loam.mutation_mode), a
+  # confirm-mode (an MCP tool acting for an AI agent — see OpenLoam.mutation_mode), a
   # write is staged HERE as a preview instead of committing; a manager approves
-  # or rejects, and only approval executes it. This is Loam's thesis made
+  # or rejects, and only approval executes it. This is OpenLoam's thesis made
   # concrete: agent-triggered writes are gate-able.
   #
-  # The approval gate IS a workflow (Loam::Workflow): pending → (manager) approve
+  # The approval gate IS a workflow (OpenLoam::Workflow): pending → (manager) approve
   # / reject → executed / failed. "Who may approve" lives in one declarative,
-  # role-gated place. The proposed changes are encrypted at rest (Loam::Encryptable),
+  # role-gated place. The proposed changes are encrypted at rest (OpenLoam::Encryptable),
   # because a staged change to an encrypted target field would otherwise sit here
   # — and in this row's own audit — as plaintext, reopening the leak L-901 closed.
-  class PendingAction < Loam::TenantRecord
-    self.table_name = "loam_pending_actions"
+  class PendingAction < OpenLoam::TenantRecord
+    self.table_name = "open_loam_pending_actions"
 
-    include Loam::Auditable
-    include Loam::Encryptable
-    include Loam::Workflow
+    include OpenLoam::Auditable
+    include OpenLoam::Encryptable
+    include OpenLoam::Workflow
 
     belongs_to :actor, class_name: "User", optional: true
     belongs_to :reviewer, class_name: "User", foreign_key: :reviewed_by_id, optional: true
@@ -96,7 +96,7 @@ module Loam
     # write; the record ends "executed" or "failed". Executes as `by`, so the
     # TARGET's audit names the approving human — the person owns the change.
     def approve!(by:)
-      Loam.as_tenant(tenant, actor: by) do
+      OpenLoam.as_tenant(tenant, actor: by) do
         reject_self_approval!(by)
         self.reviewed_by_id = by.id
         self.reviewed_at = Time.current
@@ -107,7 +107,7 @@ module Loam
     end
 
     def reject!(by:, reason: nil)
-      Loam.as_tenant(tenant, actor: by) do
+      OpenLoam.as_tenant(tenant, actor: by) do
         self.reviewed_by_id = by.id
         self.reviewed_at = Time.current
         self.result = [ "rejected", reason.presence ].compact.join(": ")
@@ -126,9 +126,9 @@ module Loam
     # withdrawal, not a segregation-of-duties concern.)
     def reject_self_approval!(by)
       return unless by.id == actor_id
-      return if Loam::Configs.get("approvals.allow_self_approve", default: false)
+      return if OpenLoam::Configs.get("approvals.allow_self_approve", default: false)
 
-      raise Loam::NotAuthorizedError, "self-approval is not permitted; a different person must approve this change"
+      raise OpenLoam::NotAuthorizedError, "self-approval is not permitted; a different person must approve this change"
     end
 
     # Execution AND its status/result recording share ONE transaction with the
@@ -163,7 +163,7 @@ module Loam
         target.respond_to?(:soft_delete!) ? target.soft_delete! : target.destroy!
         "deleted #{target_type}##{target_id}"
       else
-        raise Loam::Error, "unknown action_type #{action_type.inspect}"
+        raise OpenLoam::Error, "unknown action_type #{action_type.inspect}"
       end
     end
 
@@ -178,31 +178,31 @@ module Loam
     end
 
     def encrypted_target_fields
-      return [] unless target_class.respond_to?(:loam_encrypted_attributes)
+      return [] unless target_class.respond_to?(:open_loam_encrypted_attributes)
 
-      target_class.loam_encrypted_attributes.map(&:to_s)
+      target_class.open_loam_encrypted_attributes.map(&:to_s)
     end
 
     # Set while a workflow transition is performing its save, so the validation
     # below can tell a legitimate status move from a direct assignment.
-    def loam_perform_transition!(transition)
-      @loam_status_via_transition = true
+    def open_loam_perform_transition!(transition)
+      @open_loam_status_via_transition = true
       super
     ensure
-      @loam_status_via_transition = false
+      @open_loam_status_via_transition = false
     end
 
     def status_changes_only_through_a_transition
       return unless will_save_change_to_status?
-      return if @loam_status_via_transition
+      return if @open_loam_status_via_transition
 
       errors.add(:status, "may only change through an approval transition (approve!/reject!), not a direct write")
     end
 
     def status_starts_at_the_initial_state
-      return if status == self.class.loam_workflow.initial
+      return if status == self.class.open_loam_workflow.initial
 
-      errors.add(:status, "must start at #{self.class.loam_workflow.initial.inspect} — a staged action begins pending")
+      errors.add(:status, "must start at #{self.class.open_loam_workflow.initial.inspect} — a staged action begins pending")
     end
   end
 end

@@ -1,7 +1,7 @@
-class CreateLoamPerspectives < ActiveRecord::Migration[8.1]
+class CreateOpenLoamPerspectives < ActiveRecord::Migration[8.1]
   def change
-    create_table :loam_perspectives do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }
+    create_table :open_loam_perspectives do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :open_loam_tenants }
       t.string :entity_type, null: false        # which entity this view is for
       t.string :name, null: false               # human label
       t.bigint :owner_id                         # the user who owns a private view
@@ -12,6 +12,6 @@ class CreateLoamPerspectives < ActiveRecord::Migration[8.1]
       t.integer :lock_version, null: false, default: 0  # optimistic locking
       t.timestamps
     end
-    add_index :loam_perspectives, %i[tenant_id entity_type]
+    add_index :open_loam_perspectives, %i[tenant_id entity_type]
   end
 end

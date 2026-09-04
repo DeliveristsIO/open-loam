@@ -1,24 +1,24 @@
 module Admin
-  # Recurring schedules (Loam::ScheduledJob) — manager-only. List/create/edit/
+  # Recurring schedules (OpenLoam::ScheduledJob) — manager-only. List/create/edit/
   # delete a tenant's schedules, toggle active, and "run now". The runner
-  # (`loam:scheduler:tick`, wired to system cron) is what fires them on schedule.
+  # (`open_loam:scheduler:tick`, wired to system cron) is what fires them on schedule.
   class ScheduledJobsController < BaseController
     before_action { require_role!(:manager) }
     before_action :set_job, only: %i[edit update destroy run_now]
 
     def index
-      @jobs = Loam::ScheduledJob.order(:key)
+      @jobs = OpenLoam::ScheduledJob.order(:key)
     end
 
     def new
-      @job = Loam::ScheduledJob.new(scope: "tenant", active: true, schedule: "0 3 * * *")
+      @job = OpenLoam::ScheduledJob.new(scope: "tenant", active: true, schedule: "0 3 * * *")
     end
 
     def create
       # scope is forced to "tenant": a tenant admin must never create a
       # "system" schedule (which would run with no tenant context). System
       # schedules are created only by the app/console.
-      @job = Loam::ScheduledJob.new(job_params.merge(scope: "tenant"))
+      @job = OpenLoam::ScheduledJob.new(job_params.merge(scope: "tenant"))
       @job.next_run_at ||= safe_next_run(@job)
       if @job.save
         redirect_to admin_scheduled_jobs_path, notice: "Schedule created."
@@ -45,14 +45,14 @@ module Admin
     end
 
     def run_now
-      Loam::Scheduler.run_now(@job)
+      OpenLoam::Scheduler.run_now(@job)
       redirect_to admin_scheduled_jobs_path, notice: "#{@job.name} enqueued."
     end
 
     private
 
     def set_job
-      @job = Loam::ScheduledJob.find(params[:id])
+      @job = OpenLoam::ScheduledJob.find(params[:id])
     end
 
     def job_params

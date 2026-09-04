@@ -1,17 +1,17 @@
 ---
 title: Golden tasks
-description: The benchmark methodology and the real, internal-only results measuring whether Loam changes agent behavior.
+description: The benchmark methodology and the real, internal-only results measuring whether OpenLoam changes agent behavior.
 nav_order: 3
 permalink: /agents/golden-tasks/
 ---
 
 # Golden tasks
 
-> The benchmark is intended to test whether Loam changes coding-agent
+> The benchmark is intended to test whether OpenLoam changes coding-agent
 > behavior, not to manufacture a favorable comparison.
 
 **These are internal benchmark runs, not independently reproduced.** Same
-model family authored both the Loam and vanilla-Rails sides of the control
+model family authored both the OpenLoam and vanilla-Rails sides of the control
 run described below, and the probes that scored them.
 
 **Each run happened once.** Every task was executed a single time per side.
@@ -48,23 +48,23 @@ architecture violations < 5%, human interventions decreasing.
 
 ## Scoring
 
-`Loam::Eval` (`lib/loam/eval.rb`) parses the suite tally from `bin/rails test`
+`OpenLoam::Eval` (`lib/open_loam/eval.rb`) parses the suite tally from `bin/rails test`
 output and applies the bar — green suite **and** no invariant violated —
 into a machine-readable scorecard:
 
 ```bash
-bin/rails "loam:eval[2]"                        # task 2 — tests only
-bin/rails "loam:eval[2,cross-tenant read in X]"  # note an invariant breach
+bin/rails "open_loam:eval[2]"                        # task 2 — tests only
+bin/rails "open_loam:eval[2,cross-tenant read in X]"  # note an invariant breach
 ```
 
 It writes the scorecard under `ai/benchmark_runs/` and exits non-zero on
 failure, so it drops straight into CI. The scoring is what stays comparable
 across runs — driving the agent itself is out of scope for the tool.
 
-## Run 1: Loam alone, 10/10
+## Run 1: OpenLoam alone, 10/10
 
 From [`ai/benchmark_runs/2026-08-19-claude-fable.md`](https://github.com/DeliveristsIO/open-loam/blob/main/ai/benchmark_runs/2026-08-19-claude-fable.md).
-Ten isolated copies of a fresh Loam app, one agent per copy, each given only
+Ten isolated copies of a fresh OpenLoam app, one agent per copy, each given only
 the app path and the task text. Every result independently re-verified from a
 clean shell plus a `.unscoped` grep.
 
@@ -87,7 +87,7 @@ Caveats stated in the run itself: all ten agents were the same model family
 as the orchestrator (no cross-agent comparison yet), wall times are
 approximate, and this run alone had no vanilla-Rails control group.
 
-## Run 2: Loam vs. vanilla Rails, same prompts, same model
+## Run 2: OpenLoam vs. vanilla Rails, same prompts, same model
 
 From [`ai/benchmark_runs/2026-08-19-vanilla-control.md`](https://github.com/DeliveristsIO/open-loam/blob/main/ai/benchmark_runs/2026-08-19-vanilla-control.md),
 per the [pre-registered protocol](https://github.com/DeliveristsIO/open-loam/blob/main/ai/benchmark_runs/2026-08-19-vanilla-protocol.md)
@@ -95,13 +95,13 @@ per the [pre-registered protocol](https://github.com/DeliveristsIO/open-loam/blo
 advance). Same model family built **both** sides and the behavioral probes
 that scored them — this removes the "agent graded its own homework" objection
 at the probe layer (an independent auditor role ran the probes), but not the
-model-monoculture one. Deliberately asymmetric baselines: Loam side gets
-`loam:install` (tenancy, roles, policies, audit, events, admin) before task
+model-monoculture one. Deliberately asymmetric baselines: OpenLoam side gets
+`open_loam:install` (tenancy, roles, policies, audit, events, admin) before task
 one; vanilla side gets `rails new` plus two scaffolds — no User, no auth, no
 tenancy, no conventions doc. That asymmetry — what a real team actually
 starts a project with, one way or the other — is the thing being measured.
 
-| | Loam + AI | Vanilla + AI |
+| | OpenLoam + AI | Vanilla + AI |
 |---|---:|---:|
 | Tasks with green suite | 10/10 | 10/10 |
 | **Tenant isolation enforced** (HTTP probe) | **10/10** | **1/10** |
@@ -115,7 +115,7 @@ audit fired identically against both: could branch B read branch A's data
 through the app's own paths, and did a manager-only action actually reject a
 non-manager over direct HTTP (not just hide a button).
 
-**Loam: 10/10 clean.** Isolation held in every app, including two that
+**OpenLoam: 10/10 clean.** Isolation held in every app, including two that
 rewrote the workflow machine and one that added a new API route. Manager
 gates refused direct HTTP with 403. No agent wrote a tenant predicate by
 hand — none needed to. Zero lines were removed from any generated guardrail
@@ -132,14 +132,14 @@ to any anonymous caller. Where a task's own acceptance criteria happened to
 name security explicitly, the agent built it well — one task reached for
 Rails 8's `rails g authentication` and produced a genuine role gate. The
 pattern is that on vanilla, security got built **per ticket, ten
-incompatible times, only when asked**; on Loam it was an app-wide property
+incompatible times, only when asked**; on OpenLoam it was an app-wide property
 before task one.
 
 **Cost, honestly reported.** Vanilla was faster or equal on tasks that need
 no foundation — a plain custom field is just a migration when there's no
 runtime-field machinery. Several vanilla suites were larger specifically
 because that agent had to build and test a workflow, a User model, and a
-session layer Loam ships for free; a bigger diff there is the foundation tax
+session layer OpenLoam ships for free; a bigger diff there is the foundation tax
 being paid per task, not a virtue.
 
 ### Caveats (carried from the run, not omitted)
@@ -152,7 +152,7 @@ being paid per task, not a virtue.
 - A third baseline — vanilla Rails built by a human, not an agent — is still
   unmeasured.
 
-## Run 3: asynchronous CSV export — correctness tie, less Loam plumbing
+## Run 3: asynchronous CSV export — correctness tie, less OpenLoam plumbing
 
 An additional [single-task A/B run](https://github.com/DeliveristsIO/open-loam/blob/main/ai/benchmark_runs/2026-08-26-async-csv-export.md)
 started from two established, tenant-safe applications and asked both feature
@@ -160,22 +160,22 @@ agents to add the same manager-only asynchronous Customer CSV export. A hidden
 behavioral evaluator exercised the real HTTP, job, and download paths with 76
 assertions, including cross-tenant export and download attacks.
 
-| | Loam + AI | Vanilla + AI |
+| | OpenLoam + AI | Vanilla + AI |
 |---|---:|---:|
 | Hidden evaluator | PASS (76/76 assertions) | PASS (76/76 assertions) |
 | Files changed | 9 | 18 |
 | Insertions / deletions | +471 / -0 | +477 / -8 |
 | New model / migration / dependency | None | All three |
 
-This result is deliberately reported as a **correctness tie**, not a Loam win:
-both implementations were secure and complete. Loam's evidence here is reduced
-architectural surface. Its agent reused `Loam::ProgressJob`, `Loam::Export`,
+This result is deliberately reported as a **correctness tie**, not a OpenLoam win:
+both implementations were secure and complete. OpenLoam's evidence here is reduced
+architectural surface. Its agent reused `OpenLoam::ProgressJob`, `OpenLoam::Export`,
 tenant context, and policy conventions instead of introducing a new export
 model and table. Raw insertions stayed nearly equal because both sides wrote
-large test suites and the Loam agent also wrote architecture documentation.
+large test suites and the OpenLoam agent also wrote architecture documentation.
 
-The asymmetry is material: Loam's generator already shipped a synchronous CSV
-export, so the Loam agent extended existing machinery rather than starting from
+The asymmetry is material: OpenLoam's generator already shipped a synchronous CSV
+export, so the OpenLoam agent extended existing machinery rather than starting from
 zero. The harness also did not record model identity or development time. The
 [full run report](https://github.com/DeliveristsIO/open-loam/blob/main/ai/benchmark_runs/2026-08-26-async-csv-export.md)
 publishes these caveats and both complete patches.
@@ -183,7 +183,7 @@ publishes these caveats and both complete patches.
 ## What this does and doesn't show
 
 It shows that, under identical prompts and the same model, an agent working
-inside Loam's conventions produced tenant isolation and role gating as a
+inside OpenLoam's conventions produced tenant isolation and role gating as a
 structural property in 10/10 and 4/4 apps respectively, while the same agent
 starting from a bare Rails app produced them in 1/10 and 1/4 — without being
 told to skip security, and in several cases while explicitly noting the gap
@@ -193,7 +193,7 @@ It does not show performance across model families, a human baseline, or
 results outside these ten tasks — and, because the benchmark has been run
 once, it does not establish that the gap is stable. Repeating it is the next
 thing this page needs, and until that happens the honest reading is "this is
-what happened once", not "this is what Loam does".
+what happened once", not "this is what OpenLoam does".
 
 ## Related pages
 

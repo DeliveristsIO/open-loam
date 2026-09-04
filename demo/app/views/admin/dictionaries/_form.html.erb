@@ -1,4 +1,4 @@
-<%# Loam::Dictionary is namespaced, so pin the URL + param scope. %>
+<%# OpenLoam::Dictionary is namespaced, so pin the URL + param scope. %>
 <%= form_with model: @dictionary, scope: :dictionary,
       url: (@dictionary.persisted? ? admin_dictionary_path(@dictionary) : admin_dictionaries_path) do |f| %>
   <% if @dictionary.errors.any? %>

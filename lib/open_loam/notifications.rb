@@ -1,14 +1,14 @@
-module Loam
+module OpenLoam
   # The one way to tell someone something inside the app.
   #
-  #   Loam::Notifications.notify(user, title: "Order approved", source: order)
-  #   Loam::Notifications.notify_role(:manager, title: "New damage report")
+  #   OpenLoam::Notifications.notify(user, title: "Order approved", source: order)
+  #   OpenLoam::Notifications.notify_role(:manager, title: "New damage report")
   #
-  # Records land in the CURRENT tenant (Loam::Notification is tenant-scoped),
+  # Records land in the CURRENT tenant (OpenLoam::Notification is tenant-scoped),
   # so a notification can never be delivered across a tenant boundary.
   #
   # The intended pattern is event -> notification: subscribe to a domain event
-  # in config/initializers/loam.rb and notify from there, instead of scattering
+  # in config/initializers/open_loam.rb and notify from there, instead of scattering
   # delivery calls through models and controllers.
   module Notifications
     # Returns the created notifications. Accepts one user or many; `source` is

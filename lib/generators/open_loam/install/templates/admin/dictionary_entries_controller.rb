@@ -1,5 +1,5 @@
 module Admin
-  # Entries of a Loam::Dictionary — manager-only, nested under a dictionary.
+  # Entries of a OpenLoam::Dictionary — manager-only, nested under a dictionary.
   # Add / edit (value, label, color, icon, position, default, active) / delete;
   # reordering is by editing `position`.
   class DictionaryEntriesController < BaseController
@@ -33,7 +33,7 @@ module Admin
     private
 
     def set_dictionary
-      @dictionary = Loam::Dictionary.find(params[:dictionary_id])
+      @dictionary = OpenLoam::Dictionary.find(params[:dictionary_id])
     end
 
     def set_entry

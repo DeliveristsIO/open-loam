@@ -1,8 +1,8 @@
-module Loam
+module OpenLoam
   module Generators
-    # Shared primary-key shaping for `loam:install` and `loam:entity`.
+    # Shared primary-key shaping for `open_loam:install` and `open_loam:entity`.
     #
-    # Loam's migrations used to spell every key `bigint` — implicitly in
+    # OpenLoam's migrations used to spell every key `bigint` — implicitly in
     # `create_table`, and explicitly in `t.references` and the polymorphic
     # `*_id` columns. In an app whose own tables use string or uuid keys the
     # foreign keys then do not line up with the tables they point at, and every
@@ -10,7 +10,7 @@ module Loam
     #
     # The key type is taken from, in order: an explicit --primary-key-type, the
     # host app's own `config.generators` setting (so an app that already told
-    # Rails what its keys look like does not have to tell Loam separately), and
+    # Rails what its keys look like does not have to tell OpenLoam separately), and
     # bigint as the Rails default.
     #
     # The templates ask for the *rendered fragment* rather than the type, so
@@ -34,15 +34,15 @@ module Loam
 
       private
 
-      def loam_key_type
-        @loam_key_type ||= begin
+      def open_loam_key_type
+        @open_loam_key_type ||= begin
           requested = (options[:primary_key_type] || host_app_primary_key_type).to_s
           requested = "bigint" if requested.empty?
 
           unless SUPPORTED.include?(requested)
             raise Thor::Error,
-                  "Unsupported --primary-key-type #{requested.inspect}. Loam generates #{SUPPORTED.join(', ')}. " \
-                  "A key type Loam does not know how to size would produce migrations that look right and " \
+                  "Unsupported --primary-key-type #{requested.inspect}. OpenLoam generates #{SUPPORTED.join(', ')}. " \
+                  "A key type OpenLoam does not know how to size would produce migrations that look right and " \
                   "do not line up with your tables."
           end
 
@@ -60,40 +60,40 @@ module Loam
         nil
       end
 
-      def loam_key_limit
+      def open_loam_key_limit
         return options[:key_limit].to_i if options[:key_limit]
 
-        loam_key_type == :string ? DEFAULT_STRING_LIMIT : nil
+        open_loam_key_type == :string ? DEFAULT_STRING_LIMIT : nil
       end
 
       # Appended to `create_table :x` — "" for bigint, so the default path is
       # byte-for-byte what it was.
-      def loam_id_option
-        return "" if loam_key_type == :bigint
+      def open_loam_id_option
+        return "" if open_loam_key_type == :bigint
 
-        "#{loam_key_fragment.sub('type:', 'id:')}"
+        "#{open_loam_key_fragment.sub('type:', 'id:')}"
       end
 
       # Appended inside `t.references :x, ...`.
-      def loam_type_option
-        return "" if loam_key_type == :bigint
+      def open_loam_type_option
+        return "" if open_loam_key_type == :bigint
 
-        loam_key_fragment
+        open_loam_key_fragment
       end
 
       # The bare column type for a polymorphic or un-constrained `*_id`, which
       # cannot use t.references.
-      def loam_key_column_type
-        loam_key_type
+      def open_loam_key_column_type
+        open_loam_key_type
       end
 
-      def loam_key_limit_option
-        loam_key_limit ? ", limit: #{loam_key_limit}" : ""
+      def open_loam_key_limit_option
+        open_loam_key_limit ? ", limit: #{open_loam_key_limit}" : ""
       end
 
-      def loam_key_fragment
-        fragment = ", type: :#{loam_key_type}"
-        fragment += ", limit: #{loam_key_limit}" if loam_key_limit
+      def open_loam_key_fragment
+        fragment = ", type: :#{open_loam_key_type}"
+        fragment += ", limit: #{open_loam_key_limit}" if open_loam_key_limit
         fragment
       end
     end
