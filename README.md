@@ -8,6 +8,8 @@ safely extend, with human-approval gates before any agent write takes effect.
 
 **The fertile Rails foundation where AI agents grow business software.**
 
+📖 **Documentation: [deliveristsio.github.io/open-loam/](https://deliveristsio.github.io/open-loam/)**
+
 ---
 
 ## Why Loam exists
@@ -151,23 +153,23 @@ bin/rails server          # → http://localhost:3000/admin
 Sign in as `anna@example.com` (manager in both branches, so she gets the tenant
 picker) or `tomek@example.com` (Warsaw only) — password `password123` for both.
 
-**New here? Start with the [Getting Started walkthrough](docs/_guides/getting-started.md)** —
+**New here? Start with the [Getting Started walkthrough](https://deliveristsio.github.io/open-loam/getting-started/)** —
 it builds a multi-tenant feature from `rails new` to a working approval flow,
 showing the real commands and exactly what you *didn't* have to write.
 
 - [**Architecture map**](https://claude.ai/code/artifact/949311d3-5e14-4f07-a8ad-7b1bb5bd87ad) — a visual tour: the module graph, a request lifecycle, the event flow
-- [Getting started](docs/_guides/getting-started.md) — hands-on, install to first feature
+- [Getting started](https://deliveristsio.github.io/open-loam/getting-started/) — hands-on, install to first feature
 - [Overview](OVERVIEW.md) — plain-language product, use cases, evidence, and risks
-- [Concept & positioning](docs/_guides/concept.md)
-- [How Loam works](docs/_foundation/overview.md) — the diagrams above + how every pillar is built
-- [Tenant isolation](docs/_foundation/tenant-isolation.md) & [Authorization](docs/_foundation/authorization.md) — the two flagship guarantees, in depth
-- [Agents](docs/_agents/) — the agent contract, guardrails, the golden-tasks benchmark, and subsystem deep-dives (encryption, SSO, scheduler, events, inbound webhooks, bulk, confirm-mode)
-- [Reference](docs/_reference/) — configuration, generators, backward compatibility
+- [Concept & positioning](https://deliveristsio.github.io/open-loam/concept/)
+- [How Loam works](https://deliveristsio.github.io/open-loam/foundation/overview/) — the diagrams above + how every pillar is built
+- [Tenant isolation](https://deliveristsio.github.io/open-loam/foundation/tenant-isolation/) & [Authorization](https://deliveristsio.github.io/open-loam/foundation/authorization/) — the two flagship guarantees, in depth
+- [Agents](https://deliveristsio.github.io/open-loam/agents/) — the agent contract, guardrails, the golden-tasks benchmark, and subsystem deep-dives (encryption, SSO, scheduler, events, inbound webhooks, bulk, confirm-mode)
+- Reference — [configuration](https://deliveristsio.github.io/open-loam/reference/configuration/), [generators](https://deliveristsio.github.io/open-loam/reference/generators/), [backward compatibility](https://deliveristsio.github.io/open-loam/reference/compatibility/)
 - [Roadmap](ROADMAP.md) — ordered backlog, Mercato-informed
 - [Backward-compatibility contract](BACKWARD_COMPATIBILITY.md) — the frozen public surfaces
-- [Architecture decisions](docs/_adr/) & [lessons](ai/lessons.md) — why things are the way they are, and the gotchas
+- [Architecture decisions](https://deliveristsio.github.io/open-loam/adr/) & [lessons](ai/lessons.md) — why things are the way they are, and the gotchas
 - [Agent pack](.loam/agents/) — everything an AI agent should load to extend a Loam app correctly
-- [Manifesto](docs/_guides/manifesto.md)
+- [Manifesto](https://deliveristsio.github.io/open-loam/manifesto/)
 - [Contributing](CONTRIBUTING.md)
 
 ---
