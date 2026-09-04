@@ -103,14 +103,20 @@ GitHub's OIDC token is exchanged for short-lived credentials, so no API key
 exists on anyone's machine or in repo secrets.
 
 ```bash
-# 1. bump lib/loam/version.rb and add the release to CHANGELOG.md
-# 2. refresh the demo's lockfile — it pins the path gem by version, and CI
-#    bundles frozen, so a stale lock fails the demo job with exit 16
-(cd demo && bundle install)
-# 3. commit lib/loam/version.rb, CHANGELOG.md and demo/Gemfile.lock, then:
+rake bump[0.2.0]     # version constant + demo/Gemfile.lock, together
+# add the 0.2.0 entry to CHANGELOG.md, then:
+git add lib/loam/version.rb CHANGELOG.md demo/Gemfile.lock
+git commit -m "chore(release): 0.2.0"
 git tag -a v0.2.0 -m "Loam 0.2.0"
 git push --follow-tags
 ```
+
+`rake bump` exists because the version constant and `demo/Gemfile.lock` have to
+move together: the demo depends on the gem through `path: ".."`, so the lock
+records it *by version*, and CI bundles the demo frozen. Bumping one without the
+other fails the demo job with a bare `exit 16`. CI cannot repair this for you —
+the tag is pushed in the same breath as the commit, so anything CI committed
+afterwards would land past the tag.
 
 `.github/workflows/release.yml` then re-runs the harness against the tagged
 commit and publishes. It re-runs deliberately: `ci.yml` only covers pushes to
