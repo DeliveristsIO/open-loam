@@ -16,6 +16,11 @@ docs/.jekyll-cache/
 docs/.bundle/
 docs/vendor/
 
+# demo app secrets — the demo needs no credentials, and a committed master.key
+# is a key in public history the moment this repo is open.
+demo/config/master.key
+demo/config/credentials.yml.enc
+
 # demo app runtime artifacts
 demo/log/*
 demo/tmp/*
