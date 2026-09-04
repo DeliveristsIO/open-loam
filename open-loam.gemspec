@@ -9,21 +9,26 @@ Gem::Specification.new do |spec|
                      "permissions, audit trails, a domain event bus, an admin surface) and ships the agent " \
                      "conventions (AGENTS.md, generators as the interface, structural guardrails) that make " \
                      "the codebase safe for AI agents to extend."
-  spec.homepage    = "https://github.com/DeliveristsIO/open-loam"
+  # The docs site is the homepage; the repository is a separate link. Pointing
+  # both at GitHub made RubyGems drop one of them and warn about it.
+  spec.homepage    = "https://deliveristsio.github.io/open-loam/"
   spec.license     = "MIT"
   spec.required_ruby_version = ">= 3.2"
 
+  repository = "https://github.com/DeliveristsIO/open-loam"
+
   spec.metadata = {
     "homepage_uri" => spec.homepage,
-    "source_code_uri" => spec.homepage,
-    "changelog_uri" => "#{spec.homepage}/releases",
+    "source_code_uri" => repository,
+    "changelog_uri" => "#{repository}/blob/main/CHANGELOG.md",
+    "bug_tracker_uri" => "#{repository}/issues",
     "rubygems_mfa_required" => "true"
   }
 
   # app/ is the engine's own code (Loam::Tenant, Membership, AuditRecord,
   # FieldDefinition). Omitting it packages a gem that works from a path: source
   # and breaks the moment anyone installs the release.
-  spec.files = Dir["{app,lib}/**/*", "LICENSE", "README.md"]
+  spec.files = Dir["{app,lib}/**/*", "LICENSE", "README.md", "CHANGELOG.md"]
 
   spec.add_dependency "rails", ">= 7.1"
   # `loam:install` generates a User with has_secure_password, so password

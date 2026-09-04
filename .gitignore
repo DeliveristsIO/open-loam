@@ -16,6 +16,9 @@ docs/.jekyll-cache/
 docs/.bundle/
 docs/vendor/
 
+# built gem artifacts (`gem build`) — released to RubyGems, not committed
+*.gem
+
 # demo app secrets — the demo needs no credentials, and a committed master.key
 # is a key in public history the moment this repo is open.
 demo/config/master.key
