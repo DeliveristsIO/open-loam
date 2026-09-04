@@ -29,10 +29,10 @@ class GeneratorSmokeTest < HarnessCase
   # Migrations are timestamped, so match by the part the generator controls.
   INSTALL_MIGRATIONS = %w[
     create_users
-    create_loam_tenants
-    create_loam_memberships
-    create_loam_audit_records
-    create_loam_field_definitions
+    create_open_loam_tenants
+    create_open_loam_memberships
+    create_open_loam_audit_records
+    create_open_loam_field_definitions
   ].freeze
 
   ENTITY_ARTIFACTS = %w[
@@ -49,7 +49,7 @@ class GeneratorSmokeTest < HarnessCase
 
   ENTITY_COMMAND = "bin/rails g open_loam:entity Gadget name:string price:decimal --domain lab"
 
-  def test_loam_installs_into_a_brand_new_rails_app_and_leaves_it_green
+  def test_open_loam_installs_into_a_brand_new_rails_app_and_leaves_it_green
     app = build_app
 
     # (a) install

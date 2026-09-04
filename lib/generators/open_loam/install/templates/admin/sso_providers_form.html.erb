@@ -3,7 +3,7 @@
 <%% end %>
 
 <%# The model is namespaced (OpenLoam::SsoProvider), so an inferred URL/param-scope
-    would be admin_loam_sso_provider_path / open_loam_sso_provider[...]. Pin both to
+    would be admin_open_loam_sso_provider_path / open_loam_sso_provider[...]. Pin both to
     the un-namespaced route and the "sso_provider" key the controller permits. %>
 <%%= form_with model: @provider, scope: :sso_provider,
       url: (@provider.persisted? ? admin_sso_provider_path(@provider) : admin_sso_providers_path) do |f| %>

@@ -10,6 +10,6 @@ class CreateOpenLoamTranslations < ActiveRecord::Migration[8.1]
       t.timestamps
     end
     add_index :open_loam_translations, %i[translatable_type translatable_id locale field],
-              unique: true, name: "index_loam_translations_unique"
+              unique: true, name: "index_open_loam_translations_unique"
   end
 end

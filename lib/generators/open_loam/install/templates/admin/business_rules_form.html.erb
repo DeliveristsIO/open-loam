@@ -3,7 +3,7 @@
 <%% end %>
 
 <%# The model is namespaced (OpenLoam::BusinessRule), so an inferred URL/param-scope
-    would be admin_loam_business_rule_path / open_loam_business_rule[...]. Pin both to
+    would be admin_open_loam_business_rule_path / open_loam_business_rule[...]. Pin both to
     the un-namespaced route and the "business_rule" key the controller permits. %>
 <%%= form_with model: @rule, scope: :business_rule,
       url: (@rule.persisted? ? admin_business_rule_path(@rule) : admin_business_rules_path) do |f| %>

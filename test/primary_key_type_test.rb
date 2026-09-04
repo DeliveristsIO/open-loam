@@ -17,7 +17,7 @@ class PrimaryKeyTypeTest < HarnessCase
 
     step("rails g open_loam:install", "bin/rails g open_loam:install", app)
 
-    body = File.read(migration(app, "create_loam_audit_records"))
+    body = File.read(migration(app, "create_open_loam_audit_records"))
     assert_match(/create_table :open_loam_audit_records, id: :string, limit: 36 do/, body,
                  "the table itself still declares a bigint key:\n#{body}")
     assert_match(/t\.references :tenant,.*type: :string, limit: 36/, body,

@@ -10,6 +10,6 @@ class CreateOpenLoamFieldDefinitions < ActiveRecord::Migration[<%= ActiveRecord:
       t.json :config, null: false, default: {}  # type-specific settings (e.g. a dictionary field's key)
       t.timestamps
     end
-    add_index :open_loam_field_definitions, %i[tenant_id entity_type name], unique: true, name: "index_loam_field_definitions_on_tenant_entity_name"
+    add_index :open_loam_field_definitions, %i[tenant_id entity_type name], unique: true, name: "index_open_loam_field_definitions_on_tenant_entity_name"
   end
 end

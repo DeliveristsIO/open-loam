@@ -8,6 +8,6 @@ class CreateOpenLoamFieldDefinitions < ActiveRecord::Migration[8.1]
       t.json :writable_roles, default: [], null: false
       t.timestamps
     end
-    add_index :open_loam_field_definitions, %i[tenant_id entity_type name], unique: true, name: "index_loam_field_definitions_on_tenant_entity_name"
+    add_index :open_loam_field_definitions, %i[tenant_id entity_type name], unique: true, name: "index_open_loam_field_definitions_on_tenant_entity_name"
   end
 end

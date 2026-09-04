@@ -8,7 +8,7 @@ module OpenLoam
     # else is refused — no `send` of arbitrary methods, no SQL, no eval.
     module Condition
       OPS = %w[eq neq gt gte lt lte in contains present blank].freeze
-      REFUSED = :__loam_field_refused__
+      REFUSED = :__open_loam_field_refused__
 
       def self.matches?(node, record)
         node = node.is_a?(Hash) ? node : {}

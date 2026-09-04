@@ -17,12 +17,12 @@ module OpenLoam
   # Integer keys take the early return, so nothing changes for the default app.
   module GeneratedKey
     def self.included(base)
-      base.before_create :assign_loam_generated_key
+      base.before_create :assign_open_loam_generated_key
     end
 
     private
 
-    def assign_loam_generated_key
+    def assign_open_loam_generated_key
       key = self.class.primary_key
       return if key.nil?             # a join table declared with id: false
       return if self[key].present?   # the caller chose the key

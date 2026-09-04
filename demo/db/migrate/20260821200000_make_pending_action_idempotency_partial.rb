@@ -4,6 +4,6 @@ class MakePendingActionIdempotencyPartial < ActiveRecord::Migration[8.1]
     # the same key may coexist, so a rejected proposal can be re-staged later.
     remove_index :open_loam_pending_actions, column: %i[tenant_id idempotency_key], unique: true
     add_index :open_loam_pending_actions, %i[tenant_id idempotency_key], unique: true,
-              where: "status = 'pending'", name: "index_loam_pending_actions_pending_key"
+              where: "status = 'pending'", name: "index_open_loam_pending_actions_pending_key"
   end
 end

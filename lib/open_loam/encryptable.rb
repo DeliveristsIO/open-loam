@@ -64,7 +64,7 @@ module OpenLoam
         self.open_loam_searchable_encrypted_attributes = (open_loam_searchable_encrypted_attributes + [name]).freeze if searchable
 
         include open_loam_encryption_reader_writer(name, searchable, scope)
-        define_loam_blind_index_finder(name) if searchable
+        define_open_loam_blind_index_finder(name) if searchable
       end
 
       # Reader/writer live in their own module (the OpenLoam::Workflow precedent) so
@@ -97,7 +97,7 @@ module OpenLoam
       # deliberately shadow Active Record's dynamic `find_by_<attr>`: the obvious
       # call must hash-and-compare, never match a plaintext query against the
       # ciphertext column (which would silently find nothing).
-      def define_loam_blind_index_finder(name)
+      def define_open_loam_blind_index_finder(name)
         hash_column = "#{name}_hash"
 
         define_singleton_method("where_#{name}") do |value|

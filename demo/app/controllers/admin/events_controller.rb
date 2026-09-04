@@ -1,7 +1,7 @@
 module Admin
   # Server-Sent Events: a per-tenant push stream (OpenLoam::EventStream) so the admin
   # updates live instead of polling. Authentication runs in the normal
-  # before_action chain (set_loam_context) BEFORE any stream write — so an
+  # before_action chain (set_open_loam_context) BEFORE any stream write — so an
   # unauthenticated request redirects to login the ordinary way, since no headers
   # have been committed yet. Once the loop starts writing, the response is
   # committed and there is no going back; that ordering is the whole safety of a

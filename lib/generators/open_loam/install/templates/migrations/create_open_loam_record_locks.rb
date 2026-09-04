@@ -11,6 +11,6 @@ class CreateOpenLoamRecordLocks < ActiveRecord::Migration[<%= ActiveRecord::VERS
     end
     # One advisory lock per record.
     add_index :open_loam_record_locks, %i[tenant_id lockable_type lockable_id], unique: true,
-              name: "index_loam_record_locks_on_lockable"
+              name: "index_open_loam_record_locks_on_lockable"
   end
 end

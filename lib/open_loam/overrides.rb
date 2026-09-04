@@ -19,7 +19,7 @@ module OpenLoam
   # doesn't wrap those. Controllers/views/routes are NOT here — that's Rails'
   # path-shadowing job (see docs).
   module Overrides
-    DISABLED = :__loam_disabled__
+    DISABLED = :__open_loam_disabled__
 
     class << self
       def disable(registry, key)

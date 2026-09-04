@@ -13,9 +13,9 @@ class CreateOpenLoamConfigs < ActiveRecord::Migration[8.1]
 
     # One global row per key (partial: only where there is no tenant).
     add_index :open_loam_configs, :key, unique: true, where: "tenant_id IS NULL",
-              name: "index_loam_configs_global_key"
+              name: "index_open_loam_configs_global_key"
     # One override row per key per tenant.
     add_index :open_loam_configs, %i[key tenant_id], unique: true,
-              name: "index_loam_configs_on_key_and_tenant"
+              name: "index_open_loam_configs_on_key_and_tenant"
   end
 end

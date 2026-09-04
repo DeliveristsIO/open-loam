@@ -4,7 +4,7 @@ module Admin
 
     layout "admin"
 
-    before_action :set_loam_context
+    before_action :set_open_loam_context
     before_action :set_locale
 
     rescue_from OpenLoam::NotAuthorizedError do
@@ -70,7 +70,7 @@ module Admin
     # If anything fails, BOTH halves of the context are cleared before the
     # redirect, so a half-established context can never leak into the next
     # request or into a job enqueued from it.
-    def set_loam_context
+    def set_open_loam_context
       OpenLoam::Current.tenant = OpenLoam::Tenant.find_by(id: session[:tenant_id])
       OpenLoam::Current.actor = User.find_by(id: session[:user_id])
 

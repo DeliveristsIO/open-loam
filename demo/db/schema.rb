@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
+ActiveRecord::Schema[8.2].define(version: 2026_09_04_120000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -113,7 +113,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.index ["tenant_id"], name: "index_leads_on_tenant_id"
   end
 
-  create_table "loam_api_tokens", force: :cascade do |t|
+  create_table "open_loam_api_tokens", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.integer "user_id", null: false
     t.string "token", null: false
@@ -121,12 +121,12 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.datetime "last_used_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["tenant_id"], name: "index_loam_api_tokens_on_tenant_id"
-    t.index ["token"], name: "index_loam_api_tokens_on_token", unique: true
-    t.index ["user_id"], name: "index_loam_api_tokens_on_user_id"
+    t.index ["tenant_id"], name: "index_open_loam_api_tokens_on_tenant_id"
+    t.index ["token"], name: "index_open_loam_api_tokens_on_token", unique: true
+    t.index ["user_id"], name: "index_open_loam_api_tokens_on_user_id"
   end
 
-  create_table "loam_audit_records", force: :cascade do |t|
+  create_table "open_loam_audit_records", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "auditable_type", null: false
     t.bigint "auditable_id", null: false
@@ -135,20 +135,20 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.text "changeset"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["tenant_id", "auditable_type", "auditable_id"], name: "idx_on_tenant_id_auditable_type_auditable_id_3d28ce6bd5"
-    t.index ["tenant_id"], name: "index_loam_audit_records_on_tenant_id"
+    t.index ["tenant_id", "auditable_type", "auditable_id"], name: "idx_on_tenant_id_auditable_type_auditable_id_4ac726c1ee"
+    t.index ["tenant_id"], name: "index_open_loam_audit_records_on_tenant_id"
   end
 
-  create_table "loam_auth_attempts", force: :cascade do |t|
+  create_table "open_loam_auth_attempts", force: :cascade do |t|
     t.string "identifier", null: false
     t.string "kind", null: false
     t.string "ip"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["identifier", "created_at"], name: "index_loam_auth_attempts_on_identifier_and_created_at"
+    t.index ["identifier", "created_at"], name: "index_open_loam_auth_attempts_on_identifier_and_created_at"
   end
 
-  create_table "loam_business_rule_runs", force: :cascade do |t|
+  create_table "open_loam_business_rule_runs", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.integer "business_rule_id", null: false
     t.string "subject_type"
@@ -159,12 +159,12 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.text "error"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["business_rule_id"], name: "index_loam_business_rule_runs_on_business_rule_id"
-    t.index ["tenant_id", "business_rule_id", "created_at"], name: "idx_on_tenant_id_business_rule_id_created_at_01f0c22da1"
-    t.index ["tenant_id"], name: "index_loam_business_rule_runs_on_tenant_id"
+    t.index ["business_rule_id"], name: "index_open_loam_business_rule_runs_on_business_rule_id"
+    t.index ["tenant_id", "business_rule_id", "created_at"], name: "idx_on_tenant_id_business_rule_id_created_at_0e48acf129"
+    t.index ["tenant_id"], name: "index_open_loam_business_rule_runs_on_tenant_id"
   end
 
-  create_table "loam_business_rules", force: :cascade do |t|
+  create_table "open_loam_business_rules", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "name", null: false
     t.string "entity_type"
@@ -175,11 +175,11 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.integer "priority", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["tenant_id", "active"], name: "index_loam_business_rules_on_tenant_id_and_active"
-    t.index ["tenant_id"], name: "index_loam_business_rules_on_tenant_id"
+    t.index ["tenant_id", "active"], name: "index_open_loam_business_rules_on_tenant_id_and_active"
+    t.index ["tenant_id"], name: "index_open_loam_business_rules_on_tenant_id"
   end
 
-  create_table "loam_comments", force: :cascade do |t|
+  create_table "open_loam_comments", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "commentable_type", null: false
     t.bigint "commentable_id", null: false
@@ -187,12 +187,12 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.text "body", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["author_id"], name: "index_loam_comments_on_author_id"
-    t.index ["tenant_id", "commentable_type", "commentable_id"], name: "idx_on_tenant_id_commentable_type_commentable_id_038d2261a2"
-    t.index ["tenant_id"], name: "index_loam_comments_on_tenant_id"
+    t.index ["author_id"], name: "index_open_loam_comments_on_author_id"
+    t.index ["tenant_id", "commentable_type", "commentable_id"], name: "idx_on_tenant_id_commentable_type_commentable_id_416ffd8af0"
+    t.index ["tenant_id"], name: "index_open_loam_comments_on_tenant_id"
   end
 
-  create_table "loam_configs", force: :cascade do |t|
+  create_table "open_loam_configs", force: :cascade do |t|
     t.string "key", null: false
     t.integer "tenant_id"
     t.json "value_json"
@@ -200,10 +200,10 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.datetime "updated_at", null: false
     t.index ["key", "tenant_id"], name: "index_loam_configs_on_key_and_tenant", unique: true
     t.index ["key"], name: "index_loam_configs_global_key", unique: true, where: "tenant_id IS NULL"
-    t.index ["tenant_id"], name: "index_loam_configs_on_tenant_id"
+    t.index ["tenant_id"], name: "index_open_loam_configs_on_tenant_id"
   end
 
-  create_table "loam_custom_field_values", force: :cascade do |t|
+  create_table "open_loam_custom_field_values", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "indexable_type", null: false
     t.bigint "indexable_id", null: false
@@ -217,31 +217,31 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.index ["indexable_type", "indexable_id", "field_key"], name: "index_loam_cfv_unique", unique: true
     t.index ["tenant_id", "indexable_type", "field_key", "value_number"], name: "index_loam_cfv_number"
     t.index ["tenant_id", "indexable_type", "field_key", "value_text"], name: "index_loam_cfv_text"
-    t.index ["tenant_id"], name: "index_loam_custom_field_values_on_tenant_id"
+    t.index ["tenant_id"], name: "index_open_loam_custom_field_values_on_tenant_id"
   end
 
-  create_table "loam_dashboard_widgets", force: :cascade do |t|
+  create_table "open_loam_dashboard_widgets", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "widget_key", null: false
     t.integer "position", default: 0, null: false
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["tenant_id", "widget_key"], name: "index_loam_dashboard_widgets_on_tenant_id_and_widget_key", unique: true
-    t.index ["tenant_id"], name: "index_loam_dashboard_widgets_on_tenant_id"
+    t.index ["tenant_id", "widget_key"], name: "index_open_loam_dashboard_widgets_on_tenant_id_and_widget_key", unique: true
+    t.index ["tenant_id"], name: "index_open_loam_dashboard_widgets_on_tenant_id"
   end
 
-  create_table "loam_dictionaries", force: :cascade do |t|
+  create_table "open_loam_dictionaries", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "key", null: false
     t.string "name", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["tenant_id", "key"], name: "index_loam_dictionaries_on_tenant_id_and_key", unique: true
-    t.index ["tenant_id"], name: "index_loam_dictionaries_on_tenant_id"
+    t.index ["tenant_id", "key"], name: "index_open_loam_dictionaries_on_tenant_id_and_key", unique: true
+    t.index ["tenant_id"], name: "index_open_loam_dictionaries_on_tenant_id"
   end
 
-  create_table "loam_dictionary_entries", force: :cascade do |t|
+  create_table "open_loam_dictionary_entries", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.integer "dictionary_id", null: false
     t.string "value", null: false
@@ -253,13 +253,13 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["dictionary_id", "value"], name: "index_loam_dictionary_entries_on_dictionary_id_and_value", unique: true
-    t.index ["dictionary_id"], name: "index_loam_dictionary_entries_on_dictionary_id"
-    t.index ["tenant_id", "dictionary_id", "position"], name: "idx_on_tenant_id_dictionary_id_position_0a9045964a"
-    t.index ["tenant_id"], name: "index_loam_dictionary_entries_on_tenant_id"
+    t.index ["dictionary_id", "value"], name: "index_open_loam_dictionary_entries_on_dictionary_id_and_value", unique: true
+    t.index ["dictionary_id"], name: "index_open_loam_dictionary_entries_on_dictionary_id"
+    t.index ["tenant_id", "dictionary_id", "position"], name: "idx_on_tenant_id_dictionary_id_position_5ab2c8989d"
+    t.index ["tenant_id"], name: "index_open_loam_dictionary_entries_on_tenant_id"
   end
 
-  create_table "loam_event_deliveries", force: :cascade do |t|
+  create_table "open_loam_event_deliveries", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "subscriber_key", null: false
     t.string "event_name", null: false
@@ -271,11 +271,11 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.datetime "delivered_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["tenant_id", "status", "next_attempt_at"], name: "idx_on_tenant_id_status_next_attempt_at_2cb58beb5e"
-    t.index ["tenant_id"], name: "index_loam_event_deliveries_on_tenant_id"
+    t.index ["tenant_id", "status", "next_attempt_at"], name: "idx_on_tenant_id_status_next_attempt_at_e523000f4b"
+    t.index ["tenant_id"], name: "index_open_loam_event_deliveries_on_tenant_id"
   end
 
-  create_table "loam_field_definitions", force: :cascade do |t|
+  create_table "open_loam_field_definitions", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "entity_type", null: false
     t.string "name", null: false
@@ -286,10 +286,10 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.json "config", default: {}, null: false
     t.json "readable_roles", default: [], null: false
     t.index ["tenant_id", "entity_type", "name"], name: "index_loam_field_definitions_on_tenant_entity_name", unique: true
-    t.index ["tenant_id"], name: "index_loam_field_definitions_on_tenant_id"
+    t.index ["tenant_id"], name: "index_open_loam_field_definitions_on_tenant_id"
   end
 
-  create_table "loam_inbound_webhook_deliveries", force: :cascade do |t|
+  create_table "open_loam_inbound_webhook_deliveries", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.integer "source_id", null: false
     t.string "external_id", null: false
@@ -299,17 +299,17 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.json "payload", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["source_id", "external_id"], name: "idx_on_source_id_external_id_5dc5cc70a1", unique: true
-    t.index ["source_id"], name: "index_loam_inbound_webhook_deliveries_on_source_id"
-    t.index ["tenant_id"], name: "index_loam_inbound_webhook_deliveries_on_tenant_id"
+    t.index ["source_id", "external_id"], name: "idx_on_source_id_external_id_d7efc957d0", unique: true
+    t.index ["source_id"], name: "index_open_loam_inbound_webhook_deliveries_on_source_id"
+    t.index ["tenant_id"], name: "index_open_loam_inbound_webhook_deliveries_on_tenant_id"
   end
 
-  create_table "loam_inbound_webhook_sources", force: :cascade do |t|
+  create_table "open_loam_inbound_webhook_sources", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "name", null: false
     t.string "token", null: false
     t.string "secret", null: false
-    t.string "signature_header", default: "X-Loam-Signature", null: false
+    t.string "signature_header", default: "X-OpenLoam-Signature", null: false
     t.string "delivery_id_header"
     t.string "timestamp_header"
     t.integer "timestamp_tolerance"
@@ -317,22 +317,22 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["tenant_id"], name: "index_loam_inbound_webhook_sources_on_tenant_id"
-    t.index ["token"], name: "index_loam_inbound_webhook_sources_on_token", unique: true
+    t.index ["tenant_id"], name: "index_open_loam_inbound_webhook_sources_on_tenant_id"
+    t.index ["token"], name: "index_open_loam_inbound_webhook_sources_on_token", unique: true
   end
 
-  create_table "loam_memberships", force: :cascade do |t|
+  create_table "open_loam_memberships", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.integer "user_id", null: false
     t.string "role", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["tenant_id", "user_id"], name: "index_loam_memberships_on_tenant_id_and_user_id", unique: true
-    t.index ["tenant_id"], name: "index_loam_memberships_on_tenant_id"
-    t.index ["user_id"], name: "index_loam_memberships_on_user_id"
+    t.index ["tenant_id", "user_id"], name: "index_open_loam_memberships_on_tenant_id_and_user_id", unique: true
+    t.index ["tenant_id"], name: "index_open_loam_memberships_on_tenant_id"
+    t.index ["user_id"], name: "index_open_loam_memberships_on_user_id"
   end
 
-  create_table "loam_mfa_credentials", force: :cascade do |t|
+  create_table "open_loam_mfa_credentials", force: :cascade do |t|
     t.integer "user_id", null: false
     t.text "totp_secret"
     t.text "recovery_codes"
@@ -340,10 +340,10 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "last_totp_step"
-    t.index ["user_id"], name: "index_loam_mfa_credentials_on_user_id", unique: true
+    t.index ["user_id"], name: "index_open_loam_mfa_credentials_on_user_id", unique: true
   end
 
-  create_table "loam_notifications", force: :cascade do |t|
+  create_table "open_loam_notifications", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.integer "user_id", null: false
     t.string "title", null: false
@@ -353,12 +353,12 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.bigint "source_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["tenant_id", "user_id", "read_at"], name: "index_loam_notifications_on_tenant_id_and_user_id_and_read_at"
-    t.index ["tenant_id"], name: "index_loam_notifications_on_tenant_id"
-    t.index ["user_id"], name: "index_loam_notifications_on_user_id"
+    t.index ["tenant_id", "user_id", "read_at"], name: "idx_on_tenant_id_user_id_read_at_ca9c004396"
+    t.index ["tenant_id"], name: "index_open_loam_notifications_on_tenant_id"
+    t.index ["user_id"], name: "index_open_loam_notifications_on_user_id"
   end
 
-  create_table "loam_pending_actions", force: :cascade do |t|
+  create_table "open_loam_pending_actions", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.bigint "actor_id"
     t.string "status", default: "pending", null: false
@@ -375,11 +375,11 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["tenant_id", "idempotency_key"], name: "index_loam_pending_actions_pending_key", unique: true, where: "status = 'pending'"
-    t.index ["tenant_id", "status"], name: "index_loam_pending_actions_on_tenant_id_and_status"
-    t.index ["tenant_id"], name: "index_loam_pending_actions_on_tenant_id"
+    t.index ["tenant_id", "status"], name: "index_open_loam_pending_actions_on_tenant_id_and_status"
+    t.index ["tenant_id"], name: "index_open_loam_pending_actions_on_tenant_id"
   end
 
-  create_table "loam_perspectives", force: :cascade do |t|
+  create_table "open_loam_perspectives", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "entity_type", null: false
     t.string "name", null: false
@@ -391,11 +391,11 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.integer "lock_version", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["tenant_id", "entity_type"], name: "index_loam_perspectives_on_tenant_id_and_entity_type"
-    t.index ["tenant_id"], name: "index_loam_perspectives_on_tenant_id"
+    t.index ["tenant_id", "entity_type"], name: "index_open_loam_perspectives_on_tenant_id_and_entity_type"
+    t.index ["tenant_id"], name: "index_open_loam_perspectives_on_tenant_id"
   end
 
-  create_table "loam_progress_jobs", force: :cascade do |t|
+  create_table "open_loam_progress_jobs", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "key"
     t.string "name", null: false
@@ -410,11 +410,11 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.json "result"
-    t.index ["tenant_id", "status"], name: "index_loam_progress_jobs_on_tenant_id_and_status"
-    t.index ["tenant_id"], name: "index_loam_progress_jobs_on_tenant_id"
+    t.index ["tenant_id", "status"], name: "index_open_loam_progress_jobs_on_tenant_id_and_status"
+    t.index ["tenant_id"], name: "index_open_loam_progress_jobs_on_tenant_id"
   end
 
-  create_table "loam_record_locks", force: :cascade do |t|
+  create_table "open_loam_record_locks", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "lockable_type", null: false
     t.bigint "lockable_id", null: false
@@ -423,12 +423,12 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.datetime "expires_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["locked_by_id"], name: "index_loam_record_locks_on_locked_by_id"
+    t.index ["locked_by_id"], name: "index_open_loam_record_locks_on_locked_by_id"
     t.index ["tenant_id", "lockable_type", "lockable_id"], name: "index_loam_record_locks_on_lockable", unique: true
-    t.index ["tenant_id"], name: "index_loam_record_locks_on_tenant_id"
+    t.index ["tenant_id"], name: "index_open_loam_record_locks_on_tenant_id"
   end
 
-  create_table "loam_scheduled_jobs", force: :cascade do |t|
+  create_table "open_loam_scheduled_jobs", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "key", null: false
     t.string "name", null: false
@@ -442,35 +442,35 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["active", "next_run_at", "locked_until"], name: "idx_on_active_next_run_at_locked_until_ace422474c"
-    t.index ["tenant_id", "key"], name: "index_loam_scheduled_jobs_on_tenant_id_and_key", unique: true
-    t.index ["tenant_id"], name: "index_loam_scheduled_jobs_on_tenant_id"
+    t.index ["active", "next_run_at", "locked_until"], name: "idx_on_active_next_run_at_locked_until_c4226e499f"
+    t.index ["tenant_id", "key"], name: "index_open_loam_scheduled_jobs_on_tenant_id_and_key", unique: true
+    t.index ["tenant_id"], name: "index_open_loam_scheduled_jobs_on_tenant_id"
   end
 
-  create_table "loam_search_tokens", force: :cascade do |t|
+  create_table "open_loam_search_tokens", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "searchable_type", null: false
     t.bigint "searchable_id", null: false
     t.string "token", null: false
-    t.index ["tenant_id", "searchable_type", "searchable_id"], name: "idx_on_tenant_id_searchable_type_searchable_id_24c57da776"
-    t.index ["tenant_id", "searchable_type", "token"], name: "idx_on_tenant_id_searchable_type_token_4625d2d4d0"
-    t.index ["tenant_id"], name: "index_loam_search_tokens_on_tenant_id"
+    t.index ["tenant_id", "searchable_type", "searchable_id"], name: "idx_on_tenant_id_searchable_type_searchable_id_4a0c095f23"
+    t.index ["tenant_id", "searchable_type", "token"], name: "idx_on_tenant_id_searchable_type_token_b521cf4176"
+    t.index ["tenant_id"], name: "index_open_loam_search_tokens_on_tenant_id"
   end
 
-  create_table "loam_sso_identities", force: :cascade do |t|
+  create_table "open_loam_sso_identities", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.integer "sso_provider_id", null: false
     t.bigint "user_id", null: false
     t.string "sub", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["sso_provider_id", "sub"], name: "index_loam_sso_identities_on_sso_provider_id_and_sub", unique: true
-    t.index ["sso_provider_id"], name: "index_loam_sso_identities_on_sso_provider_id"
-    t.index ["tenant_id"], name: "index_loam_sso_identities_on_tenant_id"
-    t.index ["user_id"], name: "index_loam_sso_identities_on_user_id"
+    t.index ["sso_provider_id", "sub"], name: "index_open_loam_sso_identities_on_sso_provider_id_and_sub", unique: true
+    t.index ["sso_provider_id"], name: "index_open_loam_sso_identities_on_sso_provider_id"
+    t.index ["tenant_id"], name: "index_open_loam_sso_identities_on_tenant_id"
+    t.index ["user_id"], name: "index_open_loam_sso_identities_on_user_id"
   end
 
-  create_table "loam_sso_providers", force: :cascade do |t|
+  create_table "open_loam_sso_providers", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "name", null: false
     t.string "protocol", default: "oidc", null: false
@@ -483,20 +483,20 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["domain"], name: "index_loam_sso_providers_on_domain", unique: true
-    t.index ["tenant_id", "active"], name: "index_loam_sso_providers_on_tenant_id_and_active"
-    t.index ["tenant_id"], name: "index_loam_sso_providers_on_tenant_id"
+    t.index ["domain"], name: "index_open_loam_sso_providers_on_domain", unique: true
+    t.index ["tenant_id", "active"], name: "index_open_loam_sso_providers_on_tenant_id_and_active"
+    t.index ["tenant_id"], name: "index_open_loam_sso_providers_on_tenant_id"
   end
 
-  create_table "loam_tenants", force: :cascade do |t|
+  create_table "open_loam_tenants", force: :cascade do |t|
     t.string "name", null: false
     t.string "slug", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["slug"], name: "index_loam_tenants_on_slug", unique: true
+    t.index ["slug"], name: "index_open_loam_tenants_on_slug", unique: true
   end
 
-  create_table "loam_translations", force: :cascade do |t|
+  create_table "open_loam_translations", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "translatable_type", null: false
     t.bigint "translatable_id", null: false
@@ -505,11 +505,11 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.text "value"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["tenant_id"], name: "index_loam_translations_on_tenant_id"
+    t.index ["tenant_id"], name: "index_open_loam_translations_on_tenant_id"
     t.index ["translatable_type", "translatable_id", "locale", "field"], name: "index_loam_translations_unique", unique: true
   end
 
-  create_table "loam_webhook_endpoints", force: :cascade do |t|
+  create_table "open_loam_webhook_endpoints", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "url", null: false
     t.string "event_pattern", null: false
@@ -517,8 +517,8 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["tenant_id", "active"], name: "index_loam_webhook_endpoints_on_tenant_id_and_active"
-    t.index ["tenant_id"], name: "index_loam_webhook_endpoints_on_tenant_id"
+    t.index ["tenant_id", "active"], name: "index_open_loam_webhook_endpoints_on_tenant_id_and_active"
+    t.index ["tenant_id"], name: "index_open_loam_webhook_endpoints_on_tenant_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -532,45 +532,45 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_22_224507) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
-  add_foreign_key "companies", "loam_tenants", column: "tenant_id"
-  add_foreign_key "customers", "loam_tenants", column: "tenant_id"
-  add_foreign_key "damage_reports", "loam_tenants", column: "tenant_id"
-  add_foreign_key "equipment", "loam_tenants", column: "tenant_id"
-  add_foreign_key "leads", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_api_tokens", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_api_tokens", "users"
-  add_foreign_key "loam_audit_records", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_business_rule_runs", "loam_business_rules", column: "business_rule_id"
-  add_foreign_key "loam_business_rule_runs", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_business_rules", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_comments", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_comments", "users", column: "author_id"
-  add_foreign_key "loam_configs", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_custom_field_values", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_dashboard_widgets", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_dictionaries", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_dictionary_entries", "loam_dictionaries", column: "dictionary_id"
-  add_foreign_key "loam_dictionary_entries", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_event_deliveries", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_field_definitions", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_inbound_webhook_deliveries", "loam_inbound_webhook_sources", column: "source_id"
-  add_foreign_key "loam_inbound_webhook_deliveries", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_inbound_webhook_sources", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_memberships", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_memberships", "users"
-  add_foreign_key "loam_mfa_credentials", "users"
-  add_foreign_key "loam_notifications", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_notifications", "users"
-  add_foreign_key "loam_pending_actions", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_perspectives", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_progress_jobs", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_record_locks", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_record_locks", "users", column: "locked_by_id"
-  add_foreign_key "loam_scheduled_jobs", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_search_tokens", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_sso_identities", "loam_sso_providers", column: "sso_provider_id"
-  add_foreign_key "loam_sso_identities", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_sso_providers", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_translations", "loam_tenants", column: "tenant_id"
-  add_foreign_key "loam_webhook_endpoints", "loam_tenants", column: "tenant_id"
+  add_foreign_key "companies", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "customers", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "damage_reports", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "equipment", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "leads", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_api_tokens", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_api_tokens", "users"
+  add_foreign_key "open_loam_audit_records", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_business_rule_runs", "open_loam_business_rules", column: "business_rule_id"
+  add_foreign_key "open_loam_business_rule_runs", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_business_rules", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_comments", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_comments", "users", column: "author_id"
+  add_foreign_key "open_loam_configs", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_custom_field_values", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_dashboard_widgets", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_dictionaries", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_dictionary_entries", "open_loam_dictionaries", column: "dictionary_id"
+  add_foreign_key "open_loam_dictionary_entries", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_event_deliveries", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_field_definitions", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_inbound_webhook_deliveries", "open_loam_inbound_webhook_sources", column: "source_id"
+  add_foreign_key "open_loam_inbound_webhook_deliveries", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_inbound_webhook_sources", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_memberships", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_memberships", "users"
+  add_foreign_key "open_loam_mfa_credentials", "users"
+  add_foreign_key "open_loam_notifications", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_notifications", "users"
+  add_foreign_key "open_loam_pending_actions", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_perspectives", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_progress_jobs", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_record_locks", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_record_locks", "users", column: "locked_by_id"
+  add_foreign_key "open_loam_scheduled_jobs", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_search_tokens", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_sso_identities", "open_loam_sso_providers", column: "sso_provider_id"
+  add_foreign_key "open_loam_sso_identities", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_sso_providers", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_translations", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_webhook_endpoints", "open_loam_tenants", column: "tenant_id"
 end

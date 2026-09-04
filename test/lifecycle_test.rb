@@ -29,7 +29,7 @@ class LifecycleTest < HarnessCase
     end
   RUBY
 
-  def test_on_tenant_created_fires_on_create_and_loam_sync_backfills_existing_tenants
+  def test_on_tenant_created_fires_on_create_and_open_loam_sync_backfills_existing_tenants
     app = build_app(name: "open_loam_lifecycle_app")
 
     step("rails g open_loam:install", "bin/rails g open_loam:install", app)

@@ -12,9 +12,9 @@ class CreateOpenLoamCustomFieldValues < ActiveRecord::Migration[8.1]
       t.timestamps
     end
     add_index :open_loam_custom_field_values, %i[indexable_type indexable_id field_key],
-              unique: true, name: "index_loam_cfv_unique"
+              unique: true, name: "index_open_loam_cfv_unique"
     # Equality/prefix filter: (tenant, type, key, value_text). Range on numbers.
-    add_index :open_loam_custom_field_values, %i[tenant_id indexable_type field_key value_text], name: "index_loam_cfv_text"
-    add_index :open_loam_custom_field_values, %i[tenant_id indexable_type field_key value_number], name: "index_loam_cfv_number"
+    add_index :open_loam_custom_field_values, %i[tenant_id indexable_type field_key value_text], name: "index_open_loam_cfv_text"
+    add_index :open_loam_custom_field_values, %i[tenant_id indexable_type field_key value_number], name: "index_open_loam_cfv_number"
   end
 end
