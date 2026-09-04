@@ -5,6 +5,22 @@ with the caveat that 0.x releases may break the public surface; the
 [backward-compatibility contract](BACKWARD_COMPATIBILITY.md) names what is
 frozen and what is not.
 
+## 0.1.1 — 2026-09-04
+
+No functional change. The packaged code is byte-identical to 0.1.0 — only CI
+configuration moved, and workflows are not part of the gem.
+
+This version exists to exercise the release pipeline end to end, so that the
+first keyless publish is a version nothing depends on rather than one that
+matters.
+
+### Changed
+
+- Releases are published from CI using RubyGems trusted publishing. GitHub's
+  OIDC token is exchanged for short-lived credentials, so no API key is held on
+  a maintainer's machine or in repository secrets, and publishing is gated on an
+  approval in the `release` environment.
+
 ## 0.1.0 — 2026-09-04
 
 First public release. Loam is a working, tested prototype: the foundation and
