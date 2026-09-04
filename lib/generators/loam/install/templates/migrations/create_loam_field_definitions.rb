@@ -1,7 +1,7 @@
 class CreateLoamFieldDefinitions < ActiveRecord::Migration[<%= ActiveRecord::VERSION::STRING.to_f %>]
   def change
-    create_table :loam_field_definitions do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }
+    create_table :loam_field_definitions<%= loam_id_option %> do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }<%= loam_type_option %>
       t.string :entity_type, null: false
       t.string :name, null: false
       t.string :field_type, null: false

@@ -1,7 +1,7 @@
 class CreateLoamScheduledJobs < ActiveRecord::Migration[<%= ActiveRecord::VERSION::STRING.to_f %>]
   def change
-    create_table :loam_scheduled_jobs do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }
+    create_table :loam_scheduled_jobs<%= loam_id_option %> do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }<%= loam_type_option %>
       t.string :key, null: false                        # unique per tenant
       t.string :name, null: false
       t.string :job_class, null: false                  # a whitelisted ActiveJob class name

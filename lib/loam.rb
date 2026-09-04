@@ -107,6 +107,7 @@ module Loam
 end
 
 ActiveSupport.on_load(:active_record) do
+  require "loam/generated_key"
   require "loam/tenant_record"
   require "loam/auditable"
   require "loam/soft_deletable"

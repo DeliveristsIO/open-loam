@@ -1,7 +1,7 @@
 class Create<%= table_name.camelize %> < ActiveRecord::Migration[<%= ActiveRecord::VERSION::STRING.to_f %>]
   def change
-    create_table :<%= table_name %> do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }
+    create_table :<%= table_name %><%= loam_id_option %> do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }<%= loam_type_option %>
 <% attributes.each do |attribute| -%>
 <% if encrypted?(attribute) -%>
       t.text :<%= attribute.name %>   # encrypted at rest (Loam::Encryptable) — text, since ciphertext outgrows varchar

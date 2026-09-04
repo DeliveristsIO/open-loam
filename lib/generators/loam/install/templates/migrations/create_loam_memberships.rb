@@ -1,8 +1,8 @@
 class CreateLoamMemberships < ActiveRecord::Migration[<%= ActiveRecord::VERSION::STRING.to_f %>]
   def change
-    create_table :loam_memberships do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }
-      t.references :user, null: false, foreign_key: true
+    create_table :loam_memberships<%= loam_id_option %> do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }<%= loam_type_option %>
+      t.references :user, null: false, foreign_key: true<%= loam_type_option %>
       t.string :role, null: false
       t.timestamps
     end

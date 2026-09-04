@@ -1,5 +1,6 @@
 require "rails/generators"
 require "rails/generators/active_record"
+require "generators/loam/primary_key_options"
 
 module Loam
   module Generators
@@ -12,6 +13,7 @@ module Loam
     # already decided.
     class EntityGenerator < Rails::Generators::NamedBase
       include ActiveRecord::Generators::Migration
+      include Loam::Generators::PrimaryKeyOptions
 
       source_root File.expand_path("templates", __dir__)
 

@@ -1,11 +1,11 @@
 class CreateLoamAuditRecords < ActiveRecord::Migration[<%= ActiveRecord::VERSION::STRING.to_f %>]
   def change
-    create_table :loam_audit_records do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }
+    create_table :loam_audit_records<%= loam_id_option %> do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }<%= loam_type_option %>
       t.string :auditable_type, null: false
-      t.bigint :auditable_id, null: false
+      t.<%= loam_key_column_type %> :auditable_id<%= loam_key_limit_option %>, null: false
       t.string :action, null: false
-      t.bigint :actor_id
+      t.<%= loam_key_column_type %> :actor_id<%= loam_key_limit_option %>
       t.text :changeset
       t.timestamps
     end

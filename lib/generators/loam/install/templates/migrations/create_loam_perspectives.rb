@@ -1,10 +1,10 @@
 class CreateLoamPerspectives < ActiveRecord::Migration[<%= ActiveRecord::VERSION::STRING.to_f %>]
   def change
-    create_table :loam_perspectives do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }
+    create_table :loam_perspectives<%= loam_id_option %> do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }<%= loam_type_option %>
       t.string :entity_type, null: false        # which entity this view is for
       t.string :name, null: false               # human label
-      t.bigint :owner_id                         # the user who owns a private view
+      t.<%= loam_key_column_type %> :owner_id<%= loam_key_limit_option %>                         # the user who owns a private view
       t.string :visibility, null: false, default: "private"  # private / role / tenant
       t.string :role                             # set when visibility is "role"
       t.boolean :is_default, null: false, default: false

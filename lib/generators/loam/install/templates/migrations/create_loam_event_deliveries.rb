@@ -1,7 +1,7 @@
 class CreateLoamEventDeliveries < ActiveRecord::Migration[<%= ActiveRecord::VERSION::STRING.to_f %>]
   def change
-    create_table :loam_event_deliveries do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }
+    create_table :loam_event_deliveries<%= loam_id_option %> do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }<%= loam_type_option %>
       t.string :subscriber_key, null: false            # a registered Loam::DurableEvents subscriber
       t.string :event_name, null: false
       t.json :payload, null: false                     # JSON-scalar event payload

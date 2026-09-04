@@ -5,6 +5,7 @@ module Loam
   # by the submitted identifier (the same reason Loam::MfaCredential is global).
   # Allowlisted in the guardrails tenancy lint.
   class AuthAttempt < ApplicationRecord
+    include Loam::GeneratedKey
     self.table_name = "loam_auth_attempts"
 
     validates :identifier, :kind, presence: true

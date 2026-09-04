@@ -1,7 +1,7 @@
 class CreateLoamSsoProviders < ActiveRecord::Migration[<%= ActiveRecord::VERSION::STRING.to_f %>]
   def change
-    create_table :loam_sso_providers do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }
+    create_table :loam_sso_providers<%= loam_id_option %> do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }<%= loam_type_option %>
       t.string :name, null: false
       t.string :protocol, null: false, default: "oidc"  # "oidc" shipped; "saml" is a seam
       t.string :issuer                                    # OIDC discovery base (.well-known)
@@ -21,10 +21,10 @@ class CreateLoamSsoProviders < ActiveRecord::Migration[<%= ActiveRecord::VERSION
     # The durable link between an external identity (provider + subject) and a
     # local User — the primary lookup on callback (email can change at the IdP,
     # `sub` does not).
-    create_table :loam_sso_identities do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }
-      t.references :sso_provider, null: false, foreign_key: { to_table: :loam_sso_providers }
-      t.bigint :user_id, null: false  # the local User this identity belongs to
+    create_table :loam_sso_identities<%= loam_id_option %> do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }<%= loam_type_option %>
+      t.references :sso_provider, null: false, foreign_key: { to_table: :loam_sso_providers }<%= loam_type_option %>
+      t.<%= loam_key_column_type %> :user_id<%= loam_key_limit_option %>, null: false  # the local User this identity belongs to
       t.string :sub, null: false      # the IdP's stable subject identifier
       t.timestamps
     end

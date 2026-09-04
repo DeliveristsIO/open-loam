@@ -8,6 +8,7 @@ module Loam
   # `scope:`), which decrypts in any tenant and with no tenant at all — the whole
   # reason a per-tenant key would be a lockout bug here.
   class MfaCredential < ApplicationRecord
+    include Loam::GeneratedKey
     self.table_name = "loam_mfa_credentials"
 
     RECOVERY_CODE_COUNT = 10

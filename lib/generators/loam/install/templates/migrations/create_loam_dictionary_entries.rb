@@ -1,8 +1,8 @@
 class CreateLoamDictionaryEntries < ActiveRecord::Migration[<%= ActiveRecord::VERSION::STRING.to_f %>]
   def change
-    create_table :loam_dictionary_entries do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }
-      t.references :dictionary, null: false, foreign_key: { to_table: :loam_dictionaries }
+    create_table :loam_dictionary_entries<%= loam_id_option %> do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }<%= loam_type_option %>
+      t.references :dictionary, null: false, foreign_key: { to_table: :loam_dictionaries }<%= loam_type_option %>
       t.string :value, null: false                    # the stored code
       t.string :label, null: false                    # display text
       t.string :color                                 # optional hex

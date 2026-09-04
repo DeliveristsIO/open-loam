@@ -12,6 +12,9 @@ module Loam
   class TenantRecord < ActiveRecord::Base
     self.abstract_class = true
 
+    # Generates the key when it is not an integer (see Loam::GeneratedKey).
+    include Loam::GeneratedKey
+
     belongs_to :tenant, class_name: "Loam::Tenant"
 
     default_scope { where(tenant_id: Loam.tenant!.id) }

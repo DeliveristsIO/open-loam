@@ -1,9 +1,9 @@
 class CreateLoamTranslations < ActiveRecord::Migration[<%= ActiveRecord::VERSION::STRING.to_f %>]
   def change
-    create_table :loam_translations do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }
+    create_table :loam_translations<%= loam_id_option %> do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }<%= loam_type_option %>
       t.string :translatable_type, null: false
-      t.bigint :translatable_id, null: false
+      t.<%= loam_key_column_type %> :translatable_id<%= loam_key_limit_option %>, null: false
       t.string :locale, null: false            # "en", "de", "pl"
       t.string :field, null: false             # the translated attribute
       t.text :value                            # the per-locale content

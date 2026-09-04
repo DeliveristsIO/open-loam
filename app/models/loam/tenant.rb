@@ -2,6 +2,7 @@ module Loam
   # The tenant itself is deliberately NOT tenant-scoped — it is the axis the
   # rest of the system is scoped by.
   class Tenant < ActiveRecord::Base
+    include Loam::GeneratedKey
     self.table_name = "loam_tenants"
 
     validates :name, presence: true

@@ -1,8 +1,8 @@
 class CreateLoamMfaCredentials < ActiveRecord::Migration[<%= ActiveRecord::VERSION::STRING.to_f %>]
   def change
-    create_table :loam_mfa_credentials do |t|
+    create_table :loam_mfa_credentials<%= loam_id_option %> do |t|
       # Per USER, not per tenant — MFA belongs to the person (no tenant_id).
-      t.references :user, null: false, foreign_key: { to_table: :users }, index: { unique: true }
+      t.references :user, null: false, foreign_key: { to_table: :users }, index: { unique: true }<%= loam_type_option %>
       t.text :totp_secret            # encrypted at rest, user-scoped (Loam::Encryptable)
       t.text :recovery_codes         # JSON: [{ digest, used_at }], codes stored hashed
       t.datetime :activated_at       # nil until the user confirms a live code

@@ -1,7 +1,7 @@
 class CreateLoamInboundWebhooks < ActiveRecord::Migration[<%= ActiveRecord::VERSION::STRING.to_f %>]
   def change
-    create_table :loam_inbound_webhook_sources do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }
+    create_table :loam_inbound_webhook_sources<%= loam_id_option %> do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }<%= loam_type_option %>
       t.string :name, null: false
       t.string :token, null: false                 # unguessable URL id: /webhooks/:token
       t.string :secret, null: false                # HMAC key (authenticates the call)
@@ -15,9 +15,9 @@ class CreateLoamInboundWebhooks < ActiveRecord::Migration[<%= ActiveRecord::VERS
     end
     add_index :loam_inbound_webhook_sources, :token, unique: true
 
-    create_table :loam_inbound_webhook_deliveries do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }
-      t.references :source, null: false, foreign_key: { to_table: :loam_inbound_webhook_sources }
+    create_table :loam_inbound_webhook_deliveries<%= loam_id_option %> do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }<%= loam_type_option %>
+      t.references :source, null: false, foreign_key: { to_table: :loam_inbound_webhook_sources }<%= loam_type_option %>
       t.string :external_id, null: false           # delivery-id header, or a body hash
       t.string :event_name, null: false
       t.string :status, null: false, default: "received"

@@ -1,9 +1,9 @@
 class CreateLoamCustomFieldValues < ActiveRecord::Migration[<%= ActiveRecord::VERSION::STRING.to_f %>]
   def change
-    create_table :loam_custom_field_values do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }
+    create_table :loam_custom_field_values<%= loam_id_option %> do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }<%= loam_type_option %>
       t.string :indexable_type, null: false
-      t.bigint :indexable_id, null: false
+      t.<%= loam_key_column_type %> :indexable_id<%= loam_key_limit_option %>, null: false
       t.string :field_key, null: false
       t.text :value_text                # canonical string form (contains/present/eq)
       t.decimal :value_number           # integer/decimal fields (range queries)

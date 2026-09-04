@@ -13,6 +13,7 @@ module Loam
   # all round-trip under the same key. Row existence — not the value — is what
   # marks a key as set, so the value may legitimately be JSON null.
   class Config < ApplicationRecord
+    include Loam::GeneratedKey
     self.table_name = "loam_configs"
 
     belongs_to :tenant, class_name: "Loam::Tenant", optional: true

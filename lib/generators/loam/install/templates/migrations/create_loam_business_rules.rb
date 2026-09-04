@@ -1,7 +1,7 @@
 class CreateLoamBusinessRules < ActiveRecord::Migration[<%= ActiveRecord::VERSION::STRING.to_f %>]
   def change
-    create_table :loam_business_rules do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }
+    create_table :loam_business_rules<%= loam_id_option %> do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }<%= loam_type_option %>
       t.string :name, null: false
       t.string :entity_type              # the entity this rule watches (nil = event-only)
       t.string :trigger, null: false     # an event pattern (Loam::Events.pattern_matches?)
@@ -13,11 +13,11 @@ class CreateLoamBusinessRules < ActiveRecord::Migration[<%= ActiveRecord::VERSIO
     end
     add_index :loam_business_rules, %i[tenant_id active]
 
-    create_table :loam_business_rule_runs do |t|
-      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }
-      t.references :business_rule, null: false, foreign_key: { to_table: :loam_business_rules }
+    create_table :loam_business_rule_runs<%= loam_id_option %> do |t|
+      t.references :tenant, null: false, foreign_key: { to_table: :loam_tenants }<%= loam_type_option %>
+      t.references :business_rule, null: false, foreign_key: { to_table: :loam_business_rules }<%= loam_type_option %>
       t.string :subject_type
-      t.bigint :subject_id
+      t.<%= loam_key_column_type %> :subject_id<%= loam_key_limit_option %>
       t.string :event_name
       t.boolean :matched, null: false, default: false
       t.json :actions_taken, null: false, default: []
