@@ -12,9 +12,16 @@ permalink: /agents/golden-tasks/
 
 **These are internal benchmark runs, not independently reproduced.** Same
 model family authored both the Loam and vanilla-Rails sides of the control
-run described below, and the probes that scored them. Read the numbers with
-that in mind — the methodology and every caveat are disclosed below and in
-the source run files, not smoothed over.
+run described below, and the probes that scored them.
+
+**Each run happened once.** Every task was executed a single time per side.
+Ten apps per side is ten samples of *a task*, not ten repeats of the
+benchmark — so there is no variance estimate, and no way to tell from this
+data how much of the gap would survive a re-run. Treat the numbers as one
+recorded observation with a documented method, not as a measured rate.
+
+Read them with both of those in mind. The methodology and every caveat are
+disclosed below and in the source run files, not smoothed over.
 
 ## The 10 tasks
 
@@ -180,8 +187,13 @@ inside Loam's conventions produced tenant isolation and role gating as a
 structural property in 10/10 and 4/4 apps respectively, while the same agent
 starting from a bare Rails app produced them in 1/10 and 1/4 — without being
 told to skip security, and in several cases while explicitly noting the gap
-in its own code comments. It does not show performance across model
-families, a human baseline, or results outside these ten tasks.
+in its own code comments.
+
+It does not show performance across model families, a human baseline, or
+results outside these ten tasks — and, because the benchmark has been run
+once, it does not establish that the gap is stable. Repeating it is the next
+thing this page needs, and until that happens the honest reading is "this is
+what happened once", not "this is what Loam does".
 
 ## Related pages
 

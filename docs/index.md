@@ -57,6 +57,9 @@ hero:
         Tenant isolation enforced (HTTP probe)
           Loam + AI:    10/10
           Vanilla + AI:  1/10
+
+        One internal run, same prompts, same model.
+        Method and caveats published in full.
         ```
   actions:
     - theme: brand
@@ -86,6 +89,6 @@ features:
     title: Built for coding agents
     details: "[AGENTS.md is the contract](/agents/agent-contract/); [`loam:entity`](/reference/generators/) is the interface; an [MCP server](/agents/mcp/) exposes tenant-scoped, policy-aware reads and human-approved writes."
   - icon: "📊"
-    title: Measured, not asserted
-    details: "The [golden-tasks benchmark](/agents/golden-tasks/) found tenant isolation held 10/10 on Loam apps versus 1/10 on hand-rolled vanilla Rails, same prompts, same model — internal results, disclosed as such."
+    title: Benchmarked, caveats published
+    details: "In one internal run of the [golden-tasks benchmark](/agents/golden-tasks/), tenant isolation held 10/10 on Loam apps versus 1/10 on vanilla Rails — same prompts, same model, protocol pre-registered. A single run, not yet repeated or independently reproduced, and the page says so."
 ---
