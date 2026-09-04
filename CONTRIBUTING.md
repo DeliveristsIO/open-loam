@@ -96,6 +96,31 @@ measured — a change that makes those tasks harder or less safe is a regression
 - New behavior comes with tests. A bug fix comes with the regression test that
   would have caught it.
 
+## Releasing
+
+Releases are published by tag, from CI, using RubyGems trusted publishing —
+GitHub's OIDC token is exchanged for short-lived credentials, so no API key
+exists on anyone's machine or in repo secrets.
+
+```bash
+# 1. bump lib/loam/version.rb and add the release to CHANGELOG.md
+# 2. commit, then:
+git tag -a v0.2.0 -m "Loam 0.2.0"
+git push --follow-tags
+```
+
+`.github/workflows/release.yml` then re-runs the harness against the tagged
+commit and publishes. It re-runs deliberately: `ci.yml` only covers pushes to
+`main`, a tag can point at any commit, and a published gem version can never be
+re-pushed.
+
+The `release` environment gates the publish, so any approval rule configured on
+it applies. The trusted publisher itself is registered at rubygems.org against
+this repository, `release.yml`, and that environment.
+
+Don't run `gem push` by hand — it would publish a version that never went
+through the gate.
+
 ## License
 
 By contributing you agree your contributions are licensed under the project's

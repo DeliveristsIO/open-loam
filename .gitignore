@@ -16,6 +16,14 @@ docs/.jekyll-cache/
 docs/.bundle/
 docs/vendor/
 
+# Gemfile.lock is not committed for a library — the gem is resolved against
+# whatever the host app already has, and pinning here would only hide drift.
+/Gemfile.lock
+
+# `rake build` output
+/pkg/
+/checksums/
+
 # built gem artifacts (`gem build`) — released to RubyGems, not committed
 *.gem
 

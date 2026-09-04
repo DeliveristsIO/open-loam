@@ -1,3 +1,7 @@
+# build / install / release. `rake release` is what rubygems/release-gem runs
+# in the publish workflow; because that workflow is triggered BY the version
+# tag, the tagging step is a no-op and only the gem push happens.
+require "bundler/gem_tasks"
 require "rake/testtask"
 
 Rake::TestTask.new(:test) do |t|
