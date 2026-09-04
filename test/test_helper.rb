@@ -24,12 +24,13 @@ Encoding.default_external = Encoding::UTF_8
 module LoamHarness
   GEM_ROOT = File.expand_path("..", __dir__)
 
-  # Where generated apps go. The session scratchpad if it is writable (so the
-  # artifacts sit next to the rest of this session's work), otherwise the
-  # system temp dir.
+  # Where generated apps go. LOAM_HARNESS_SCRATCH lets a caller put the
+  # artifacts somewhere it will go looking for them; otherwise the system temp
+  # dir. This used to hardcode one machine's session scratchpad, which meant
+  # nothing on any other machine and silently fell back anyway.
   SCRATCH_ROOT = begin
-    preferred = "/tmp/claude-1000/-home-dev-code-loam/d40ba38e-cca3-4291-a577-19824282f8be/scratchpad"
-    File.directory?(preferred) && File.writable?(preferred) ? preferred : Dir.tmpdir
+    preferred = ENV["LOAM_HARNESS_SCRATCH"]
+    preferred && File.directory?(preferred) && File.writable?(preferred) ? preferred : Dir.tmpdir
   end
 
   # The flags the demo app was built with: no git, no deploy tooling, no
