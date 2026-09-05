@@ -98,3 +98,40 @@ class OpenLoamOutboundUrlModelTest < ActiveSupport::TestCase
     assert_not plain.valid?, "the client_secret travels over this, so https is mandatory"
   end
 end
+
+# The uploaded CSV is a payload of real records — often rows headed for
+# encrypted columns. It must not sit in the clear in the queue backend.
+class OpenLoamImportPayloadTest < ActionDispatch::IntegrationTest
+  setup do
+    @tenant = OpenLoam::Tenant.create!(name: "T", slug: "import-payload")
+    @manager = User.create!(name: "M", email: "m@import.test", password: "password123")
+    with_tenant(@tenant) { OpenLoam::Membership.create!(user: @manager, role: "manager") }
+    post admin_session_path, params: { email: "m@import.test", password: "password123" }
+  end
+
+  test "the job carries a blob id, never the file" do
+    csv = "name,email\nNowak,nowak@secret.test\n"
+
+    assert_enqueued_with(job: ImportJob) do
+      post admin_imports_path, params: {
+        entity_type: "Customer", csv: csv, commit: "Import",
+        mapping: { "name" => "name", "email" => "email" }
+      }
+    end
+
+    arguments = ActiveJob::Base.queue_adapter.enqueued_jobs.last["arguments"].inspect
+
+    assert_not_includes arguments, "nowak@secret.test", "no row values in the queue payload"
+    assert_not_includes arguments, "name,email", "not even the header"
+    assert_match(/blob_id/, arguments)
+  end
+
+  test "csv is filtered out of the request log" do
+    filter = ActiveSupport::ParameterFilter.new(Rails.application.config.filter_parameters)
+    logged = filter.filter("csv" => "name,email\nNowak,nowak@secret.test", "code" => "123456", "entity_type" => "Customer")
+
+    assert_equal "[FILTERED]", logged["csv"]
+    assert_equal "[FILTERED]", logged["code"], "a live TOTP must not be logged either"
+    assert_equal "Customer", logged["entity_type"], "and ordinary params still log"
+  end
+end

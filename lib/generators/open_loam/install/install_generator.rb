@@ -70,6 +70,16 @@ module OpenLoam
         template "initializer.rb", "config/initializers/open_loam.rb"
       end
 
+      # Rails' default filter list covers passwords and tokens but not the params
+      # OpenLoam introduces: an uploaded :csv is a payload of real records, and
+      # :code is a live TOTP.
+      def filter_open_loam_parameters
+        append_to_file "config/initializers/filter_parameter_logging.rb", <<~RUBY
+
+          Rails.application.config.filter_parameters += %i[csv file code recovery secret otp]
+        RUBY
+      end
+
       def create_agents_md
         template "AGENTS.md", "AGENTS.md"
       end

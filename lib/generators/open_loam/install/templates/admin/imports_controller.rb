@@ -31,7 +31,7 @@ module Admin
       if params[:commit] == "Dry run"
         run_dry(mapping, match_key)
       else
-        ImportJob.perform_later(entity_type: @entity_type, csv: @csv, mapping: mapping,
+        ImportJob.perform_later(entity_type: @entity_type, blob_id: staged_csv_blob(@csv).id, mapping: mapping,
                                 match_key: match_key, tenant_id: current_tenant.id, actor_id: current_actor.id)
         redirect_to admin_progress_jobs_path, notice: "Import started — watch it progress under Tasks."
       end
@@ -70,6 +70,18 @@ module Admin
       raise OpenLoam::Error, "choose a CSV file to upload" if file.blank?
 
       file.read.force_encoding("UTF-8")
+    end
+
+    # The CSV goes to blob storage and the JOB gets an id. ActiveJob arguments
+    # are serialized into the queue backend and echoed in the job log, so
+    # passing the file itself would leave every row sitting in the clear —
+    # including the columns headed for encrypted fields. ImportJob purges it.
+    def staged_csv_blob(csv)
+      ActiveStorage::Blob.create_and_upload!(
+        io: StringIO.new(csv),
+        filename: "#{@entity_type.underscore}-import-#{SecureRandom.hex(8)}.csv",
+        content_type: "text/csv"
+      )
     end
   end
 end
