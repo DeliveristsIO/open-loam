@@ -5,7 +5,7 @@ with the caveat that 0.x releases may break the public surface; the
 [backward-compatibility contract](BACKWARD_COMPATIBILITY.md) names what is
 frozen and what is not.
 
-## Unreleased
+## 0.3.0 — 2026-09-05
 
 ### Security
 
