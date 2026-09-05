@@ -64,7 +64,7 @@ the gem): `Membership.tenants_for`, `ApiToken.authenticate`, `Sso.provider_for`,
 |---|---|
 | Ciphertext format | `v1:base64(iv‖tag‖ciphertext)` (no AAD) and `v2:` (AAD-bound to tenant+table+column). **Both stay readable**; `open_loam:encryption:rotate` upgrades v1→v2. |
 | Algorithm | AES-256-GCM, random 12-byte IV, per-tenant key via HKDF-SHA256 behind a `KeyProvider` seam. |
-| Blind index | Searchable encrypted field carries an HMAC-SHA256 `<field>_hash` for exact match. |
+| Blind index | Searchable encrypted field carries an HMAC-SHA256 `<field>_hash` for exact match. The key derives per **(tenant, table, column)**, like the v2 AAD — as of 0.3.0, which changed the derivation and so the stored values; the column's shape and name did not change. Re-index with `open_loam:encryption:rotate`. |
 | Audit redaction | An encrypted field's change is recorded as `"[encrypted]"`, never the value; the hash column is dropped. |
 
 ## 6. Webhooks (in & out)
@@ -73,7 +73,7 @@ the gem): `Membership.tenants_for`, `ApiToken.authenticate`, `Sso.provider_for`,
 |---|---|
 | Outbound signature | `X-OpenLoam-Signature: sha256=<hex>` where hex = `HMAC-SHA256(endpoint.secret, exact_body)`. **Pinned by a fixed test vector** — changing it breaks every receiver. |
 | Outbound body | `{ "event": …, "payload": …, "tenant_id": … }`. |
-| Inbound receiver | `POST /webhooks/:token`; HMAC over the raw body in the source's `signature_header`; `(source, external_id)` replay ledger; uniform `401` on any auth failure. |
+| Inbound receiver | `POST /webhooks/:token`; HMAC over the raw body in the source's `signature_header`; `(source, external_id)` replay ledger; uniform `401` on any auth failure. As of 0.3.0 `external_id` is **SHA-256 of the raw body** — the only signed material. The `delivery_id_header` setting is gone: deriving the ledger key from an unsigned header let one captured delivery be replayed indefinitely. |
 
 ## 7. JSON API
 
