@@ -202,16 +202,19 @@ module OpenLoam
       when "neq"      then rows.where.not(value_text: value.to_s)
       when "contains" then rows.where("value_text LIKE ?", "%#{sanitize_like(value)}%")
       when "present"  then rows.where.not(value_text: [ nil, "" ])
-      when "gt"       then numeric(rows, value, ">")
-      when "gte"      then numeric(rows, value, ">=")
-      when "lt"       then numeric(rows, value, "<")
-      when "lte"      then numeric(rows, value, "<=")
+      when "gt", "gte", "lt", "lte" then numeric(rows, value, op)
       end
     end
 
-    # Numeric comparisons hit the indexed value_number column.
-    def numeric(rows, value, operator)
-      rows.where("value_number #{operator} ?", value.to_f)
+    # Numeric comparisons hit the indexed value_number column. Built through
+    # Arel rather than an interpolated fragment: `op` reaches here from
+    # params[:cf_op], and a comparison operator cannot be a bound parameter, so
+    # the only safe form is one that never becomes a string.
+    NUMERIC_PREDICATES = { "gt" => :gt, "gte" => :gteq, "lt" => :lt, "lte" => :lteq }.freeze
+
+    def numeric(rows, value, op)
+      column = OpenLoam::CustomFieldValue.arel_table[:value_number]
+      rows.where(column.public_send(NUMERIC_PREDICATES.fetch(op), value.to_f))
     end
 
     def row_for(record, definition, type)

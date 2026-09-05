@@ -25,6 +25,11 @@ module OpenLoam
 
     normalizes :domain, with: ->(domain) { domain.to_s.strip.downcase.presence }
 
+    # The server fetches the issuer's discovery document and posts the code
+    # exchange to it, so a manager-typed issuer is an SSRF vector unless it is
+    # provably external. https because the client_secret travels over it.
+    validate :issuer_is_reachable_from_outside, if: -> { issuer.present? }
+
     # Editing the domain drops the proof — otherwise a verified provider could be
     # repointed at a domain nobody approved.
     before_validation :reset_domain_verification, if: -> { persisted? && domain_changed? }
@@ -50,6 +55,12 @@ module OpenLoam
 
     def reset_domain_verification
       self.domain_verified_at = nil
+    end
+
+    def issuer_is_reachable_from_outside
+      OpenLoam::OutboundUrl.validate!(issuer, require_https: true)
+    rescue OpenLoam::OutboundUrl::BlockedError => error
+      errors.add(:issuer, error.message)
     end
   end
 end

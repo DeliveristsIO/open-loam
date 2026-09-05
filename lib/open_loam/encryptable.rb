@@ -98,7 +98,7 @@ module OpenLoam
       # call must hash-and-compare, never match a plaintext query against the
       # ciphertext column (which would silently find nothing).
       def define_open_loam_blind_index_finder(name)
-        hash_column = "#{name}_hash"
+        hash_column = :"#{name}_hash"
 
         define_singleton_method("where_#{name}") do |value|
           where(hash_column => OpenLoam::Encryption.blind_index(value, OpenLoam.tenant!.id))

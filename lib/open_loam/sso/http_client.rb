@@ -10,22 +10,31 @@ module OpenLoam
       module_function
 
       def get_json(url, bearer: nil)
-        uri = URI(url)
+        uri, address = checked(url)
         request = Net::HTTP::Get.new(uri)
         request["Authorization"] = "Bearer #{bearer}" if bearer
-        parse(perform(uri, request))
+        parse(perform(uri, address, request))
       end
 
       def post_form(url, params)
-        uri = URI(url)
+        uri, address = checked(url)
         request = Net::HTTP::Post.new(uri)
         request.set_form_data(params)
         request["Accept"] = "application/json"
-        parse(perform(uri, request))
+        parse(perform(uri, address, request))
       end
 
-      def perform(uri, request)
-        Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") do |http|
+      # The issuer is typed by a tenant manager, so these URLs are as untrusted
+      # as a webhook endpoint's. https is mandatory here rather than merely
+      # allowed: the client_secret and the code exchange travel over it.
+      def checked(url)
+        OpenLoam::OutboundUrl.resolve!(url, require_https: true)
+      rescue OpenLoam::OutboundUrl::BlockedError => error
+        raise OpenLoam::Sso::Error, "identity provider URL refused: #{error.message}"
+      end
+
+      def perform(uri, address, request)
+        Net::HTTP.start(uri.host, uri.port, use_ssl: true, ipaddr: address) do |http|
           http.request(request)
         end
       end

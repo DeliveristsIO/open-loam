@@ -23,7 +23,7 @@ module OpenLoam
           matches = OpenLoam::SearchToken
             .where(searchable_type: type_for(model), token: tokens)
             .group(:searchable_id)
-            .having("COUNT(DISTINCT token) = #{tokens.size}")
+            .having("COUNT(DISTINCT token) = ?", tokens.size)
             .select(:searchable_id)
 
           scope.where(id: matches)

@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+# Read-only by default; the one job that needs more asks for it locally.
+permissions:
+  contents: read
+
 jobs:
   # The gem's own harness. It builds real Rails apps in a temp dir and drives
   # the generators through them, shelling out to the globally installed `rails`
@@ -49,8 +53,13 @@ jobs:
       - name: Lint (Rubocop)
         run: bin/rubocop
 
+      # The gem is where the security-relevant code lives, and it is a Rails
+      # engine, so scanning only demo/ left its app/ and lib/ unanalyzed —
+      # which is how a SQL-injection-shaped fragment and an unvalidated
+      # outbound URL sat unnoticed. --add-engines-path pulls in app/,
+      # --add-libs-path the plain Ruby under lib/.
       - name: Security scan (Brakeman)
-        run: bin/brakeman -q --ensure-ignore-notes --ensure-no-obsolete-ignore-entries
+        run: bin/brakeman -q --add-engines-path .. --add-libs-path ../lib --ensure-ignore-notes --ensure-no-obsolete-ignore-entries
 
       - name: Prepare database
         run: bin/rails db:migrate db:seed

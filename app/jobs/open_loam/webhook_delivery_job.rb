@@ -13,6 +13,10 @@ module OpenLoam
   class WebhookDeliveryJob < ActiveJob::Base
     queue_as :default
 
+    # A URL that points inside the perimeter will never become deliverable by
+    # retrying, and retrying is itself the SSRF attempt repeated.
+    discard_on OpenLoam::OutboundUrl::BlockedError
+
     TIMEOUT_SECONDS = 5
 
     def self.body_for(event_name, payload, tenant_id)
@@ -40,9 +44,14 @@ module OpenLoam
     private
 
     def deliver(endpoint, body, event_name)
-      uri = URI.parse(endpoint.url)
+      # Re-checked at delivery, not just at save: the URL was validated when the
+      # tenant entered it, but DNS can be repointed at an internal address any
+      # time afterwards. Connecting to the address we just checked closes the
+      # window between the check and the connection.
+      uri, address = OpenLoam::OutboundUrl.resolve!(endpoint.url)
 
       http = Net::HTTP.new(uri.host, uri.port)
+      http.ipaddr = address
       http.use_ssl = uri.scheme == "https"
       http.open_timeout = TIMEOUT_SECONDS
       http.read_timeout = TIMEOUT_SECONDS

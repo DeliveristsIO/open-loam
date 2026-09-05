@@ -27,10 +27,16 @@ docs/vendor/
 # built gem artifacts (`gem build`) — released to RubyGems, not committed
 *.gem
 
-# demo app secrets — the demo needs no credentials, and a committed master.key
-# is a key in public history the moment this repo is open.
-demo/config/master.key
+# Secrets. A committed key is a key in public history the moment this repo is
+# open, and history is the part you cannot take back — so these are matched
+# anywhere, not just at the path the demo happens to use today.
+**/config/master.key
+**/config/credentials/*.key
 demo/config/credentials.yml.enc
+*.pem
+*.p12
+.env
+.env.*
 
 # demo app runtime artifacts
 demo/log/*
