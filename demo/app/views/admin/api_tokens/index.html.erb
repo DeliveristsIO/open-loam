@@ -37,3 +37,26 @@ audit trail. Send it as <code>Authorization: Bearer &lt;token&gt;</code>.</p>
     <% end %>
   </tbody>
 </table>
+
+<% if @tenant_records.any? %>
+  <h2>Everyone else's tokens</h2>
+  <p>Manager view. Removing someone's membership already stops their tokens
+  working; revoking is the clean end of it.</p>
+
+  <table>
+    <thead>
+      <tr><th>Owner</th><th>Label</th><th>Created</th><th>Last used</th><th></th></tr>
+    </thead>
+    <tbody>
+      <% @tenant_records.each do |record| %>
+        <tr>
+          <td><%= record.user.name %></td>
+          <td><%= record.label %></td>
+          <td><%= record.created_at.to_fs(:short) %></td>
+          <td><%= record.last_used_at&.to_fs(:short) || "never" %></td>
+          <td><%= button_to "Revoke", admin_api_token_path(record), method: :delete, form: { style: "display:inline" } %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>

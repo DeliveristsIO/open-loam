@@ -1,16 +1,31 @@
+require "openssl"
+
 module OpenLoam
   # A bearer token that lets a machine act as one user in one tenant. Same
   # rules as a human session: whatever the token's user may do in that tenant,
   # no more. Plumbing, so not audited and not evented.
+  #
+  # Only the SHA-256 digest is stored. The plaintext is returned once, from the
+  # instance that generated it, and is unrecoverable afterwards — a dump of this
+  # table is not a set of working credentials. A 24-byte random token needs no
+  # slow KDF; it is not guessable the way a password is.
   class ApiToken < OpenLoam::TenantRecord
     self.table_name = "open_loam_api_tokens"
 
     belongs_to :user
 
-    validates :token, presence: true, uniqueness: true
+    validates :token_digest, presence: true, uniqueness: true
+
+    # Present only on the instance that just created it — never after a reload.
+    attr_reader :token
 
     before_validation on: :create do
-      self.token ||= SecureRandom.hex(24)
+      @token ||= SecureRandom.hex(24)
+      self.token_digest = self.class.digest(@token)
+    end
+
+    def self.digest(raw_token)
+      OpenSSL::Digest::SHA256.hexdigest(raw_token.to_s)
     end
 
     # THE blessed cross-tenant lookup, and the reason it lives in the gem.
@@ -27,13 +42,21 @@ module OpenLoam
     def self.authenticate(raw_token)
       return nil if raw_token.blank?
 
-      api_token = unscoped.find_by(token: raw_token)
+      api_token = unscoped.find_by(token_digest: digest(raw_token))
       return nil unless api_token
 
       OpenLoam::Current.tenant = api_token.tenant
       OpenLoam::Current.actor = api_token.user
-      api_token.update_column(:last_used_at, Time.current)
 
+      # A token outlives the membership that justified it, so offboarding a user
+      # from a tenant would otherwise leave their machine access intact. Checked
+      # here rather than at revoke time: the membership is the authority.
+      unless OpenLoam::Membership.exists?(user_id: api_token.user_id)
+        OpenLoam::Current.reset
+        return nil
+      end
+
+      api_token.update_column(:last_used_at, Time.current)
       api_token
     end
   end

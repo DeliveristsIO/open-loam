@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_09_05_090000) do
+ActiveRecord::Schema[8.2].define(version: 2026_09_05_100000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -116,13 +116,13 @@ ActiveRecord::Schema[8.2].define(version: 2026_09_05_090000) do
   create_table "open_loam_api_tokens", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.integer "user_id", null: false
-    t.string "token", null: false
     t.string "label"
     t.datetime "last_used_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "token_digest", null: false
     t.index ["tenant_id"], name: "index_open_loam_api_tokens_on_tenant_id"
-    t.index ["token"], name: "index_open_loam_api_tokens_on_token", unique: true
+    t.index ["token_digest"], name: "index_open_loam_api_tokens_on_token_digest", unique: true
     t.index ["user_id"], name: "index_open_loam_api_tokens_on_user_id"
   end
 

@@ -51,12 +51,12 @@ class OpenLoamApiTest < ActionDispatch::IntegrationTest
   end
 
   test "using a token records when it was last used" do
-    token = with_tenant(@warsaw) { OpenLoam::ApiToken.find_by(token: @manager_token) }
+    token = with_tenant(@warsaw) { OpenLoam::ApiToken.find_by(token_digest: OpenLoam::ApiToken.digest(@manager_token)) }
     assert_nil token.last_used_at
 
     get "/api/equipment", headers: bearer(@manager_token)
 
-    assert with_tenant(@warsaw) { OpenLoam::ApiToken.find_by(token: @manager_token).last_used_at }
+    assert with_tenant(@warsaw) { OpenLoam::ApiToken.find_by(token_digest: OpenLoam::ApiToken.digest(@manager_token)).last_used_at }
   end
 
   test "a manager may set a manager-only field" do

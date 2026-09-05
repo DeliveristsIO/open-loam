@@ -115,7 +115,13 @@ class AdminAuthTest < ActionDispatch::IntegrationTest
     assert_response :success
     token = with_tenant(@warsaw) { OpenLoam::ApiToken.find_by(user_id: @tomek.id) }
     assert token, "the token belongs to the signed-in user in the current tenant"
-    assert_match token.token, response.body, "the value is shown once, on the screen after creation"
+
+    # The plaintext exists only on this one screen — the row holds a digest, so
+    # it has to be read back out of the response, not off the record.
+    shown = response.body[%r{<code>([0-9a-f]{48})</code>}, 1]
+    assert shown, "the value is shown once, on the screen after creation"
+    assert_equal token.token_digest, OpenLoam::ApiToken.digest(shown)
+    assert_nil token.token, "and is unrecoverable from the record afterwards"
 
     delete admin_api_token_path(token)
     assert with_tenant(@warsaw) { OpenLoam::ApiToken.where(user_id: @tomek.id).empty? }
