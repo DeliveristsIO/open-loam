@@ -19,9 +19,12 @@ module OpenLoam
   # Every AUTH failure returns 401 with no distinguishing body, so a sender can't
   # probe which check failed; the specific reason is logged server-side only.
   #
-  # REPLAY: the real defense is the (source_id, external_id) dedupe. The timestamp
-  # window is defense-in-depth: unless the sender signs the timestamp too, a
-  # replayer can refresh an unsigned timestamp header. Don't over-trust it.
+  # REPLAY: the real defense is the (source_id, external_id) dedupe, and
+  # external_id is derived from the SIGNED body — never from a header. Anything
+  # an attacker can vary without invalidating the signature is a way to mint a
+  # fresh dedupe key and replay the delivery. The timestamp window is
+  # defense-in-depth only, for the same reason: unless the sender signs the
+  # timestamp, a replayer just refreshes it.
   module InboundWebhooks
     MAX_BYTES = 1_000_000
 
@@ -92,14 +95,18 @@ module OpenLoam
       (Time.current.to_i - seconds).abs <= tolerance.to_i
     end
 
-    def delivery_id(source, headers, body)
-      if source.delivery_id_header.present?
-        value = header(headers, source.delivery_id_header)
-        return value if value.present?
-      end
-      # No delivery-id header configured (or absent): fall back to a body hash.
-      # Consequence: identical bodies dedupe. A sender with a real delivery id
-      # should configure delivery_id_header so distinct-but-identical bodies pass.
+    # The dedupe key comes from SIGNED material only, which means the body.
+    #
+    # It used to prefer a delivery-id header, and the HMAC covers the body alone —
+    # so a captured (body, signature) pair replayed with a fresh header value
+    # produced a new external_id every time, slipped past the unique index and
+    # published the domain event again. One capture, unlimited events.
+    #
+    # The cost is that a sender emitting genuinely distinct deliveries with
+    # byte-identical bodies sees the second deduped. That is the safe direction,
+    # and senders that need distinguishable deliveries put a nonce or timestamp
+    # in the body — which is signed — rather than only in a header.
+    def delivery_id(_source, _headers, body)
       Digest::SHA256.hexdigest(body)
     end
 

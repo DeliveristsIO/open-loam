@@ -6,7 +6,6 @@ class CreateOpenLoamInboundWebhooks < ActiveRecord::Migration[<%= ActiveRecord::
       t.string :token, null: false                 # unguessable URL id: /webhooks/:token
       t.string :secret, null: false                # HMAC key (authenticates the call)
       t.string :signature_header, null: false, default: "X-OpenLoam-Signature"
-      t.string :delivery_id_header                 # optional: external delivery-id for dedupe
       t.string :timestamp_header                   # optional: enables the freshness window
       t.integer :timestamp_tolerance               # seconds; nil = default 300
       t.string :event_name, null: false            # what to publish on the bus

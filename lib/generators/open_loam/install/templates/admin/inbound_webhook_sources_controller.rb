@@ -53,7 +53,7 @@ module Admin
 
     def source_params
       params.require(:inbound_webhook_source).permit(
-        :name, :event_name, :signature_header, :delivery_id_header,
+        :name, :event_name, :signature_header,
         :timestamp_header, :timestamp_tolerance
       )
     end

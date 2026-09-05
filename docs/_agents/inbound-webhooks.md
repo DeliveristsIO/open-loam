@@ -23,7 +23,6 @@ Give the sender the URL and secret. Configure per source:
 |---|---|
 | `event_name` | what to publish on the bus (`domain.thing.happened`) |
 | `signature_header` | where the signature arrives (default `X-OpenLoam-Signature`; GitHub uses `X-Hub-Signature-256`) |
-| `delivery_id_header` | optional external delivery id for dedupe; blank ⇒ dedupe on a body hash |
 | `timestamp_header` + `timestamp_tolerance` | optional freshness window (seconds; default 300) |
 
 **Token identifies, signature authenticates.** The token in the URL will appear in
@@ -56,9 +55,14 @@ OpenLoam::DurableEvents.register(key: "on_inbound", to: "billing.invoice.paid",
 ## Guarantees
 
 - **Replay resistance** is the `(source_id, external_id)` unique ledger: a replayed
-  delivery hits the DB constraint and returns `200` without re-publishing. The
-  timestamp window is **defense-in-depth only** — unless the sender signs the
-  timestamp, a replayer can refresh an unsigned header; don't rely on it alone.
+  delivery hits the DB constraint and returns `200` without re-publishing.
+  `external_id` is the SHA-256 of the **body**, which is the only material the
+  signature covers — a key derived from a header would let a replayer vary it and
+  mint a fresh one. The consequence is that two genuinely distinct deliveries with
+  byte-identical bodies dedupe; a sender that needs them distinguished puts a
+  nonce or timestamp *in the body*. The timestamp window is **defense-in-depth
+  only**, for the same reason: unless the sender signs the timestamp, a replayer
+  can refresh an unsigned header.
 - **Race-safe:** two concurrent identical deliveries both try to insert; the loser
   catches `RecordNotUnique` and returns the idempotent `200`.
 - **Retry-safe:** the row is created and the event published in one transaction —

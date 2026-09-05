@@ -87,14 +87,25 @@ class OpenLoamInboundWebhooksTest < ActiveSupport::TestCase
     assert_equal 1, publishes
   end
 
-  test "the delivery-id header dedupes even when bodies differ" do
-    with_tenant(@warsaw) { @source.update!(delivery_id_header: "X-Delivery-Id") }
-    a = ingest(%({"n":1}), { "X-OpenLoam-Signature" => sign(%({"n":1})), "X-Delivery-Id" => "abc" })
-    b = ingest(%({"n":2}), { "X-OpenLoam-Signature" => sign(%({"n":2})), "X-Delivery-Id" => "abc" })
+  # The HMAC covers the body alone. Dedupe used to prefer a delivery-id header,
+  # so one captured (body, signature) pair replayed with a fresh header value
+  # minted a new dedupe key and published the event again, without limit.
+  test "a captured delivery cannot be replayed by varying unsigned headers" do
+    body = %({"amount":100})
+    signature = sign(body)
+    publishes = 0
+    sub = OpenLoam::Events.subscribe("demo.inbound.received") { |_n, _p| publishes += 1 }
 
-    assert_equal 202, a.status
-    assert_equal 200, b.status
+    first = ingest(body, { "X-OpenLoam-Signature" => signature, "X-Delivery-Id" => "one" })
+    replays = [ "two", "three" ].map do |id|
+      ingest(body, { "X-OpenLoam-Signature" => signature, "X-Delivery-Id" => id })
+    end
+    ActiveSupport::Notifications.unsubscribe(sub)
+
+    assert_equal 202, first.status
+    assert_equal [ 200, 200 ], replays.map(&:status), "each replay is an idempotent no-op"
     assert_equal 1, deliveries
+    assert_equal 1, publishes, "one capture must not become an unlimited event source"
   end
 
   test "a configured timestamp header enforces a freshness window" do
