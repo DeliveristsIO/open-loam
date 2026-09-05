@@ -53,3 +53,4 @@ hindsight. Both are inputs the next agent reads.
 - [0004 — A byte-budgeted AGENTS.md as the agent contract]({% link _adr/0004-agents-md-contract.md %})
 - [0005 — Events as the decoupling seam; two subscriber tiers]({% link _adr/0005-event-backbone-two-tiers.md %})
 - [0006 — Evaluating Avo as an alternate admin backend]({% link _adr/0006-avo-admin-evaluation.md %})
+- [0007 — Resolving the proven-gem swaps]({% link _adr/0007-proven-gem-swaps-resolved.md %})

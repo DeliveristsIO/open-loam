@@ -87,6 +87,32 @@ module OpenLoam
       @broadcast_events = Array(patterns).map(&:to_s)
     end
 
+    # Event-name patterns EXCLUDED from the event log (OpenLoam::EventLog).
+    # Capture is on by default and there is no match-all pattern to opt into, so
+    # this exclusion list is the only knob: empty captures everything.
+    #
+    # The default excludes progress ticks, which fire once per processed row
+    # during a bulk import — high volume, no history worth keeping, and each one
+    # would otherwise be an inline INSERT in the import's own thread.
+    def self.uncaptured_events
+      @uncaptured_events ||= [ "open_loam.progress." ]
+    end
+
+    def self.uncaptured_events=(patterns)
+      @uncaptured_events = Array(patterns).map(&:to_s)
+    end
+
+    # How long a captured event is kept before OpenLoam::EventLogPruneJob deletes
+    # it. nil disables pruning — an unbounded log, which is a deliberate choice
+    # an app has to make, not the default.
+    def self.event_log_retention
+      defined?(@event_log_retention) ? @event_log_retention : 90.days
+    end
+
+    def self.event_log_retention=(duration)
+      @event_log_retention = duration
+    end
+
     # The locales content translations (OpenLoam::Translatable) may be authored in —
     # declared in the initializer (`OpenLoam.locales = %w[en de pl]`), so the admin
     # knows which languages to offer. A registry like the others; defaults to the
@@ -163,6 +189,14 @@ module OpenLoam
   def self.broadcast_events = Lifecycle.broadcast_events
   def self.broadcast_events=(patterns)
     Lifecycle.broadcast_events = patterns
+  end
+  def self.uncaptured_events = Lifecycle.uncaptured_events
+  def self.uncaptured_events=(patterns)
+    Lifecycle.uncaptured_events = patterns
+  end
+  def self.event_log_retention = Lifecycle.event_log_retention
+  def self.event_log_retention=(duration)
+    Lifecycle.event_log_retention = duration
   end
   def self.locales = Lifecycle.locales
   def self.locales=(codes)

@@ -9,6 +9,7 @@ module OpenLoam
     config.after_initialize do
       OpenLoam::Webhooks.subscribe!
       OpenLoam::DurableEvents.subscribe!    # persist + retry durable subscribers (L-706)
+      OpenLoam::EventLog.subscribe!         # capture every event as queryable history (L-204)
       OpenLoam::BusinessRules.subscribe!
       OpenLoam::Widgets.register_builtins!  # the default dashboard widgets
       OpenLoam::Overrides.check!            # warn about any stale disable/replace overrides
@@ -18,6 +19,13 @@ module OpenLoam
       OpenLoam::Scheduler.register(
         key: OpenLoam::DurableEvents::SWEEP_KEY, name: "Event redelivery sweep",
         job_class: "OpenLoam::EventRedeliverySweepJob", schedule: "interval:300", scope: "tenant"
+      )
+
+      # Event-log retention, also per-tenant. interval:86400 = daily; the window
+      # itself is OpenLoam.event_log_retention.
+      OpenLoam::Scheduler.register(
+        key: OpenLoam::EventLog::PRUNE_KEY, name: "Event log prune",
+        job_class: "OpenLoam::EventLogPruneJob", schedule: "interval:86400", scope: "tenant"
       )
     end
 

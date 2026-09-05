@@ -145,11 +145,23 @@ number = higher priority.
   and a win→notification — the SAME primitives as the rental domain. Proves
   domain-agnosticism; folds toward the OPEN_LOAM_PLAN reference CRM.
 
-### P6 — Swap in proven gems (a refactor, not a feature — do last)
-- **L-201** evaluate & wrap `acts_as_tenant` behind `OpenLoam::TenantRecord`.
-- **L-202** wrap Pundit behind `OpenLoam::Policy`'s field DSL.
-- **L-203** wrap `paper_trail` behind `OpenLoam::Auditable`.
-- **L-204** wrap Rails Event Store behind `OpenLoam::Events`.
+### P6 — Swap in proven gems — ✅ resolved, see [ADR 0007](docs/_adr/0007-proven-gem-swaps-resolved.md)
+Read one at a time against the code as it stands, three of the four were not
+worth doing and the fourth was a real gap the named gem was the wrong way to fix.
+- ~~**L-201** wrap `acts_as_tenant`~~ — declined: `OpenLoam::TenantRecord` is 36
+  lines and is the security boundary; `acts_as_tenant` would add a second
+  current-tenant store alongside `OpenLoam::Current`.
+- ~~**L-202** wrap Pundit~~ — declined: `policy_for`/`authorize!` already are
+  Pundit's `authorize` in six lines. It did expose one real hole — no
+  `verify_authorized`-equivalent guard — tracked separately.
+- ~~**L-203** wrap `paper_trail`~~ — declined: undo already shipped (L-704), and
+  paper_trail's full-object serialization would undo `OpenLoam::Auditable`'s
+  encrypted-column redaction.
+- ~~**L-204** wrap Rails Event Store~~ — ✅ shipped in-gem instead:
+  `OpenLoam::EventLog` + `OpenLoam::EventRecord` capture every publish as
+  append-only tenant-scoped history, readable and replayable by event name or
+  domain prefix, pruned on a retention window. L-706 had made *delivery*
+  durable; this closes *capture*.
 
 ### P7 — Monetization infrastructure
 - **L-601** `open-loam-enterprise` extension-point skeleton.

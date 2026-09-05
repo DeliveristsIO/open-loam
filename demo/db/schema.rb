@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_09_04_120000) do
+ActiveRecord::Schema[8.2].define(version: 2026_09_05_070000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -273,6 +273,17 @@ ActiveRecord::Schema[8.2].define(version: 2026_09_04_120000) do
     t.datetime "updated_at", null: false
     t.index ["tenant_id", "status", "next_attempt_at"], name: "idx_on_tenant_id_status_next_attempt_at_e523000f4b"
     t.index ["tenant_id"], name: "index_open_loam_event_deliveries_on_tenant_id"
+  end
+
+  create_table "open_loam_event_records", force: :cascade do |t|
+    t.integer "tenant_id", null: false
+    t.string "name", null: false
+    t.json "payload", null: false
+    t.datetime "occurred_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tenant_id", "name", "occurred_at"], name: "idx_on_tenant_id_name_occurred_at_ba6506b814"
+    t.index ["tenant_id"], name: "index_open_loam_event_records_on_tenant_id"
   end
 
   create_table "open_loam_field_definitions", force: :cascade do |t|
@@ -552,6 +563,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_09_04_120000) do
   add_foreign_key "open_loam_dictionary_entries", "open_loam_dictionaries", column: "dictionary_id"
   add_foreign_key "open_loam_dictionary_entries", "open_loam_tenants", column: "tenant_id"
   add_foreign_key "open_loam_event_deliveries", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_event_records", "open_loam_tenants", column: "tenant_id"
   add_foreign_key "open_loam_field_definitions", "open_loam_tenants", column: "tenant_id"
   add_foreign_key "open_loam_inbound_webhook_deliveries", "open_loam_inbound_webhook_sources", column: "source_id"
   add_foreign_key "open_loam_inbound_webhook_deliveries", "open_loam_tenants", column: "tenant_id"

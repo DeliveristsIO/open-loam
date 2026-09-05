@@ -111,3 +111,64 @@ dispatcher makes) — durable delivery is a tenant-scoped guarantee.
 | Exception | propagates to publisher | contained in the job |
 | Ordering | publish order, inline | unordered |
 | Use for | cheap in-process fan-out | side effects that must not be lost |
+
+## The event log — capture, not delivery
+
+The two tiers above both describe **delivery**: who gets told, and how hard the
+system tries. Neither records that the event *happened*. `OpenLoam::DurableEvents`
+says so in its own contract — "durability is of DELIVERY, not CAPTURE" — so
+before the log existed, a published event that nobody was subscribed to left no
+trace, and no stream could be replayed.
+
+`OpenLoam::EventLog` is the capture half. Every publish becomes one append-only
+`OpenLoam::EventRecord` row in the event's tenant:
+
+```ruby
+OpenLoam::EventLog.read("rental.")                       # whole domain, oldest first
+OpenLoam::EventLog.read("rental.equipment.created")      # one event name
+OpenLoam::EventLog.read("billing.", since: 7.days.ago)
+
+OpenLoam::EventLog.replay("billing.") do |name, payload|
+  # exactly what a live subscriber saw
+end
+```
+
+Patterns mean the same thing here as everywhere else: a trailing dot is a domain
+prefix, anything else is an exact event name.
+
+**Replay is a re-read of history, not a second publish.** Nothing else on the bus
+fires, and a replayed event is not captured again — so a replay handler must be
+idempotent, but it cannot cascade.
+
+### Defaults and their reasoning
+
+Capture is **on, and captures everything** except the patterns in
+`OpenLoam.uncaptured_events`. That is the opposite of `OpenLoam.broadcast_events`,
+deliberately: broadcasting governs **exposure** — events crossing out to a
+browser, where a stray event is a leak, so nothing goes unless asked. The log is
+internal, tenant-scoped history, which is the audit-by-default posture. An opt-in
+log is a log nobody turns on.
+
+The shipped exclusion is `open_loam.progress.`: a bulk import fires one tick per
+row, which is volume without history worth keeping.
+
+What lands in a row is the published payload, which by convention carries **ids
+and scalars, never records** — the same rule the webhook and durable paths
+already depend on. A payload is an authored choice at each call site, which is
+what makes capture-all reasonable where blanket model-state serialization would
+not be.
+
+Capture runs **inline in the publisher's thread**, so a failed insert propagates
+into whatever published the event — the same posture as `DurableEvents.capture`,
+and for the same reason: a log that silently drops entries is not a log.
+
+Nil-tenant events are **not** captured, matching durable delivery and the webhook
+dispatcher.
+
+### Retention
+
+Capture-all grows with event volume, so retention is part of the feature:
+`OpenLoam.event_log_retention` (90 days by default; `nil` keeps everything) is
+enforced by `OpenLoam::EventLogPruneJob`, registered per tenant and swept daily.
+Rows are readonly once written, so the prune deletes in one statement rather than
+instantiating and destroying.

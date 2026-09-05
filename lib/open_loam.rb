@@ -44,6 +44,7 @@ require "open_loam/business_rules"
 require "open_loam/webhooks"
 require "open_loam/inbound_webhooks"
 require "open_loam/durable_events"
+require "open_loam/event_log"
 require "open_loam/engine" if defined?(Rails::Engine)
 
 module OpenLoam

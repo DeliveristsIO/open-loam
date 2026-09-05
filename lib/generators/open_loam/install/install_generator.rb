@@ -42,6 +42,7 @@ module OpenLoam
         migration_template "migrations/create_open_loam_auth_attempts.rb", "db/migrate/create_open_loam_auth_attempts.rb"
         migration_template "migrations/create_open_loam_custom_field_values.rb", "db/migrate/create_open_loam_custom_field_values.rb"
         migration_template "migrations/create_open_loam_event_deliveries.rb", "db/migrate/create_open_loam_event_deliveries.rb"
+        migration_template "migrations/create_open_loam_event_records.rb", "db/migrate/create_open_loam_event_records.rb"
         migration_template "migrations/create_open_loam_inbound_webhooks.rb", "db/migrate/create_open_loam_inbound_webhooks.rb"
       end
 
