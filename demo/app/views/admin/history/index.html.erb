@@ -18,7 +18,7 @@ never reverted here.</p>
         <td><code><%= audit.action %></code></td>
         <td><%= audit.actor&.name || "—" %></td>
         <td>
-          <% (audit.changeset || {}).each do |field, values| %>
+          <% visible_changeset(audit).each do |field, values| %>
             <div><code><%= field %></code>:
               <%= values.is_a?(Array) ? "#{values.first.inspect} → #{values.last.inspect}" : values %></div>
           <% end %>

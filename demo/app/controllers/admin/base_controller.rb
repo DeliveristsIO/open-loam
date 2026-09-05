@@ -191,6 +191,10 @@ module Admin
     # be a false conflict every time.
     def stale_conflict!(record, fields)
       encrypted = record.class.respond_to?(:open_loam_encrypted_attributes) ? record.class.open_loam_encrypted_attributes.map(&:to_s) : []
+      # The diff shows the OTHER person's saved values, so it obeys the same field
+      # rules as any other read. Anything not writable was never submitted anyway.
+      policy = policy_for(record)
+      fields = fields.select { |field| policy.writable?(field) && policy.readable?(field) }
       attempted = fields.map(&:to_s).index_with { |field| conflict_value(record, field, encrypted) }
 
       record.reload

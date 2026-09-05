@@ -151,6 +151,60 @@ class OpenLoamReadAclTest < ActionDispatch::IntegrationTest
     assert_includes columns.map { |c| c[:header] }, "purchase_price"
   end
 
+  # --- Derived read paths ---------------------------------------------------
+
+  test "the history screen does not replay a restricted field as an old to new pair" do
+    with_tenant(@tenant) do
+      OpenLoam::Current.actor = @manager
+      @excavator.update!(daily_rate: 777.77)
+      OpenLoam::Current.actor = nil
+    end
+    sign_in(@employee)
+
+    get admin_history_path(type: "Equipment", record_id: @excavator.id)
+
+    assert_response :success
+    assert_no_match(/777\.77/, response.body)
+    assert_no_match(/999\.99/, response.body, "neither side of the pair")
+  end
+
+  test "the history screen filters restricted runtime fields out of the custom_fields blob" do
+    with_tenant(@tenant) do
+      OpenLoam::FieldDefinition.create!(entity_type: "Equipment", name: "secret_note",
+                                        field_type: "string", readable_roles: [ "manager" ])
+      OpenLoam::FieldDefinition.create!(entity_type: "Equipment", name: "public_note", field_type: "string")
+      OpenLoam::Current.actor = @manager
+      @excavator.set_custom_field("secret_note", "CLASSIFIED")
+      @excavator.set_custom_field("public_note", "ROUTINE")
+      @excavator.save!
+      OpenLoam::Current.actor = nil
+    end
+    sign_in(@employee)
+
+    get admin_history_path(type: "Equipment", record_id: @excavator.id)
+
+    assert_no_match(/CLASSIFIED/, response.body)
+    assert_match(/ROUTINE/, response.body, "the readable one still shows")
+  end
+
+  test "an edit conflict does not diff a field the role may not read" do
+    sign_in(@employee)
+    get edit_admin_equipment_path(@excavator)
+
+    # Someone else saves first, so the employee's submit carries a stale lock_version.
+    with_tenant(@tenant) do
+      OpenLoam::Current.actor = @manager
+      @excavator.update!(daily_rate: 555.55)
+      OpenLoam::Current.actor = nil
+    end
+
+    patch admin_equipment_path(@excavator),
+          params: { equipment: { name: "Renamed", lock_version: 0 } }
+
+    assert_response :conflict
+    assert_no_match(/555\.55/, response.body, "the conflict table is a read path too")
+  end
+
   # --- Fail closed ----------------------------------------------------------
 
   test "a model with no policy class raises instead of falling back to the base policy" do

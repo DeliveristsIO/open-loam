@@ -6,6 +6,8 @@ module Admin
   class HistoryController < BaseController
     before_action :set_target
 
+    helper_method :visible_changeset
+
     def index
       authorize!(policy_for(@record), :read?)
       @audits = OpenLoam::AuditRecord
@@ -23,6 +25,30 @@ module Admin
     end
 
     private
+
+    # History is a read path like any other: a field the role may not read must
+    # not come back here as an old → new pair.
+    def visible_changeset(audit)
+      policy = (@history_policy ||= policy_for(@record))
+
+      (audit.changeset || {}).each_with_object({}) do |(field, values), visible|
+        if field == "custom_fields"
+          readable = readable_custom_fields(values, policy)
+          visible[field] = readable if readable
+        elsif policy.readable?(field)
+          visible[field] = values
+        end
+      end
+    end
+
+    # Runtime fields are audited as one json blob, so the filter goes inside the
+    # old/new pair rather than dropping the whole entry.
+    def readable_custom_fields(values, policy)
+      return values unless values.is_a?(Array)
+
+      sides = values.map { |side| side.to_h.select { |name, _| policy.custom_field_readable?(name) } }
+      sides.any?(&:present?) ? sides : nil
+    end
 
     # The target record, looked up through its OWN default scope (tenancy holds;
     # a soft-deleted row is still reachable to restore). The type is whitelisted
