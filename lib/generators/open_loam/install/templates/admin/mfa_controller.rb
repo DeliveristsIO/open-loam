@@ -8,6 +8,9 @@ module Admin
   class MfaController < BaseController
     skip_authorization! "Your own MFA credentials; sensitive changes go through require_sudo! instead."
 
+    # This IS the enrollment screen the requirement sends people to.
+    skip_before_action :require_mfa_enrollment!
+
     # Shown in authenticator apps as the account issuer; defaults to the app name.
     ISSUER = Rails.application.class.module_parent_name.freeze
 

@@ -94,7 +94,7 @@ module OpenLoam
       join = "LEFT JOIN #{table} ON #{table}.indexable_type = #{conn.quote(index_type(model))} " \
              "AND #{table}.indexable_id = #{model.table_name}.id " \
              "AND #{table}.field_key = #{conn.quote(field_key.to_s)} " \
-             "AND #{table}.tenant_id = #{OpenLoam.tenant!.id}"
+             "AND #{table}.tenant_id = #{conn.quote(OpenLoam.tenant!.id)}"
       model.joins(join).order(Arel.sql("#{table}.value_text #{dir.to_s.casecmp('desc').zero? ? 'DESC' : 'ASC'}"))
     end
 

@@ -5,6 +5,7 @@ module Admin
     layout "admin"
 
     before_action :set_open_loam_context
+    before_action :require_mfa_enrollment!
     before_action :set_locale
 
     # Fails an action that never authorized anything. Forgetting `authorize!` is
@@ -100,6 +101,22 @@ module Admin
     # point: a membership in some other tenant is not membership here.
     def member_of_current_tenant?
       OpenLoam::Membership.exists?(user_id: current_actor.id)
+    end
+
+    # security.mfa_required_roles has to hold on EVERY request, not just as a
+    # redirect at the end of login — otherwise typing any other admin URL walks
+    # straight past enrollment and the requirement means nothing.
+    def require_mfa_enrollment!
+      return if OpenLoam::MfaCredential.active_for(current_actor)
+      return unless mfa_required_role?
+
+      redirect_to new_admin_mfa_path,
+                  alert: "Your role requires two-factor authentication — set it up to continue."
+    end
+
+    def mfa_required_role?
+      required = Array(OpenLoam::Configs.get("security.mfa_required_roles", default: []))
+      required.map(&:to_s).include?(current_role.to_s)
     end
 
     # Drives the bell in the admin layout. One COUNT per admin page render,

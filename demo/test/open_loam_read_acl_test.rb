@@ -216,3 +216,70 @@ class OpenLoamReadAclTest < ActionDispatch::IntegrationTest
     assert_match(/No policy defined for OpenLoam::Tenant/, error.message)
   end
 end
+
+# Staging is deliberately ungated ("propose" is not "apply"), so approval is
+# where authority is spent — and it used to spend it on an unfiltered changeset
+# applied to a bare constantize of a stored string.
+class OpenLoamStagedChangeTest < ActiveSupport::TestCase
+  setup do
+    @tenant = OpenLoam::Tenant.create!(name: "T", slug: "staged-change")
+    @manager = User.create!(name: "M", email: "m@staged.test", password: "password123")
+    @employee = User.create!(name: "E", email: "e@staged.test", password: "password123")
+    with_tenant(@tenant) do
+      OpenLoam::Membership.create!(user: @manager, role: "manager")
+      OpenLoam::Membership.create!(user: @employee, role: "employee")
+      OpenLoam::Current.actor = @manager
+      @excavator = Equipment.create!(name: "Excavator", daily_rate: 100, status: "available")
+      OpenLoam::Current.actor = nil
+    end
+  end
+
+  def stage(changes, actor:, target: @excavator, target_type: nil)
+    with_tenant(@tenant) do
+      OpenLoam::Current.actor = actor
+      action = OpenLoam::PendingActions.stage(summary: "s", on: target, action: :update, changes: changes)
+      action.update_column(:target_type, target_type) if target_type
+      OpenLoam::Current.actor = nil
+      action
+    end
+  end
+
+  test "a non-tenant-scoped target is refused, not constantized and written" do
+    action = stage({ name: "x" }, actor: @employee, target_type: "User")
+
+    with_tenant(@tenant) do
+      OpenLoam::Current.actor = @manager
+      action.approve!(by: @manager)
+      OpenLoam::Current.actor = nil
+    end
+
+    assert_equal "failed", action.reload.status
+    assert_match(/not a tenant-scoped model/, action.error)
+  end
+
+  test "a staged change may not carry soft-delete or tenancy plumbing" do
+    action = stage({ "deleted_at" => Time.current }, actor: @employee)
+
+    with_tenant(@tenant) do
+      OpenLoam::Current.actor = @manager
+      action.approve!(by: @manager)
+      OpenLoam::Current.actor = nil
+    end
+
+    assert_equal "failed", action.reload.status
+    assert_match(/may not set deleted_at/, action.error)
+    assert_nil @excavator.reload.deleted_at
+  end
+
+  test "the approver's own field rules apply to what they approve" do
+    action = stage({ "daily_rate" => 1 }, actor: @manager)
+
+    with_tenant(@tenant) do
+      OpenLoam::Current.actor = @employee
+      # An employee cannot approve at all in the UI (require_role!), but the
+      # model must not rely on the screen for the field-level half.
+      assert_raises(OpenLoam::NotAuthorizedError) { action.send(:permitted_changeset, @excavator) }
+      OpenLoam::Current.actor = nil
+    end
+  end
+end

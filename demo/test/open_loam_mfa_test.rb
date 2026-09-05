@@ -273,3 +273,50 @@ class AdminMfaFlowTest < ActionDispatch::IntegrationTest
     secret
   end
 end
+
+# security.mfa_required_roles used to be advisory: login redirected to
+# enrollment, and any other admin URL walked straight past it.
+class MfaRequiredRolesTest < ActionDispatch::IntegrationTest
+  setup do
+    @tenant = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-mfa-required")
+    @marta = User.create!(name: "Marta", email: "marta@mfareq.test", password: "password123")
+    with_tenant(@tenant) do
+      OpenLoam::Membership.create!(user: @marta, role: "manager")
+      OpenLoam::Configs.set("security.mfa_required_roles", [ "manager" ])
+    end
+    post admin_session_path, params: { email: "marta@mfareq.test", password: "password123" }
+  end
+
+  test "a required role cannot navigate past enrollment" do
+    get admin_equipment_index_path
+
+    assert_redirected_to new_admin_mfa_path
+  end
+
+  test "the enrollment screen itself stays reachable, or the redirect would loop" do
+    get new_admin_mfa_path
+
+    assert_response :success
+  end
+
+  test "enrolling lifts the block" do
+    secret = OpenLoam::Totp.generate_secret
+    travel_to(61.seconds.ago) do
+      OpenLoam::MfaCredential.new(user: @marta).activate_with!(secret, OpenLoam::Totp.code_at(secret, Time.now.to_i / 30))
+    end
+
+    get admin_equipment_index_path
+
+    assert_response :success
+  end
+
+  test "a role that is not on the list is unaffected" do
+    tomek = User.create!(name: "Tomek", email: "tomek@mfareq.test", password: "password123")
+    with_tenant(@tenant) { OpenLoam::Membership.create!(user: tomek, role: "employee") }
+
+    post admin_session_path, params: { email: "tomek@mfareq.test", password: "password123" }
+    get admin_equipment_index_path
+
+    assert_response :success
+  end
+end

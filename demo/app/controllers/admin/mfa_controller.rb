@@ -8,6 +8,9 @@ module Admin
   class MfaController < BaseController
     skip_authorization! "Your own MFA credentials; sensitive changes go through require_sudo! instead."
 
+    # This IS the enrollment screen the requirement sends people to.
+    skip_before_action :require_mfa_enrollment!
+
     ISSUER = "OpenLoam Demo".freeze
 
     # Replacing an ACTIVE credential (or disabling it) is sensitive, so gate those

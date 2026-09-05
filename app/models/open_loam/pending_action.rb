@@ -150,13 +150,20 @@ module OpenLoam
       update!(error: error.message)
     end
 
+    # Never settable through a staged change: soft-delete state has its own
+    # audited action (and its own policy question), and the rest is plumbing.
+    PROTECTED_FIELDS = %w[id tenant_id deleted_at lock_version].freeze
+
     def execute_change!
       case action_type
       when "create"
-        record = target_class.create!(changeset)
+        record = target_class.new
+        record.assign_attributes(permitted_changeset(record))
+        record.save!
         "created #{target_type}##{record.id}"
       when "update"
-        target_class.find(target_id).update!(changeset)
+        record = target_class.find(target_id)
+        record.update!(permitted_changeset(record))
         "updated #{target_type}##{target_id}"
       when "destroy"
         target = target_class.find(target_id)
@@ -167,8 +174,34 @@ module OpenLoam
       end
     end
 
+    # target_type is a string off a stored row, so it gets the same treatment as
+    # any other type resolution from untrusted input. The TenantRecord check is
+    # the load-bearing half: a non-tenant-scoped target (User, say) has no
+    # default scope, which would turn approval into a cross-tenant write.
     def target_class
-      target_type.constantize
+      klass = target_type.to_s.safe_constantize
+      unless klass.is_a?(Class) && klass < OpenLoam::TenantRecord
+        raise OpenLoam::Error, "#{target_type.inspect} is not a tenant-scoped model — refusing to apply a staged change"
+      end
+
+      klass
+    end
+
+    # The changeset is whatever the stager wrote, and staging is deliberately
+    # ungated ("propose" is not "apply"). Approval is where authority is
+    # spent, so the fields go through the APPROVER's policy — otherwise staging
+    # would be a way around every field rule, with a manager's click on the end
+    # of it. Refusals raise rather than being dropped, so the proposal fails
+    # visibly instead of applying a quietly different change.
+    def permitted_changeset(record)
+      blocked = changeset.keys & PROTECTED_FIELDS
+      raise OpenLoam::Error, "a staged change may not set #{blocked.join(', ')}" if blocked.any?
+
+      policy = OpenLoam::Policy.for(record)
+      refused = changeset.keys - policy.permitted_fields(changeset.keys).map(&:to_s)
+      raise OpenLoam::NotAuthorizedError, "the approver may not write #{refused.join(', ')}" if refused.any?
+
+      changeset
     end
 
     def load_target

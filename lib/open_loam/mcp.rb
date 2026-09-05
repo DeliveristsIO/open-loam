@@ -163,7 +163,10 @@ module OpenLoam
       clean = {}
       (changes || {}).each do |field, value|
         field = field.to_s
-        raise ToolError, "#{field} cannot be set" if %w[id tenant_id lock_version].include?(field)
+        # deleted_at belongs with the rest: staging a direct soft-delete would
+        # bypass a destroy? override and the audited action label, which is
+        # exactly what OpenLoam::Bulk and BusinessRules both refuse.
+        raise ToolError, "#{field} cannot be set" if %w[id tenant_id lock_version deleted_at].include?(field)
         raise ToolError, "#{field} changes go through a workflow transition, not a direct write" if field == workflow_column
 
         if model.column_names.include?(field)
@@ -267,6 +270,12 @@ module OpenLoam
     def apply_order(model, scope, order, dir)
       return scope.order(id: :asc) if order.blank?
       raise ToolError, "unknown sort column #{order.inspect}" unless model.column_names.include?(order.to_s)
+
+      # Same gate apply_filters enforces. Values are redacted from the result,
+      # but ordering by a restricted column still leaks its ranking — which is
+      # the inference oracle the filter gate exists to close.
+      policy = OpenLoam::Policy.for_model(model, OpenLoam::Current.actor)
+      raise ToolError, "#{order} is not readable for this role" unless policy.readable?(order.to_s)
 
       direction = dir.to_s.casecmp("desc").zero? ? :desc : :asc
       scope.reorder(order.to_s => direction)
