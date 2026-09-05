@@ -17,9 +17,18 @@ module OpenLoam
     # One event name ("rental.equipment.created") or a domain prefix
     # ("rental.") — the same rule as OpenLoam::Events.subscribe and webhook
     # endpoints, so a pattern means the same thing everywhere.
+    # ESCAPE is not optional here. sanitize_sql_like backslash-escapes `_`, and
+    # SQLite has NO default escape character — so a domain containing an
+    # underscore ("damage_report.") would search for a literal backslash and
+    # match nothing, silently. Naming the escape explicitly is portable across
+    # SQLite, Postgres and MySQL.
     scope :matching, ->(name_or_prefix) {
       pattern = name_or_prefix.to_s
-      pattern.end_with?(".") ? where("name LIKE ?", "#{sanitize_sql_like(pattern)}%") : where(name: pattern)
+      if pattern.end_with?(".")
+        where("name LIKE ? ESCAPE ?", "#{sanitize_sql_like(pattern)}%", "\\")
+      else
+        where(name: pattern)
+      end
     }
 
     def readonly?

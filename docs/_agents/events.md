@@ -129,7 +129,9 @@ OpenLoam::EventLog.read("rental.equipment.created")      # one event name
 OpenLoam::EventLog.read("billing.", since: 7.days.ago)
 
 OpenLoam::EventLog.replay("billing.") do |name, payload|
-  # exactly what a live subscriber saw
+  # the same event a live subscriber saw — but read back from the row, so the
+  # payload has STRING keys (as durable delivery does), not the symbols an
+  # inline subscriber receives.
 end
 ```
 

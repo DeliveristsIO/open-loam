@@ -77,6 +77,27 @@ class OpenLoamEventLogTest < ActiveSupport::TestCase
     end
   end
 
+  test "a domain prefix containing an underscore matches its events" do
+    # Regression: sanitize_sql_like escapes `_` with a backslash, and SQLite has
+    # no default LIKE escape character — without an explicit ESCAPE clause this
+    # searched for a literal backslash and silently returned nothing. The demo
+    # has a damage_report domain, so this is the common case, not an edge one.
+    with_tenant(@warsaw) do
+      OpenLoam::Events.publish("damage_report.claim.filed", { id: 1 })
+
+      assert_equal %w[damage_report.claim.filed], OpenLoam::EventLog.read("damage_report.").map(&:name)
+    end
+  end
+
+  test "an underscore in a domain prefix is literal, not a wildcard" do
+    with_tenant(@warsaw) do
+      OpenLoam::Events.publish("damagexreport.claim.filed", { id: 1 })
+
+      assert_equal 0, OpenLoam::EventLog.read("damage_report.").count,
+                   "`_` must match itself, not any character"
+    end
+  end
+
   test "replay hands a handler exactly what a live subscriber saw" do
     with_tenant(@warsaw) do
       OpenLoam::Events.publish("billing.invoice.paid", { invoice_id: 7 })
