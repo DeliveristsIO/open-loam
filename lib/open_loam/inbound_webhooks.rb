@@ -95,17 +95,11 @@ module OpenLoam
       (Time.current.to_i - seconds).abs <= tolerance.to_i
     end
 
-    # The dedupe key comes from SIGNED material only, which means the body.
-    #
-    # It used to prefer a delivery-id header, and the HMAC covers the body alone —
-    # so a captured (body, signature) pair replayed with a fresh header value
-    # produced a new external_id every time, slipped past the unique index and
-    # published the domain event again. One capture, unlimited events.
-    #
-    # The cost is that a sender emitting genuinely distinct deliveries with
-    # byte-identical bodies sees the second deduped. That is the safe direction,
-    # and senders that need distinguishable deliveries put a nonce or timestamp
-    # in the body — which is signed — rather than only in a header.
+    # The dedupe key must come from SIGNED material, which means the body: the
+    # HMAC covers the body alone, so a captured (body, signature) replayed with a
+    # fresh delivery-id header used to mint a new external_id every time and
+    # re-publish the event. Cost: a sender emitting distinct deliveries with
+    # identical bodies sees the second deduped — its nonce belongs in the body.
     def delivery_id(_source, _headers, body)
       Digest::SHA256.hexdigest(body)
     end

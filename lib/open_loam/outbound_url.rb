@@ -4,20 +4,16 @@ require "uri"
 
 module OpenLoam
   # Guard for URLs a TENANT supplies and the SERVER then fetches — webhook
-  # endpoints and the SSO issuer. Without it those are a server-side request
-  # forgery primitive: the tenant names an address only the server can reach
-  # (169.254.169.254, 127.0.0.1, a private subnet) and reads the result, or acts
-  # on it, from inside the network perimeter.
-  #
-  # In-gem and dependency-free by design (ADR 0002).
+  # endpoints and the SSO issuer. Without it the tenant names an address only
+  # the server can reach (169.254.169.254, loopback, a private subnet) and gets
+  # the result back from inside the perimeter.
   #
   #   uri, address = OpenLoam::OutboundUrl.resolve!(endpoint.url)
   #   http = Net::HTTP.new(uri.host, uri.port)
   #   http.ipaddr = address   # connect to the address that was CHECKED
   #
-  # Pinning the connection to the checked address is the load-bearing half. A
-  # host that resolves to a public IP during validation and a private one a
-  # moment later (DNS rebinding) defeats any check that only inspects the name.
+  # The pin is the load-bearing half: a host that resolves publicly during the
+  # check and privately a moment later (DNS rebinding) beats a name-only check.
   module OutboundUrl
     class BlockedError < OpenLoam::Error; end
 
@@ -34,10 +30,8 @@ module OpenLoam
 
     module_function
 
-    # Shape only — no DNS. This is what a model validation calls: saving must not
-    # depend on the network (a DNS blip would make every endpoint unsaveable),
-    # and a name that resolves publicly today can resolve privately tomorrow, so
-    # a save-time lookup proves nothing that resolve! does not re-prove.
+    # Shape only — no DNS. Model validations call this: saving must not depend on
+    # the network, and a save-time lookup proves nothing resolve! doesn't re-prove.
     def validate!(url, require_https: false)
       uri = parse!(url, require_https: require_https)
       if literal_address(uri.host) && blocked?(uri.host)

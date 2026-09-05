@@ -282,4 +282,24 @@ class OpenLoamStagedChangeTest < ActiveSupport::TestCase
       OpenLoam::Current.actor = nil
     end
   end
+
+  test "a staged destroy still has to pass the approver's destroy? rule" do
+    action = with_tenant(@tenant) do
+      OpenLoam::Current.actor = @employee
+      staged = OpenLoam::PendingActions.stage(summary: "s", on: @excavator, action: :destroy)
+      OpenLoam::Current.actor = nil
+      staged
+    end
+
+    EquipmentPolicy.class_eval { def destroy? = false }
+    begin
+      with_tenant(@tenant) { action.approve!(by: @manager) }
+    ensure
+      EquipmentPolicy.class_eval { def destroy? = role == :manager }
+    end
+
+    assert_equal "failed", action.reload.status
+    assert_match(/may not destroy/, action.error)
+    assert_nil @excavator.reload.deleted_at
+  end
 end

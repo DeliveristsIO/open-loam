@@ -62,7 +62,10 @@ replayed with a fresh header value and re-publish its event without limit.
 resolved its target with a bare `constantize` and mass-assigned the stored
 changeset, so a host staging a non-tenant-scoped target turned approval into a
 cross-tenant `update!` on arbitrary columns. The target must now be a
-`TenantRecord`, and the changeset goes through the approver's policy.
+`TenantRecord`, and both halves of the approver's policy apply: the action
+(`create?`/`update?`/`destroy?`) and the fields the changeset writes. A policy
+narrower than "any manager" — `destroy?` restricted to an owner, say — was
+previously bypassed by staging the change and having a manager approve it.
 
 **`security.mfa_required_roles` was advisory.** Login redirected to enrollment
 and nothing checked again, so any other admin URL walked past it. Now enforced

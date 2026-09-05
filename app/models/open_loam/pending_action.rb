@@ -158,20 +158,33 @@ module OpenLoam
       case action_type
       when "create"
         record = target_class.new
+        authorize_action!(record, :create?)
         record.assign_attributes(permitted_changeset(record))
         record.save!
         "created #{target_type}##{record.id}"
       when "update"
         record = target_class.find(target_id)
+        authorize_action!(record, :update?)
         record.update!(permitted_changeset(record))
         "updated #{target_type}##{target_id}"
       when "destroy"
         target = target_class.find(target_id)
+        authorize_action!(target, :destroy?)
         target.respond_to?(:soft_delete!) ? target.soft_delete! : target.destroy!
         "deleted #{target_type}##{target_id}"
       else
         raise OpenLoam::Error, "unknown action_type #{action_type.inspect}"
       end
+    end
+
+    # The field rules below are not the whole policy: a host may restrict the
+    # ACTION itself (destroy? to an owner, say). Staging must not route around
+    # that, so the approver's verdict on the action is asked first.
+    def authorize_action!(record, question)
+      return if OpenLoam::Policy.for(record).public_send(question)
+
+      raise OpenLoam::NotAuthorizedError,
+            "the approver may not #{question.to_s.chomp('?')} #{target_type}"
     end
 
     # target_type is a string off a stored row, so it gets the same treatment as
@@ -187,12 +200,10 @@ module OpenLoam
       klass
     end
 
-    # The changeset is whatever the stager wrote, and staging is deliberately
-    # ungated ("propose" is not "apply"). Approval is where authority is
-    # spent, so the fields go through the APPROVER's policy — otherwise staging
-    # would be a way around every field rule, with a manager's click on the end
-    # of it. Refusals raise rather than being dropped, so the proposal fails
-    # visibly instead of applying a quietly different change.
+    # Staging is deliberately ungated ("propose" is not "apply"), so approval is
+    # where authority is spent and the APPROVER's field rules are what bind —
+    # otherwise staging routes around every one of them. Refusals raise rather
+    # than drop, so the proposal fails visibly instead of applying a lesser change.
     def permitted_changeset(record)
       blocked = changeset.keys & PROTECTED_FIELDS
       raise OpenLoam::Error, "a staged change may not set #{blocked.join(', ')}" if blocked.any?
