@@ -10,38 +10,29 @@ frozen and what is not.
 ### Added
 
 - **The event log — `OpenLoam::EventLog` + `OpenLoam::EventRecord`.** Every
-  published event is now captured as an append-only, tenant-scoped row, so a
-  tenant's history is queryable and replayable instead of only observable live.
+  published event is captured as an append-only, tenant-scoped row, so a
+  tenant's history is queryable and replayable rather than only observable live.
   `EventLog.read(name_or_prefix, since:, limit:)` and `EventLog.replay(...)` take
-  the same patterns as `Events.subscribe` (exact name or domain prefix).
-  `OpenLoam::DurableEvents` had made *delivery* durable; this closes *capture*,
-  which its own contract explicitly did not cover.
-  - Capture is **on by default and captures everything** except
-    `OpenLoam.uncaptured_events` (default: `["open_loam.progress."]`, since a
-    bulk import fires one progress tick per row). Unlike
-    `OpenLoam.broadcast_events`, which is default-off because it governs what
-    leaves for a browser, this is internal tenant-scoped history — the same
-    posture as audit-by-default.
-  - Capture runs inline in the publisher's thread, so a failed insert propagates
-    into the publishing operation. Deliberate: a log that silently drops entries
-    is not a log.
-  - Rows are readonly once persisted; retention (`OpenLoam.event_log_retention`,
-    90 days by default) is enforced by a per-tenant daily
-    `OpenLoam::EventLogPruneJob`. New apps get the table from
-    `rails g open_loam:install`; existing apps need the
-    `create_open_loam_event_records` migration.
+  the same patterns as `Events.subscribe`. `OpenLoam::DurableEvents` had made
+  *delivery* durable; this closes *capture*, which its contract explicitly did
+  not cover.
+
+  Capture is on by default and captures everything except
+  `OpenLoam.uncaptured_events` (default: `["open_loam.progress."]`). It runs
+  inline, so a failed insert propagates into the publishing operation. Retention
+  is `OpenLoam.event_log_retention` (90 days), swept per tenant by
+  `OpenLoam::EventLogPruneJob`. New apps get the table from
+  `rails g open_loam:install`; existing apps need the
+  `create_open_loam_event_records` migration.
 
 ### Changed
 
 - **The four "wrap a proven gem" roadmap items are resolved**, recorded in
   [ADR 0007](docs/_adr/0007-proven-gem-swaps-resolved.md). Tenancy (L-201) and
-  audit (L-203) stay in-gem for good — `acts_as_tenant` would add a second
-  current-tenant store alongside `OpenLoam::Current`, and `paper_trail`'s
-  full-object serialization would undo `OpenLoam::Auditable`'s encrypted-column
-  redaction. The Pundit swap (L-202) is declined too, since `policy_for`/
-  `authorize!` already are Pundit's `authorize`; it did surface one real gap (no
-  `verify_authorized`-equivalent guard), tracked separately. L-204 is the event
-  log above. No public `OpenLoam::` contract changed.
+  audit (L-203) stay in-gem for good; the Pundit swap (L-202) is declined, but
+  the gap it exposed — no `verify_authorized`-equivalent guard — is tracked
+  separately. L-204 is the event log above. No public `OpenLoam::` contract
+  changed.
 
 ## 0.2.0 — 2026-09-05
 

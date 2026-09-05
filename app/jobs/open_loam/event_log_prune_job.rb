@@ -1,12 +1,7 @@
 module OpenLoam
-  # Enforces the event log's retention window (see OpenLoam::EventLog.prune).
-  # Capture is on by default and captures everything, so without this the log
-  # grows without bound.
-  #
-  # Registered per-tenant via OpenLoam::Scheduler (see OpenLoam::Engine), so
-  # `sync_tenant` materializes a schedule row per tenant and the scheduler
-  # allowlist already covers the class. Tenant-scoped: the prune runs inside one
-  # tenant, so there is no cross-tenant delete.
+  # Enforces the event log's retention window (OpenLoam::EventLog.prune).
+  # Registered per-tenant in OpenLoam::Engine, so it runs inside one tenant and
+  # never deletes across the boundary.
   class EventLogPruneJob < ActiveJob::Base
     queue_as :default
 

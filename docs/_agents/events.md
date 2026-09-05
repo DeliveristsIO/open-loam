@@ -114,11 +114,9 @@ dispatcher makes) — durable delivery is a tenant-scoped guarantee.
 
 ## The event log — capture, not delivery
 
-The two tiers above both describe **delivery**: who gets told, and how hard the
-system tries. Neither records that the event *happened*. `OpenLoam::DurableEvents`
-says so in its own contract — "durability is of DELIVERY, not CAPTURE" — so
-before the log existed, a published event that nobody was subscribed to left no
-trace, and no stream could be replayed.
+Both tiers above describe **delivery**: who gets told, and how hard the system
+tries. Neither records that the event *happened*, which is why a publish nobody
+subscribed to used to leave no trace.
 
 `OpenLoam::EventLog` is the capture half. Every publish becomes one append-only
 `OpenLoam::EventRecord` row in the event's tenant:
@@ -129,48 +127,24 @@ OpenLoam::EventLog.read("rental.equipment.created")      # one event name
 OpenLoam::EventLog.read("billing.", since: 7.days.ago)
 
 OpenLoam::EventLog.replay("billing.") do |name, payload|
-  # the same event a live subscriber saw — but read back from the row, so the
-  # payload has STRING keys (as durable delivery does), not the symbols an
-  # inline subscriber receives.
+  # payload has STRING keys here — it came back from the row, as in durable
+  # delivery, not the symbols an inline subscriber receives.
 end
 ```
 
-Patterns mean the same thing here as everywhere else: a trailing dot is a domain
-prefix, anything else is an exact event name.
-
-**Replay is a re-read of history, not a second publish.** Nothing else on the bus
-fires, and a replayed event is not captured again — so a replay handler must be
-idempotent, but it cannot cascade.
-
-### Defaults and their reasoning
+Replay is a re-read of history, not a second publish: nothing else on the bus
+fires and a replayed event is not captured again, so a replay handler must be
+idempotent but cannot cascade.
 
 Capture is **on, and captures everything** except the patterns in
-`OpenLoam.uncaptured_events`. That is the opposite of `OpenLoam.broadcast_events`,
-deliberately: broadcasting governs **exposure** — events crossing out to a
-browser, where a stray event is a leak, so nothing goes unless asked. The log is
-internal, tenant-scoped history, which is the audit-by-default posture. An opt-in
-log is a log nobody turns on.
+`OpenLoam.uncaptured_events` (shipped default: `open_loam.progress.`, since a
+bulk import fires one tick per row). Capture runs inline, so a failed insert
+propagates into the publishing operation. Nil-tenant events are not captured,
+matching durable delivery and the webhook dispatcher.
 
-The shipped exclusion is `open_loam.progress.`: a bulk import fires one tick per
-row, which is volume without history worth keeping.
+Retention is `OpenLoam.event_log_retention` — 90 days by default, `nil` to keep
+everything — swept daily per tenant by `OpenLoam::EventLogPruneJob`.
 
-What lands in a row is the published payload, which by convention carries **ids
-and scalars, never records** — the same rule the webhook and durable paths
-already depend on. A payload is an authored choice at each call site, which is
-what makes capture-all reasonable where blanket model-state serialization would
-not be.
-
-Capture runs **inline in the publisher's thread**, so a failed insert propagates
-into whatever published the event — the same posture as `DurableEvents.capture`,
-and for the same reason: a log that silently drops entries is not a log.
-
-Nil-tenant events are **not** captured, matching durable delivery and the webhook
-dispatcher.
-
-### Retention
-
-Capture-all grows with event volume, so retention is part of the feature:
-`OpenLoam.event_log_retention` (90 days by default; `nil` keeps everything) is
-enforced by `OpenLoam::EventLogPruneJob`, registered per tenant and swept daily.
-Rows are readonly once written, so the prune deletes in one statement rather than
-instantiating and destroying.
+[ADR 0007]({% link _adr/0007-proven-gem-swaps-resolved.md %}) has the reasoning:
+why capture-all is the default where broadcasting is opt-in, and why this stayed
+in-gem rather than adopting Rails Event Store.

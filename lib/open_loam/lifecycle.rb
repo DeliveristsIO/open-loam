@@ -87,13 +87,9 @@ module OpenLoam
       @broadcast_events = Array(patterns).map(&:to_s)
     end
 
-    # Event-name patterns EXCLUDED from the event log (OpenLoam::EventLog).
-    # Capture is on by default and there is no match-all pattern to opt into, so
-    # this exclusion list is the only knob: empty captures everything.
-    #
-    # The default excludes progress ticks, which fire once per processed row
-    # during a bulk import — high volume, no history worth keeping, and each one
-    # would otherwise be an inline INSERT in the import's own thread.
+    # Event-name patterns EXCLUDED from the event log (OpenLoam::EventLog), which
+    # captures everything else. An empty list captures everything; there is no
+    # opt-in spelling. Progress ticks fire once per row during a bulk import.
     def self.uncaptured_events
       @uncaptured_events ||= [ "open_loam.progress." ]
     end
@@ -103,8 +99,7 @@ module OpenLoam
     end
 
     # How long a captured event is kept before OpenLoam::EventLogPruneJob deletes
-    # it. nil disables pruning — an unbounded log, which is a deliberate choice
-    # an app has to make, not the default.
+    # it. nil disables pruning, leaving an unbounded log.
     def self.event_log_retention
       defined?(@event_log_retention) ? @event_log_retention : 90.days
     end

@@ -1,14 +1,9 @@
 require "test_helper"
 
-# The event LOG (OpenLoam::EventLog) — the capture half of the event system, and
-# the twin of OpenLoam::DurableEvents. That module makes DELIVERY durable (a row
-# per registered subscriber, retried until it lands); this one records that the
-# event HAPPENED at all, so a tenant's history is queryable and replayable
-# after the fact rather than only observable live.
-#
-# The contract under test: capture is on by default and captures everything
-# except a declared exclusion, rows are tenant-scoped and append-only, and
-# retention prunes by age without tripping the append-only guard.
+# The contract under test (OpenLoam::EventLog): capture is on by default and
+# captures everything except a declared exclusion, rows are tenant-scoped and
+# append-only, and retention prunes by age without tripping the append-only
+# guard.
 class OpenLoamEventLogTest < ActiveSupport::TestCase
   setup do
     @warsaw = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-eventlog")
@@ -39,8 +34,6 @@ class OpenLoamEventLogTest < ActiveSupport::TestCase
 
   test "an excluded pattern is not captured" do
     with_tenant(@warsaw) do
-      # The shipped default excludes progress ticks: a bulk import fires one per
-      # row, and each would otherwise be an inline INSERT in the import's thread.
       OpenLoam::Events.publish("open_loam.progress.tick", { pct: 10 })
 
       assert_equal 0, OpenLoam::EventRecord.count
@@ -78,10 +71,8 @@ class OpenLoamEventLogTest < ActiveSupport::TestCase
   end
 
   test "a domain prefix containing an underscore matches its events" do
-    # Regression: sanitize_sql_like escapes `_` with a backslash, and SQLite has
-    # no default LIKE escape character — without an explicit ESCAPE clause this
-    # searched for a literal backslash and silently returned nothing. The demo
-    # has a damage_report domain, so this is the common case, not an edge one.
+    # Regression: without an explicit ESCAPE clause this returned nothing, and
+    # the demo has a damage_report domain — the common case, not an edge one.
     with_tenant(@warsaw) do
       OpenLoam::Events.publish("damage_report.claim.filed", { id: 1 })
 
@@ -98,7 +89,7 @@ class OpenLoamEventLogTest < ActiveSupport::TestCase
     end
   end
 
-  test "replay hands a handler exactly what a live subscriber saw" do
+  test "replay hands a handler each captured event, in order" do
     with_tenant(@warsaw) do
       OpenLoam::Events.publish("billing.invoice.paid", { invoice_id: 7 })
       OpenLoam::Events.publish("billing.invoice.paid", { invoice_id: 8 })
@@ -125,8 +116,6 @@ class OpenLoamEventLogTest < ActiveSupport::TestCase
       old = OpenLoam::EventRecord.create!(name: "rental.old.thing", payload: {}, occurred_at: 200.days.ago)
       recent = OpenLoam::EventRecord.create!(name: "rental.new.thing", payload: {}, occurred_at: 1.day.ago)
 
-      # delete_all, not destroy_all: the rows are readonly, and destroy would
-      # raise ReadOnlyRecord on every one of them.
       assert_equal 1, OpenLoam::EventLog.prune
       assert_not OpenLoam::EventRecord.exists?(old.id)
       assert OpenLoam::EventRecord.exists?(recent.id)

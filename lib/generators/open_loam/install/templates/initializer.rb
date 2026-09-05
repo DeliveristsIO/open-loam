@@ -65,18 +65,13 @@ OpenLoam.locales = %w[en]
 # nothing reaches the browser unless it matches a pattern here (security posture).
 OpenLoam.broadcast_events = [ "open_loam.notification.", "open_loam.progress." ]
 
-# The event LOG (OpenLoam::EventLog) — every published event is captured as a
-# queryable, replayable row. ON by default, and capture-all: unlike
-# broadcast_events (which governs what leaves for a browser), this is internal,
-# tenant-scoped history, the same posture as audit-by-default.
-#
-# The only knob is exclusion. Progress ticks are excluded because a bulk import
-# fires one per row — high volume, no history worth keeping.
+# Events EXCLUDED from the event log (OpenLoam::EventLog), which otherwise
+# captures everything. Progress ticks are excluded because a bulk import fires
+# one per row — volume without history worth keeping.
 OpenLoam.uncaptured_events = [ "open_loam.progress." ]
 
-# How long captured events are kept (OpenLoam::EventLogPruneJob sweeps daily,
-# per tenant). Set to nil to keep everything forever — an unbounded table, so
-# make that a deliberate choice.
+# How long captured events are kept before the daily per-tenant prune. nil keeps
+# everything, which means an unbounded table.
 OpenLoam.event_log_retention = 90.days
 
 # Response enrichers (OpenLoam::Enrichers): attach a computed block onto ANOTHER

@@ -1,12 +1,10 @@
 module OpenLoam
-  # One captured domain event (see OpenLoam::EventLog). The row IS the history:
+  # One captured domain event (see OpenLoam::EventLog). Where
   # OpenLoam::EventDelivery records that a durable subscriber was told, this
   # records that the thing happened at all.
   #
-  # APPEND-ONLY. A log you can edit is not evidence, so a persisted row is
-  # readonly — an UPDATE raises ActiveRecord::ReadOnlyRecord. Retention still
-  # removes old rows, but through `delete_all` (which never instantiates them),
-  # never destroy.
+  # Append-only: a persisted row is readonly, so retention must delete_all
+  # rather than destroy.
   class EventRecord < OpenLoam::TenantRecord
     self.table_name = "open_loam_event_records"
 
@@ -14,14 +12,9 @@ module OpenLoam
 
     scope :chronological, -> { order(:occurred_at, :id) }
 
-    # One event name ("rental.equipment.created") or a domain prefix
-    # ("rental.") — the same rule as OpenLoam::Events.subscribe and webhook
-    # endpoints, so a pattern means the same thing everywhere.
-    # ESCAPE is not optional here. sanitize_sql_like backslash-escapes `_`, and
-    # SQLite has NO default escape character — so a domain containing an
-    # underscore ("damage_report.") would search for a literal backslash and
-    # match nothing, silently. Naming the escape explicitly is portable across
-    # SQLite, Postgres and MySQL.
+    # ESCAPE is load-bearing: sanitize_sql_like backslash-escapes `_`, and SQLite
+    # has no default escape character, so "damage_report." would search for a
+    # literal backslash and silently match nothing.
     scope :matching, ->(name_or_prefix) {
       pattern = name_or_prefix.to_s
       if pattern.end_with?(".")
