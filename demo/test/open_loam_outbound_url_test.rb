@@ -135,3 +135,105 @@ class OpenLoamImportPayloadTest < ActionDispatch::IntegrationTest
     assert_equal "Customer", logged["entity_type"], "and ordinary params still log"
   end
 end
+
+# The blind-index key used to be scoped to the tenant alone, unlike the
+# ciphertext AAD, which binds table and column too.
+class OpenLoamBlindIndexScopeTest < ActiveSupport::TestCase
+  setup { @tenant = OpenLoam::Tenant.create!(name: "T", slug: "blind-index-scope") }
+
+  test "the same value hashes differently per column, so a dump cannot correlate" do
+    value = "nowak@example.test"
+
+    email = OpenLoam::Encryption.blind_index(value, @tenant.id, table: "customers", column: :email)
+    other = OpenLoam::Encryption.blind_index(value, @tenant.id, table: "customers", column: :billing_email)
+    other_table = OpenLoam::Encryption.blind_index(value, @tenant.id, table: "leads", column: :email)
+
+    assert_not_equal email, other, "one value must not hash alike across columns"
+    assert_not_equal email, other_table, "nor across tables"
+  end
+
+  test "it still hashes differently across tenants, and consistently within one" do
+    other_tenant = OpenLoam::Tenant.create!(name: "O", slug: "blind-index-other")
+    args = { table: "customers", column: :email }
+
+    mine = OpenLoam::Encryption.blind_index("x@y.test", @tenant.id, **args)
+    again = OpenLoam::Encryption.blind_index("x@y.test", @tenant.id, **args)
+    theirs = OpenLoam::Encryption.blind_index("x@y.test", other_tenant.id, **args)
+
+    assert_equal mine, again, "lookup depends on it being deterministic"
+    assert_not_equal mine, theirs
+  end
+
+  test "searchable lookup still finds the record it wrote" do
+    with_tenant(@tenant) do
+      OpenLoam::Current.actor = User.create!(name: "A", email: "a@bi.test", password: "password123")
+      OpenLoam::Membership.create!(user: OpenLoam::Current.actor, role: "manager")
+      customer = Customer.create!(name: "Nowak", email: "nowak@bi.test")
+
+      assert_equal customer.id, Customer.find_by_email("nowak@bi.test")&.id
+      assert_nil Customer.find_by_email("someone@else.test")
+      OpenLoam::Current.actor = nil
+    end
+  end
+end
+
+# Rotation was documented and impossible: swapping the master made every read
+# fail the auth tag before anything could rewrite it, so the rake task the
+# initializer points at for a key compromise could never run.
+class OpenLoamKeyRotationTest < ActiveSupport::TestCase
+  setup do
+    @tenant = OpenLoam::Tenant.create!(name: "T", slug: "key-rotation")
+    @old_key = OpenLoam::Encryption.master_key
+  end
+
+  teardown do
+    OpenLoam::Encryption.master_key = @old_key
+    OpenLoam::Encryption.previous_master_key = nil
+  end
+
+  def customer_with_email(email)
+    with_tenant(@tenant) do
+      OpenLoam::Current.actor = User.create!(name: "A", email: "a#{SecureRandom.hex(4)}@rot.test", password: "password123")
+      OpenLoam::Membership.create!(user: OpenLoam::Current.actor, role: "manager")
+      record = Customer.create!(name: "Nowak", email: email)
+      OpenLoam::Current.actor = nil
+      record
+    end
+  end
+
+  test "a row sealed under the old key still reads after the master is swapped" do
+    customer = customer_with_email("nowak@rot.test")
+
+    OpenLoam::Encryption.previous_master_key = @old_key
+    OpenLoam::Encryption.master_key = SecureRandom.hex(32)
+
+    assert_equal "nowak@rot.test", with_tenant(@tenant) { Customer.find(customer.id).email }
+  end
+
+  test "without the previous key it fails loudly rather than returning garbage" do
+    customer = customer_with_email("nowak2@rot.test")
+
+    OpenLoam::Encryption.previous_master_key = nil
+    OpenLoam::Encryption.master_key = SecureRandom.hex(32)
+
+    assert_raises(OpenLoam::Encryption::DecryptionError) do
+      with_tenant(@tenant) { Customer.find(customer.id).email }
+    end
+  end
+
+  test "re-encrypting rewrites the row under the new key, and the blind index with it" do
+    customer = customer_with_email("nowak3@rot.test")
+
+    OpenLoam::Encryption.previous_master_key = @old_key
+    OpenLoam::Encryption.master_key = SecureRandom.hex(32)
+    with_tenant(@tenant) { Customer.find(customer.id).open_loam_reencrypt! }
+
+    # The rotation is finished, so the old key goes away entirely.
+    OpenLoam::Encryption.previous_master_key = nil
+
+    with_tenant(@tenant) do
+      assert_equal "nowak3@rot.test", Customer.find(customer.id).email
+      assert_equal customer.id, Customer.find_by_email("nowak3@rot.test")&.id, "the blind index was rebuilt too"
+    end
+  end
+end

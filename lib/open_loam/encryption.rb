@@ -41,6 +41,19 @@ module OpenLoam
         @master_key = value
       end
 
+      attr_writer :previous_master_key
+
+      # The key being rotated AWAY from. Set it alongside the new master and
+      # decryption falls back to it, which is what makes rotation possible at
+      # all: open_loam:encryption:rotate has to READ every row under the old key
+      # before it can rewrite it under the new one. Unset it once the rotation
+      # has run everywhere.
+      def previous_master_key
+        key = defined?(@previous_master_key) ? @previous_master_key : nil
+        key ||= ENV["OPEN_LOAM_PREVIOUS_MASTER_KEY"]
+        key.presence
+      end
+
       def master_key
         key = @master_key || ENV["OPEN_LOAM_MASTER_KEY"]
         raise MissingMasterKeyError if key.nil? || key.empty?
@@ -68,8 +81,8 @@ module OpenLoam
       # hash) — the accepted trade-off for searchability — but the per-tenant
       # HMAC key means the same value hashes differently across tenants, so
       # equality never leaks between them. Only searchable fields get one.
-      def blind_index(value, tenant_id)
-        blind_index_scoped(value, tenant_scope(tenant_id))
+      def blind_index(value, tenant_id, table: nil, column: nil)
+        blind_index_scoped(value, tenant_scope(tenant_id), table: table, column: column)
       end
 
       # Explicit-scope variants, for data owned by something OTHER than a tenant
@@ -82,7 +95,17 @@ module OpenLoam
 
       def decrypt_scoped(payload, scope, aad: nil)
         return nil if payload.nil?
+
         Cipher.open(payload, data_key(scope, :encryption), aad: aad)
+      rescue DecryptionError
+        # GCM's auth tag makes "wrong key" a loud, unambiguous failure, so
+        # falling back is safe: a blob that opens under the previous key really
+        # was sealed with it. Writes always use the CURRENT key, so a row is
+        # rotated the moment anything saves it.
+        previous = previous_data_key(scope, :encryption)
+        raise if previous.nil?
+
+        Cipher.open(payload, previous, aad: aad)
       end
 
       # The Additional Authenticated Data that BINDS a ciphertext to where it
@@ -96,9 +119,20 @@ module OpenLoam
         "loam-aad:v2:#{scope}:#{table}:#{column}"
       end
 
-      def blind_index_scoped(value, scope)
+      # The key is bound to (scope, table, column) for the same reason the
+      # ciphertext AAD is. A key scoped only to the tenant makes one value hash
+      # identically in every searchable column in that tenant: a dump correlates
+      # rows across tables, and anyone who can write one such field gets an
+      # equality oracle against columns they cannot read.
+      #
+      # table/column default to nil so an unbound caller still works — the
+      # per-tenant key, which is what OpenLoam::PendingActions wants for an
+      # idempotency digest that is not a column at all.
+      def blind_index_scoped(value, scope, table: nil, column: nil)
         return nil if value.nil?
-        OpenSSL::HMAC.hexdigest("SHA256", data_key(scope, :blind_index), value.to_s)
+
+        purpose = table && column ? "blind_index/#{table}/#{column}" : :blind_index
+        OpenSSL::HMAC.hexdigest("SHA256", data_key(scope, purpose), value.to_s)
       end
 
       private
@@ -119,6 +153,15 @@ module OpenLoam
         end
 
         key_provider.data_key(scope: scope, purpose: purpose)
+      end
+
+      # nil unless a previous master is configured AND the provider supports the
+      # fallback — a KMS-backed provider manages its own key versions, so the
+      # base KeyProvider answers nil and nothing changes for it.
+      def previous_data_key(scope, purpose)
+        return nil unless key_provider.respond_to?(:previous_data_key)
+
+        key_provider.previous_data_key(scope: scope, purpose: purpose)
       end
     end
   end

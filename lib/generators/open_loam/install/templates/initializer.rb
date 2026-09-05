@@ -8,8 +8,11 @@
 #
 #   OpenLoam::Encryption.master_key = ENV.fetch("OPEN_LOAM_MASTER_KEY")
 #
-# Rotating the key without re-encrypting orphans existing ciphertext — see
-# `bin/rails open_loam:encryption:rotate[Model,tenant_id]`.
+# To ROTATE: keep the outgoing key in OPEN_LOAM_PREVIOUS_MASTER_KEY while the new
+# one is in OPEN_LOAM_MASTER_KEY. Reads fall back to the old key, writes always use
+# the new one, so `bin/rails open_loam:encryption:rotate[Model,tenant_id]` can walk
+# each tenant's rows. Drop the previous key once every model has been rotated —
+# until then, both keys are live and the old one is still worth protecting.
 
 # Roles every tenant of this app is expected to have. A registry read by your
 # own seeding/admin code — OpenLoam does not create memberships for you, because

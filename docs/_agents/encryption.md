@@ -19,8 +19,12 @@ encrypts :email, searchable: true  # + a blind index for exact-match lookup
 ```
 
 Read/write is transparent (`patient.ssn` decrypts on read); a searchable field
-is found by `Patient.find_by_email(value)`, which matches the per-tenant blind
-index — never a LIKE. Rules: a field is NEVER both `encrypts` and `searchable_by`
+is found by `Patient.find_by_email(value)`, which matches the blind index — never
+a LIKE. That index's HMAC key is derived per **(tenant, table, column)**, like the
+ciphertext AAD, so one value does not hash alike across two searchable columns: a
+tenant-only key would let a dump correlate rows across tables, and would hand
+anyone who can write one such field an equality oracle against columns they may
+not read. Rules: a field is NEVER both `encrypts` and `searchable_by`
 (ciphertext cannot be LIKE-searched — it raises at load); reading or writing an
 encrypted field with no tenant in context raises `MissingTenantError`; the audit
 trail records an encrypted change as `[encrypted]`, never the value. Set
@@ -28,6 +32,24 @@ trail records an encrypted change as `[encrypted]`, never the value. Set
 export / key rotation: `bin/rails open_loam:encryption:decrypt_dump[Model,tenant_id]`
 / `open_loam:encryption:rotate[Model,tenant_id]`.
 
+
+## Rotating the master key
+
+Set the outgoing key as `OPEN_LOAM_PREVIOUS_MASTER_KEY` and the new one as
+`OPEN_LOAM_MASTER_KEY`, then run
+`bin/rails open_loam:encryption:rotate[Model,tenant_id]` for each encryptable
+model and tenant. Reads fall back to the previous key — GCM's auth tag makes
+"wrong key" an unambiguous failure, so the fallback cannot silently mis-decrypt —
+and every write uses the new key, so a row is rotated as soon as anything saves
+it. Blind indexes are rebuilt in the same pass, since the HMAC key derives from
+the master too.
+
+Drop `OPEN_LOAM_PREVIOUS_MASTER_KEY` once every model has been rotated. Until
+then both keys are live, and the old one still protects real data.
+
+A KMS-backed `key_provider` manages its own key versions; the fallback is only
+used when the provider implements `previous_data_key`, which the default
+HKDF provider does and the base `KeyProvider` does not.
 
 ## Ciphertext binding (AAD, v2 format)
 

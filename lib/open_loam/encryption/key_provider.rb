@@ -26,10 +26,26 @@ module OpenLoam
       KEY_BYTES = 32   # AES-256 and HMAC-SHA256 both take a 32-byte key
 
       def data_key(scope:, purpose:)
+        derive(scope, purpose, OpenLoam::Encryption.master_key)
+      end
+
+      # The same derivation under the key being rotated away from, so decryption
+      # can fall back to it while open_loam:encryption:rotate rewrites rows under
+      # the new one. nil when no previous key is configured.
+      def previous_data_key(scope:, purpose:)
+        previous = OpenLoam::Encryption.previous_master_key
+        return nil if previous.nil?
+
+        derive(scope, purpose, previous)
+      end
+
+      private
+
+      def derive(scope, purpose, master)
         raise ArgumentError, "scope is required to derive a key" if scope.nil? || scope.to_s.empty?
 
         OpenSSL::KDF.hkdf(
-          OpenLoam::Encryption.master_key,
+          master,
           salt: SALT,
           # info binds the key to owner AND purpose. "tenant/5" here reproduces
           # the pre-scope format exactly, so existing ciphertext still decrypts.

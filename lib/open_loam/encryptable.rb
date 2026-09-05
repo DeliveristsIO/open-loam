@@ -88,7 +88,11 @@ module OpenLoam
             write_attribute(name, OpenLoam::Encryption.encrypt_scoped(value, resolved, aad: aad))
             # The blind index tracks the ciphertext column: rewrite it in the
             # same breath, so an exact-match lookup can never go stale.
-            write_attribute(hash_column, OpenLoam::Encryption.blind_index_scoped(value, resolved)) if searchable
+            if searchable
+              write_attribute(hash_column,
+                              OpenLoam::Encryption.blind_index_scoped(value, resolved,
+                                                                      table: self.class.table_name, column: name))
+            end
           end
         end
       end
@@ -101,7 +105,8 @@ module OpenLoam
         hash_column = :"#{name}_hash"
 
         define_singleton_method("where_#{name}") do |value|
-          where(hash_column => OpenLoam::Encryption.blind_index(value, OpenLoam.tenant!.id))
+          where(hash_column => OpenLoam::Encryption.blind_index(value, OpenLoam.tenant!.id,
+                                                                table: table_name, column: name))
         end
 
         define_singleton_method("find_by_#{name}") do |value|
