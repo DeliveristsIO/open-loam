@@ -91,6 +91,9 @@ class OpenLoamInboundWebhooksTest < ActiveSupport::TestCase
   # so one captured (body, signature) pair replayed with a fresh header value
   # minted a new dedupe key and published the event again, without limit.
   test "a captured delivery cannot be replayed by varying unsigned headers" do
+    # A source carrying the old configuration is the vulnerable shape: the column
+    # outlives the fix on any row that already had it set.
+    with_tenant(@warsaw) { @source.update!(delivery_id_header: "X-Delivery-Id") }
     body = %({"amount":100})
     signature = sign(body)
     publishes = 0
