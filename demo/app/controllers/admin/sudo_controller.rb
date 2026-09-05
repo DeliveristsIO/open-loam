@@ -18,7 +18,7 @@ module Admin
       end
 
       if reauthenticated?
-        OpenLoam::AuthThrottle.clear(identifier)
+        OpenLoam::AuthThrottle.clear(identifier, kind: "sudo")
         session[:sudo_at] = Time.now.to_i
         redirect_to(session.delete(:sudo_return_to).presence || admin_root_path,
                     notice: "Re-authenticated — you can complete the action now.")

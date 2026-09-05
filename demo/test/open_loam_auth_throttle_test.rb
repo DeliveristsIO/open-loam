@@ -18,6 +18,17 @@ class OpenLoamAuthThrottleTest < ActiveSupport::TestCase
     refute OpenLoam::AuthThrottle.locked?("alice@x.test")
   end
 
+  test "clearing one kind leaves the other kinds standing" do
+    3.times { OpenLoam::AuthThrottle.record_failure("alice@x.test", kind: "password") }
+    3.times { OpenLoam::AuthThrottle.record_failure("alice@x.test", kind: "totp") }
+
+    OpenLoam::AuthThrottle.clear("alice@x.test", kind: "password")
+
+    assert_equal 0, OpenLoam::AuthThrottle.recent_failures("alice@x.test", kind: "password")
+    assert_equal 3, OpenLoam::AuthThrottle.recent_failures("alice@x.test", kind: "totp"),
+                 "a password success must not reset the second factor's counter"
+  end
+
   test "the window expires — failures age out and the lock lifts" do
     OpenLoam::AuthThrottle.max_attempts.times { OpenLoam::AuthThrottle.record_failure("alice@x.test", kind: "password") }
     assert OpenLoam::AuthThrottle.locked?("alice@x.test")
@@ -106,5 +117,26 @@ class AuthThrottleFlowTest < ActionDispatch::IntegrationTest
     post mfa_verify_admin_session_path, params: { code: OpenLoam::Totp.code_at(secret, Time.now.to_i / 30) }
     assert_response :too_many_requests
     assert_nil session[:tenant_id], "still not signed in"
+  end
+
+  # An attacker who already holds the password used to get unlimited TOTP
+  # guesses: burn max-1 codes, log in again with the password to reset the
+  # counter, repeat. Each factor now clears only its own kind.
+  test "a password success does NOT reset the TOTP counter" do
+    secret = OpenLoam::Totp.generate_secret
+    travel_to(61.seconds.ago) { OpenLoam::MfaCredential.new(user: @user).activate_with!(secret, OpenLoam::Totp.code_at(secret, Time.now.to_i / 30)) }
+
+    post admin_session_path, params: { email: "anna@example.test", password: "password123" }
+    burned = OpenLoam::AuthThrottle.max_attempts - 1
+    burned.times { post mfa_verify_admin_session_path, params: { code: "000000" } }
+    assert_equal burned, OpenLoam::AuthThrottle.recent_failures("anna@example.test", kind: "totp")
+
+    # The attacker's reset move: a fresh, correct password login.
+    post admin_session_path, params: { email: "anna@example.test", password: "password123" }
+
+    assert_equal burned, OpenLoam::AuthThrottle.recent_failures("anna@example.test", kind: "totp"),
+                 "the TOTP counter survived a password success"
+    post mfa_verify_admin_session_path, params: { code: "000000" }
+    assert OpenLoam::AuthThrottle.locked?("anna@example.test"), "the next wrong code locks, as it should have all along"
   end
 end

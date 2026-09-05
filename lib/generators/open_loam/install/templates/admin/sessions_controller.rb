@@ -39,7 +39,10 @@ module Admin
         return render :new, status: :unauthorized
       end
 
-      OpenLoam::AuthThrottle.clear(email) # a successful login resets the counter
+      # Clears the PASSWORD counter only. Clearing every kind here would let an
+      # attacker holding the password reset the TOTP counter before each guess,
+      # making the second factor brute-forceable.
+      OpenLoam::AuthThrottle.clear(email, kind: "password")
       reset_session # a fresh session id at login: no fixation
       session[:user_id] = user.id
 
@@ -58,8 +61,6 @@ module Admin
       @user = mfa_challenge_user or return redirect_to new_admin_session_path
     end
 
-    # TODO (follow-up): rate-limit / lock out repeated failed codes here (needs
-    # throttling infra) — a 6-digit TOTP is brute-forceable without it.
     def mfa_verify
       user = mfa_challenge_user or return redirect_to new_admin_session_path
 
@@ -74,7 +75,7 @@ module Admin
       credential = OpenLoam::MfaCredential.active_for(user)
 
       if credential.verify_totp(params[:code]) || credential.consume_recovery_code(params[:code])
-        OpenLoam::AuthThrottle.clear(user.email)
+        OpenLoam::AuthThrottle.clear(user.email, kind: "totp")
         session.delete(:mfa_pending)
         complete_authentication(user)
       else

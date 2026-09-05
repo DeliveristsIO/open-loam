@@ -42,3 +42,6 @@ demo/.bundle/
 !demo/log/.keep
 !demo/tmp/.keep
 !demo/storage/.keep
+
+# Security audit reports — findings on a PUBLIC repo. Keep local until fixed.
+SECURITY-AUDIT-*.md

@@ -6,7 +6,7 @@ module OpenLoam
   #
   #   OpenLoam::AuthThrottle.locked?(email)                      # refuse if true
   #   OpenLoam::AuthThrottle.record_failure(email, kind: "password", ip: request.ip)
-  #   OpenLoam::AuthThrottle.clear(email)                        # on success
+  #   OpenLoam::AuthThrottle.clear(email, kind: "password")      # on success
   #
   # PER-IDENTIFIER is the primary defense (an attacker targets one account /
   # code). A per-ip throttle to blunt spraying across accounts is a clean
@@ -46,6 +46,12 @@ module OpenLoam
 
     # Locked if there are >= max failures within the window. Old attempts age out
     # of the window automatically (the window query IS the expiry — no reaper).
+    #
+    # Both auth call sites ask WITHOUT a kind, so failures on either factor lock
+    # both. That is the deliberate choice: `clear` is kind-scoped so one factor's
+    # success cannot reset the other's counter, and reading unscoped means an
+    # attacker grinding TOTP also loses the password form. The cost is a wider
+    # lockout on the same per-identifier DoS surface the throttle already has.
     def locked?(identifier, kind: nil)
       recent_failures(identifier, kind: kind) >= max_attempts
     end
@@ -58,8 +64,14 @@ module OpenLoam
 
     # Reset the counter — call on a SUCCESSFUL auth so a legitimate user who
     # eventually gets in isn't left throttled.
-    def clear(identifier)
-      attempts(identifier).delete_all
+    #
+    # `kind:` is mandatory in practice: clearing every kind on one factor's
+    # success lets an attacker who holds the password reset the TOTP counter at
+    # will, giving unlimited 6-digit guesses. Each factor clears only its own.
+    def clear(identifier, kind: nil)
+      scope = attempts(identifier)
+      scope = scope.where(kind: Array(kind).map(&:to_s)) if kind
+      scope.delete_all
     end
 
     # Seconds until the identifier unlocks (for the "try again in N" message),
