@@ -1,6 +1,6 @@
 ---
 title: Resolving the Proven-Gem Swaps
-description: Why tenancy and audit stay in-gem for good, and why the event gap was closed in-gem rather than by adopting Rails Event Store.
+description: Why tenancy, audit and authorization stay in-gem, and why the event gap was closed in-gem rather than with Rails Event Store.
 nav_order: 7
 ---
 
@@ -8,73 +8,43 @@ nav_order: 7
 
 - Status: Accepted
 - Date: 2026-09
-- Supersedes the open question left by [0002](0002-in-gem-implementations.md)
+- Resolves the open question left by [0002]({% link _adr/0002-in-gem-implementations.md %})
 
 ## Context
-ADR 0002 shipped minimal in-gem implementations first and left the door open:
-"swapping a proven gem back in *behind the same convention* is a later refactor,
-not a reversal." Four roadmap items carried that debt — wrap `acts_as_tenant`
-(L-201), Pundit (L-202), `paper_trail` (L-203), and Rails Event Store (L-204).
-
-Deferred is not decided. Read one at a time against the code as it now stands,
-three of the four turn out not to be worth doing, and the fourth turns out to be
-a real gap that the gem it named would not be the best way to close. Leaving them
-open as perpetual "someday" items misrepresents the roadmap, so they are decided
-here.
+0002 shipped in-gem implementations first and called swapping proven gems back in
+"a later refactor, not a reversal", leaving four roadmap items open: L-201
+`acts_as_tenant`, L-202 Pundit, L-203 `paper_trail`, L-204 Rails Event Store.
+Deferred is not decided. Read against the code as it now stands, three are not
+worth doing and the fourth is a real gap the named gem is the wrong way to close.
 
 ## Decision
+**Tenancy stays in-gem** (L-201). `TenantRecord` is 36 lines and is the security
+boundary the guardrail suite exists to test. `acts_as_tenant` keeps its own
+`current_tenant`, so adopting it means two context stores bridged against
+`OpenLoam::Current` — which audit, events, policy and encryption all read.
 
-**Tenancy stays in-gem (L-201, declined).** `OpenLoam::TenantRecord` is 36 lines
-and is the tenancy security boundary the whole guardrail suite exists to test.
-`acts_as_tenant` maintains its own `ActsAsTenant.current_tenant`, while
-`OpenLoam::Current` is already the single context that audit, events, policy and
-encryption all read. Adopting it means two current-tenant stores bridged against
-each other — new failure modes across the boundary least able to afford them, for
-no capability gained.
+**Audit stays in-gem** (L-203). `paper_trail` serializes full `object_changes`,
+where `Auditable` deliberately redacts encrypted columns and drops the
+blind-index sibling, because a stored ciphertext still leaks length and, over
+time, correlations. Its headline feature, reify, already shipped as
+`OpenLoam::Undo` (L-704).
 
-**Audit stays in-gem (L-203, declined).** `paper_trail`'s headline feature is
-reify, and undo already shipped in-gem (L-704, `OpenLoam::Undo`). More decisively,
-`paper_trail` serializes full `object`/`object_changes` into its versions table,
-while `OpenLoam::Auditable` deliberately redacts encrypted columns to
-`"[encrypted]"` and drops the blind-index sibling — because a stored ciphertext
-still leaks length and, over time, correlations. Adopting it would mean
-reimplementing that redaction inside someone else's serializer, one
-misconfiguration away from writing encrypted values to a queryable table. That is
-a security regression bought for a feature already present.
+**Authorization stays in-gem** (L-202). `policy_for`/`authorize!` are already
+Pundit's `authorize` in six lines, and the field-level DSL is not a Pundit
+feature. Its one real advantage — `verify_authorized`, which fails an action that
+never authorized anything — is ~10 lines in-gem, and is tracked separately.
 
-**Authorization stays in-gem, but the gap it exposed is real (L-202, declined as
-a swap).** `policy_for` and `authorize!` in the generated base controllers are
-already Pundit's `authorize` in six lines, and every generated action calls them.
-What Pundit has that OpenLoam lacks is `verify_authorized` — the after-action
-guard that fails a request whose action never authorized anything. That hole is
-worth closing; it is about ten lines in-gem, and does not justify the dependency.
-
-**Event capture closed in-gem (L-204, reframed).** The stated premise — "no
-history" — was half stale: L-706 made *delivery* durable. But its own contract
-says durability is of delivery, not capture, so nothing recorded that an event
-happened and no stream could be replayed. That is a genuine capability gap, and
-it is now closed by `OpenLoam::EventLog` + `OpenLoam::EventRecord`: every publish
-is captured as an append-only, tenant-scoped row, readable and replayable by
-event name or domain prefix, pruned on a retention window. Rails Event Store
-would have brought its own schema, serialization and aggregate-root opinions to
-do what roughly a hundred lines does against conventions the gem already has.
+**Event capture closed in-gem** (L-204). Delivery was durable (L-706); capture was
+not, so nothing recorded that an event happened and no stream could be replayed.
+`OpenLoam::EventLog` closes it. Rails Event Store would bring its own schema,
+serialization and aggregate-root opinions for the same result.
 
 ## Consequences
-- The `OpenLoam::` contracts remain the public surface, unchanged; what changes is
-  that three of them are now settled rather than provisional.
-- ADR 0002's general principle still holds for anything new. This ADR resolves
-  the four specific items it named, and does not license re-opening them without
-  new evidence — a concrete requirement the in-gem version cannot meet.
-- Capture is ON by default and captures everything except a declared exclusion.
-  The comparable default-OFF switch, `OpenLoam.broadcast_events`, governs
-  *exposure* (events leaving for a browser); this is internal tenant-scoped
-  history, the same posture as audit-by-default. An opt-in log is a log nobody
-  turns on.
-- Capture runs inline in the publisher's thread, so a failed insert propagates
-  into the operation that published. Deliberate: a log that silently drops
-  entries is not a log.
-- The event log grows with event volume. Retention (`OpenLoam.event_log_retention`,
-  90 days by default) and a per-tenant daily prune are part of the feature, not a
-  follow-up.
-- One item remains open from this reading: the `verify_authorized`-equivalent
-  guard, tracked as its own issue rather than as a Pundit swap.
+- No public `OpenLoam::` contract changed; three of them are now settled rather
+  than provisional.
+- 0002's principle still governs anything new. Re-opening one of these four needs
+  a requirement the in-gem version demonstrably cannot meet.
+- Capture is on by default and runs inline, so a failed insert fails the
+  publishing operation. That inverts `broadcast_events`, which is opt-in because
+  it governs exposure rather than internal history.
+- One item stays open: the `verify_authorized`-equivalent guard.
