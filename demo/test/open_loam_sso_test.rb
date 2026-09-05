@@ -13,7 +13,7 @@ class OpenLoamSsoProvisioningTest < ActiveSupport::TestCase
     @provider = with_tenant(@warsaw) do
       OpenLoam::SsoProvider.create!(name: "Warsaw IdP", protocol: "oidc", issuer: "https://idp.warsaw.example",
                                 client_id: "cid", client_secret: "s3cr3t", domain: "warsaw-corp.example",
-                                jit_role: "employee", group_role_map: { "managers" => "manager" })
+                                domain_verified_at: Time.current, jit_role: "employee", group_role_map: { "managers" => "manager" })
     end
   end
 
@@ -120,6 +120,66 @@ class OpenLoamSsoProvisioningTest < ActiveSupport::TestCase
     end
   end
 
+  # `domain` is typed by a tenant manager and `User` is global, so before
+  # verification existed any tenant could register a domain it did not own and
+  # have SSO hand it the matching accounts.
+  class UnverifiedDomainTest < ActiveSupport::TestCase
+    setup do
+      OpenLoam::Sso::FakeProvider.reset!
+      @attacker = OpenLoam::Tenant.create!(name: "Attacker Ltd", slug: "attacker-sso")
+      @squatter = with_tenant(@attacker) do
+        OpenLoam::SsoProvider.create!(name: "Attacker IdP", protocol: "oidc", client_id: "c",
+                                      domain: "victimcorp.example", jit_role: "manager")
+      end
+    end
+
+    teardown { OpenLoam::Sso::FakeProvider.reset! }
+
+    test "an unverified provider cannot adopt an existing account" do
+      victim = User.create!(name: "CEO", email: "ceo@victimcorp.example", password: "password")
+      home = OpenLoam::Tenant.create!(name: "Victim Corp", slug: "victim-sso")
+      with_tenant(home) { OpenLoam::Membership.create!(user: victim, role: "manager") }
+
+      with_tenant(@attacker) do
+        claims = OpenLoam::Sso::Claims.new(sub: "attacker|1", email: "ceo@victimcorp.example",
+                                           email_verified: true, name: "CEO", groups: [])
+        assert_raises(OpenLoam::Sso::UnverifiedDomainError) { OpenLoam::Sso.provision(@squatter, claims) }
+
+        assert_empty OpenLoam::Membership.where(user_id: victim.id), "no membership in the attacker's tenant"
+      end
+      assert_equal [ home.id ], OpenLoam::Membership.tenants_for(victim).pluck(:id), "the victim's tenants are unchanged"
+      assert_empty OpenLoam::SsoIdentity.unscoped.where(sub: "attacker|1")
+    end
+
+    test "an unverified provider is invisible to home-realm discovery" do
+      assert_nil OpenLoam::Sso.provider_for(email: "anyone@victimcorp.example"),
+                 "an unproven domain claim must not capture sign-ins"
+
+      with_tenant(@attacker) { @squatter.verify_domain! }
+      assert_equal @squatter.id, OpenLoam::Sso.provider_for(email: "anyone@victimcorp.example").id
+    end
+
+    test "an unverified provider may still create a new user in its own tenant" do
+      with_tenant(@attacker) do
+        claims = OpenLoam::Sso::Claims.new(sub: "attacker|2", email: "staff@victimcorp.example",
+                                           email_verified: true, name: "Staff", groups: [])
+        user = OpenLoam::Sso.provision(@squatter, claims)
+
+        assert_equal "staff@victimcorp.example", user.email
+        assert_equal [ @attacker.id ], OpenLoam::Membership.tenants_for(user).pluck(:id)
+      end
+    end
+
+    test "editing the domain revokes verification" do
+      with_tenant(@attacker) do
+        @squatter.verify_domain!
+        @squatter.update!(domain: "otherco.example")
+        assert_not @squatter.reload.domain_verified?, "an approved domain cannot be repointed at an unapproved one"
+      end
+      assert_nil OpenLoam::Sso.provider_for(email: "someone@otherco.example")
+    end
+  end
+
   test "domain uniqueness is enforced across tenants (HRD must be unambiguous)" do
     conflict = with_tenant(@krakow) do
       OpenLoam::SsoProvider.new(name: "Krakow IdP", protocol: "oidc", client_id: "c", domain: "warsaw-corp.example", jit_role: "employee")
@@ -137,7 +197,8 @@ class OpenLoamSsoFlowTest < ActionDispatch::IntegrationTest
     @warsaw = OpenLoam::Tenant.create!(name: "Branch Warsaw", slug: "warsaw-sso-flow")
     with_tenant(@warsaw) do
       OpenLoam::SsoProvider.create!(name: "Warsaw IdP", protocol: "oidc", issuer: "https://idp.warsaw.example",
-                                client_id: "cid", client_secret: "s3cr3t", domain: "warsaw-corp.example", jit_role: "employee")
+                                client_id: "cid", client_secret: "s3cr3t", domain: "warsaw-corp.example",
+                                domain_verified_at: Time.current, jit_role: "employee")
     end
   end
 

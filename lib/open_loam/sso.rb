@@ -32,6 +32,11 @@ module OpenLoam
     # (cross-domain account takeover), so the flow refuses it.
     class DomainMismatchError < Error; end
 
+    # The provider has not proven it owns its `domain`, so it may not adopt an
+    # existing account. Ownership is stamped out of band by an operator
+    # (rake open_loam:sso:verify_domain).
+    class UnverifiedDomainError < Error; end
+
     class << self
       attr_writer :builder
 
@@ -60,11 +65,14 @@ module OpenLoam
       # OpenLoam::Membership.tenants_for): "which tenant's IdP owns this email
       # domain?" is asked at the sign-in page, before any tenant is chosen, so it
       # reaches across tenants via `unscoped` — something host code must never do.
+      #
+      # Verified providers only: the domain is manager-typed, so an unverified
+      # claim would capture every sign-in on a domain the tenant does not own.
       def provider_for(email:)
         domain = email.to_s.split("@").last.to_s.strip.downcase
         return nil if domain.blank?
 
-        OpenLoam::SsoProvider.unscoped.where(domain: domain, active: true).first
+        OpenLoam::SsoProvider.unscoped.domain_verified.where(domain: domain, active: true).first
       end
 
       # Resolve verified IdP claims to a signed-in User, in the provider's tenant.
@@ -87,7 +95,7 @@ module OpenLoam
         # Resolve the user: the durable (provider, sub) identity first, then an
         # existing User by verified email (link), else just-in-time create.
         identity = OpenLoam::SsoIdentity.find_by(sso_provider_id: provider.id, sub: claims.sub)
-        user = identity&.user || User.find_by(email: claims.email) || jit_create_user(claims)
+        user = identity&.user || link_or_create_user(provider, claims)
 
         # Re-map claims -> role on EVERY login (including a returning identity),
         # so an IdP role change takes effect.
@@ -105,6 +113,19 @@ module OpenLoam
       end
 
       private
+
+      # `User` is global, so linking adopts an account this tenant did not create
+      # — allowed only once the provider proved it owns the domain. JIT-creating
+      # needs no proof: the new user lands in the claimant's own tenant.
+      def link_or_create_user(provider, claims)
+        existing = User.find_by(email: claims.email)
+        return jit_create_user(claims) if existing.nil?
+        return existing if provider.domain_verified?
+
+        raise UnverifiedDomainError,
+              "provider for #{provider.domain.inspect} has not proven it owns that domain — " \
+              "refusing to link the existing account #{claims.email.inspect}"
+      end
 
       def jit_create_user(claims)
         # SSO users authenticate at the IdP; the random password satisfies

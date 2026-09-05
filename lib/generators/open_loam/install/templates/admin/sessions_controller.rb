@@ -39,9 +39,7 @@ module Admin
         return render :new, status: :unauthorized
       end
 
-      # Clears the PASSWORD counter only. Clearing every kind here would let an
-      # attacker holding the password reset the TOTP counter before each guess,
-      # making the second factor brute-forceable.
+      # PASSWORD only — clearing every kind here would reset the TOTP counter.
       OpenLoam::AuthThrottle.clear(email, kind: "password")
       reset_session # a fresh session id at login: no fixation
       session[:user_id] = user.id

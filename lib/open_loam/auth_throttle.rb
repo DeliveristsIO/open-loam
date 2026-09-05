@@ -47,11 +47,8 @@ module OpenLoam
     # Locked if there are >= max failures within the window. Old attempts age out
     # of the window automatically (the window query IS the expiry — no reaper).
     #
-    # Both auth call sites ask WITHOUT a kind, so failures on either factor lock
-    # both. That is the deliberate choice: `clear` is kind-scoped so one factor's
-    # success cannot reset the other's counter, and reading unscoped means an
-    # attacker grinding TOTP also loses the password form. The cost is a wider
-    # lockout on the same per-identifier DoS surface the throttle already has.
+    # Both auth call sites ask WITHOUT a kind on purpose: failures on either
+    # factor lock both, so grinding TOTP also costs the attacker the password form.
     def locked?(identifier, kind: nil)
       recent_failures(identifier, kind: kind) >= max_attempts
     end
@@ -65,9 +62,8 @@ module OpenLoam
     # Reset the counter — call on a SUCCESSFUL auth so a legitimate user who
     # eventually gets in isn't left throttled.
     #
-    # `kind:` is mandatory in practice: clearing every kind on one factor's
-    # success lets an attacker who holds the password reset the TOTP counter at
-    # will, giving unlimited 6-digit guesses. Each factor clears only its own.
+    # Pass `kind:` — clearing every kind on one factor's success lets an attacker
+    # holding the password reset the TOTP counter before each guess.
     def clear(identifier, kind: nil)
       scope = attempts(identifier)
       scope = scope.where(kind: Array(kind).map(&:to_s)) if kind

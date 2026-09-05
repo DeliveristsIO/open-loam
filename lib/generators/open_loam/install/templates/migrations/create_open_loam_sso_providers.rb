@@ -11,6 +11,9 @@ class CreateOpenLoamSsoProviders < ActiveRecord::Migration[<%= ActiveRecord::VER
       t.string :jit_role, null: false, default: "employee"  # role for JIT-provisioned users
       t.json :group_role_map, null: false, default: {}    # IdP group -> OpenLoam role (first match wins)
       t.boolean :active, null: false, default: true
+      # Proof of domain ownership, stamped by an operator (rake
+      # open_loam:sso:verify_domain) — never by the manager who typed the domain.
+      t.datetime :domain_verified_at
       t.timestamps
     end
     # HRD resolves a provider by email domain, cross-tenant, before login — so the

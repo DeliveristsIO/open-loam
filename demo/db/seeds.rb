@@ -120,6 +120,9 @@ OpenLoam.as_tenant(warsaw, actor: anna) do
     p.client_secret = "demo-secret-not-real"
     p.jit_role = "employee"
     p.active = true
+    # Stands in for `rake open_loam:sso:verify_domain` — without it HRD skips the
+    # provider, since a manager-typed domain proves nothing on its own.
+    p.domain_verified_at = Time.current
   end
 
   # A managed lookup list (OpenLoam::Dictionary): damage severity, curated in the

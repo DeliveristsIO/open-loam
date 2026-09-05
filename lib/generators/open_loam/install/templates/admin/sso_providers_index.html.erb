@@ -4,9 +4,15 @@
 below is sent to that identity provider to sign in (OIDC), and provisioned on
 first login. <%%= link_to "New provider", new_admin_sso_provider_path %></p>
 
+<p>A provider does nothing until an operator confirms your organisation owns the
+domain — anyone can type a domain here, so the claim has to be checked off the
+admin path. Ask your operator to run
+<code>rake open_loam:sso:verify_domain[&lt;id&gt;]</code>. Editing the domain
+later clears the confirmation.</p>
+
 <table>
   <thead>
-    <tr><th>Name</th><th>Protocol</th><th>Domain</th><th>JIT role</th><th>Active</th><th></th></tr>
+    <tr><th>Name</th><th>Protocol</th><th>Domain</th><th>Ownership</th><th>JIT role</th><th>Active</th><th></th></tr>
   </thead>
   <tbody>
     <%% @providers.each do |provider| %>
@@ -14,6 +20,7 @@ first login. <%%= link_to "New provider", new_admin_sso_provider_path %></p>
         <td><%%= provider.name %></td>
         <td><%%= provider.protocol %></td>
         <td><code><%%= provider.domain %></code></td>
+        <td><%%= provider.domain_verified? ? "confirmed" : "not confirmed — SSO is inactive" %></td>
         <td><%%= provider.jit_role %></td>
         <td><%%= provider.active? ? "yes" : "no" %></td>
         <td>

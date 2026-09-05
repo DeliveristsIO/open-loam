@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_09_05_070000) do
+ActiveRecord::Schema[8.2].define(version: 2026_09_05_090000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -494,6 +494,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_09_05_070000) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "domain_verified_at"
     t.index ["domain"], name: "index_open_loam_sso_providers_on_domain", unique: true
     t.index ["tenant_id", "active"], name: "index_open_loam_sso_providers_on_tenant_id_and_active"
     t.index ["tenant_id"], name: "index_open_loam_sso_providers_on_tenant_id"

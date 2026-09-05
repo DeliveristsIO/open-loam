@@ -103,6 +103,38 @@ namespace :open_loam do
     end
   end
 
+  namespace :sso do
+    # Domain ownership can only be granted from OUTSIDE the tenant: the manager
+    # who typed the domain is the party this check exists to constrain. Confirm
+    # ownership out of band (DNS TXT, a signed request from the domain's
+    # operator, an existing contract) BEFORE running this.
+    #
+    #   bin/rails open_loam:sso:verify_domain[42]
+    desc "Mark an SSO provider's domain as proven-owned (operator only)"
+    task :verify_domain, %i[provider_id] => :environment do |_task, args|
+      provider = OpenLoam::SsoProvider.unscoped.find(args[:provider_id])
+      tenant = OpenLoam::Tenant.find(provider.tenant_id)
+      OpenLoam.as_tenant(tenant) { provider.verify_domain! }
+      puts "open_loam:sso:verify_domain — #{provider.domain} verified for tenant #{tenant.slug} (provider #{provider.id})."
+    end
+
+    desc "Revoke an SSO provider's domain verification"
+    task :unverify_domain, %i[provider_id] => :environment do |_task, args|
+      provider = OpenLoam::SsoProvider.unscoped.find(args[:provider_id])
+      tenant = OpenLoam::Tenant.find(provider.tenant_id)
+      OpenLoam.as_tenant(tenant) { provider.update!(domain_verified_at: nil) }
+      puts "open_loam:sso:unverify_domain — #{provider.domain} is no longer verified."
+    end
+
+    desc "List SSO providers and their domain-verification state"
+    task providers: :environment do
+      OpenLoam::SsoProvider.unscoped.order(:domain).each do |provider|
+        state = provider.domain_verified? ? "verified #{provider.domain_verified_at.to_fs(:db)}" : "UNVERIFIED"
+        puts format("%-6s %-30s tenant=%-6s %s", provider.id, provider.domain, provider.tenant_id, state)
+      end
+    end
+  end
+
   namespace :encryption do
     # Rotate a tenant's encrypted data under the current key: read each record's
     # encrypted fields (old key) and re-seal them (new key), one record at a
