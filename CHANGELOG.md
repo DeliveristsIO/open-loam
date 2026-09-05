@@ -7,6 +7,103 @@ frozen and what is not.
 
 ## Unreleased
 
+### Security
+
+A full-repo audit found 16 issues; all are fixed here. Every fix ships with a
+regression test that reproduces the original exploit. **Anyone running 0.2.0 or
+earlier should upgrade**, and the migration notes below are not optional — three
+of these change stored data.
+
+Reported through [private vulnerability reporting](SECURITY.md) from now on.
+
+**Cross-tenant account takeover through SSO (critical).** `SsoProvider#domain`
+is typed by a tenant manager and `User` is global, so any tenant could register
+a domain it did not own, point a provider at its own IdP, assert a verified
+email on that domain, and be handed the matching account — then select any
+tenant that user belonged to. A provider now does nothing until an operator
+confirms ownership out of band (`rake open_loam:sso:verify_domain`): home-realm
+discovery skips unverified providers, and `Sso.provision` refuses to link an
+existing account through one. Editing `domain` revokes the confirmation.
+**Every existing provider must be verified or SSO stops resolving for it.**
+
+**The MFA lockout was fully bypassable.** `AuthThrottle.clear` deleted every
+attempt kind, and a successful password login called it — so an attacker holding
+the password could reset the TOTP counter before each guess and brute-force a
+6-digit code without limit. `clear` now takes `kind:` and each factor clears only
+its own.
+
+**`readable:` field rules were ignored on most read paths.** The JSON API, the
+generated admin index/show/form, the shared custom-fields partial, the CSV
+export's custom-field columns, the history screen and the edit-conflict diff all
+served values the policy restricted. All of them now apply the check. Sorting by
+an unreadable column is refused too, in the admin and over MCP — ordering leaks
+a ranking even when values are hidden. Export and import also stopped falling
+back to the base `OpenLoam::Policy` for a model with no policy class, which
+failed open.
+
+**API tokens were stored in plaintext.** Only a SHA-256 digest is persisted now;
+the value is shown once at creation. `authenticate` also re-checks the
+membership, so removing someone from a tenant ends their machine access to it,
+and managers can revoke another member's token — previously nobody could.
+
+**SSRF through tenant-supplied URLs.** Webhook endpoints and the SSO issuer are
+both fetched by the server and neither was validated, so either could be aimed
+at `169.254.169.254`, loopback or a private range. New `OpenLoam::OutboundUrl`
+validates shape at save and resolves-and-pins the address at fetch time, so DNS
+rebinding cannot swap the target after the check. The SSO issuer additionally
+requires `https` — the `client_secret` travels over it.
+
+**Inbound webhook replay.** The HMAC covers the body, but the dedupe key
+preferred an unsigned delivery-id header — so one captured delivery could be
+replayed with a fresh header value and re-publish its event without limit.
+`external_id` is now the body hash, which is the only signed material.
+
+**A staged change was applied without checks.** `PendingAction#execute_change!`
+resolved its target with a bare `constantize` and mass-assigned the stored
+changeset, so a host staging a non-tenant-scoped target turned approval into a
+cross-tenant `update!` on arbitrary columns. The target must now be a
+`TenantRecord`, and the changeset goes through the approver's policy.
+
+**`security.mfa_required_roles` was advisory.** Login redirected to enrollment
+and nothing checked again, so any other admin URL walked past it. Now enforced
+on every request.
+
+**Master-key rotation was impossible**, despite being documented and pointed at
+for key compromise: swapping the key made every read fail before it could be
+rewritten. Set `OPEN_LOAM_PREVIOUS_MASTER_KEY` to the outgoing key and
+`open_loam:encryption:rotate` now works.
+
+**The blind-index key was scoped to the tenant only**, unlike the ciphertext
+AAD, so one value hashed alike across every searchable encrypted column — a dump
+correlated rows across tables, and writing one such field was an equality oracle
+against columns you could not read. The key now binds table and column.
+
+**The uploaded import CSV** was passed as an ActiveJob argument and was not in
+`filter_parameters`, so every row sat in the clear in the queue backend and the
+request log — including columns headed for encrypted fields. It goes to blob
+storage now, and the job purges it.
+
+**Brakeman never scanned the gem** — only `demo/`, leaving the framework's own
+`app/` and `lib/` unanalyzed. CI now passes `--add-engines-path`, which
+immediately surfaced four warnings, all fixed. CI's `GITHUB_TOKEN` is read-only,
+`.gitignore` matches key material anywhere, and the repository has secret
+scanning, push protection and private vulnerability reporting enabled.
+
+#### Migration
+
+- `open_loam_api_tokens`: add `token_digest`, backfill `sha256(token)` per row,
+  drop `token`. Tokens in use keep working. See the demo's
+  `hash_open_loam_api_tokens`.
+- `open_loam_sso_providers`: add `domain_verified_at`, then run
+  `rake open_loam:sso:verify_domain[<id>]` for each provider you actually own.
+  Until you do, SSO will not resolve for it.
+- Searchable encrypted fields: re-index by running
+  `rake open_loam:encryption:rotate[Model,tenant_id]` for each model that has
+  one. The blind-index derivation changed, so existing `<field>_hash` values no
+  longer match.
+- `delivery_id_header` on inbound webhook sources is gone; the column can be
+  dropped.
+
 ### Added
 
 - **The event log — `OpenLoam::EventLog` + `OpenLoam::EventRecord`.** Every
