@@ -2,9 +2,9 @@
 
 <h1>Damage report #<%= @record.id %></h1>
 
-<p><strong>Equipment:</strong> <%= @record.equipment_id %></p>
-<p><strong>Description:</strong> <%= @record.description %></p>
-<p><strong>Approved:</strong> <%= @record.approved %></p>
+<% if policy.readable?(:equipment_id) %><p><strong>Equipment:</strong> <%= @record.equipment_id %></p><% end %>
+<% if policy.readable?(:description) %><p><strong>Description:</strong> <%= @record.description %></p><% end %>
+<% if policy.readable?(:approved) %><p><strong>Approved:</strong> <%= @record.approved %></p><% end %>
 
 <%= render "open_loam/custom_fields/fields", record: @record, policy: policy, mode: :show %>
 

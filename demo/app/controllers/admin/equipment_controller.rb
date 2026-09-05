@@ -124,6 +124,13 @@ module Admin
     # confirm-mode pattern an MCP tool would follow — nothing is mutated here.
     def propose_price
       set_record
+      policy = policy_for(@record)
+      authorize!(policy, :update?)
+      # Staging is not a free pass around the field rule: proposing a value for a
+      # field you may not write would put it in front of an approver as if it
+      # were a legitimate request, and the form echoes the current rate back.
+      raise OpenLoam::NotAuthorizedError unless policy.writable?(:daily_rate)
+
       OpenLoam::PendingActions.stage(
         summary: "Raise #{@record.name}'s daily rate to #{params[:daily_rate]}",
         on: @record,
@@ -163,9 +170,14 @@ module Admin
     # against real columns (never interpolated from params — that would be SQL
     # injection), and the direction is constrained to asc/desc. With no valid
     # sort param, a perspective's own order is kept, else a stable default.
+    #
+    # It must also be a column the role may READ: ordering by a hidden field
+    # leaks its ordering, which is an inference oracle on a value the role
+    # cannot see. Same reasoning as OpenLoam::FieldAccessError on custom fields —
+    # ignored rather than raised, since the header is not rendered either.
     def apply_sort(scope)
       column = params[:sort].to_s
-      if Equipment.column_names.include?(column)
+      if Equipment.column_names.include?(column) && policy_for(Equipment.new).readable?(column)
         dir = params[:dir].to_s.casecmp("asc").zero? ? :asc : :desc
         scope.reorder(column => dir).order(id: dir)
       elsif scope.order_values.empty?

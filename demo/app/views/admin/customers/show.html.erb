@@ -2,9 +2,9 @@
 
 <h1>Customer #<%= @record.id %></h1>
 
-<p><strong>Name:</strong> <%= @record.name %></p>
-<p><strong>Email:</strong> <%= @record.email %></p>
-<p><strong>Tax:</strong> <%= @record.tax_id %></p>
+<% if policy.readable?(:name) %><p><strong>Name:</strong> <%= @record.name %></p><% end %>
+<% if policy.readable?(:email) %><p><strong>Email:</strong> <%= @record.email %></p><% end %>
+<% if policy.readable?(:tax_id) %><p><strong>Tax:</strong> <%= @record.tax_id %></p><% end %>
 
 <%= render "open_loam/custom_fields/fields", record: @record, policy: policy, mode: :show %>
 

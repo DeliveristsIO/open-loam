@@ -1,8 +1,9 @@
 class EquipmentPolicy < OpenLoam::Policy
-  # Any member of the tenant may read and manage equipment records, but only
-  # a manager can touch the money. One declaration — the admin form and the
-  # controller permit list both obey it.
-  field :daily_rate, writable: [:manager]
+  # Any member of the tenant may read and manage equipment records, but the rate
+  # card is manager-only — not just to write, to SEE. One declaration; the admin
+  # index/show/form, the JSON API, the CSV export and the controller permit list
+  # all obey it.
+  field :daily_rate, writable: [:manager], readable: [:manager]
 
   def destroy? = role == :manager
 end

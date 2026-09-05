@@ -2,9 +2,15 @@
 
 <h1><%= t("open_loam.actions.show_title", name: Company.model_name.human, id: @record.id) %></h1>
 
+<% if policy.readable?(:name) %>
 <p><strong><%= Company.human_attribute_name("name") %>:</strong> <%= @record.name %></p>
+<% end %>
+<% if policy.readable?(:industry) %>
 <p><strong><%= Company.human_attribute_name("industry") %>:</strong> <%= @record.industry %></p>
+<% end %>
+<% if policy.readable?(:tier) %>
 <p><strong><%= Company.human_attribute_name("tier") %>:</strong> <%= @record.tier %></p>
+<% end %>
 
 <%= render "open_loam/custom_fields/fields", record: @record, policy: policy, mode: :show %>
 

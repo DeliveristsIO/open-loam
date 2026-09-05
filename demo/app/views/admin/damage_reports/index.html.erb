@@ -1,3 +1,7 @@
+<%# One policy for the whole table: readable? keys off the actor's ROLE, not the
+    row, so building it per record would only add a membership query per row. %>
+<% policy = OpenLoam::Policy.for_model(DamageReport, current_actor) %>
+
 <h1>Damage reports</h1>
 
 <p>
@@ -14,9 +18,9 @@
   <thead>
     <tr>
       <th>ID</th>
-      <th>Equipment</th>
-      <th>Description</th>
-      <th>Approved</th>
+      <% if policy.readable?(:equipment_id) %><th>Equipment</th><% end %>
+      <% if policy.readable?(:description) %><th>Description</th><% end %>
+      <% if policy.readable?(:approved) %><th>Approved</th><% end %>
       <th></th>
     </tr>
   </thead>
@@ -24,9 +28,9 @@
     <% @records.each do |record| %>
       <tr>
         <td><%= record.id %></td>
-        <td><%= record.equipment_id %></td>
-        <td><%= record.description %></td>
-        <td><%= record.approved %></td>
+        <% if policy.readable?(:equipment_id) %><td><%= record.equipment_id %></td><% end %>
+        <% if policy.readable?(:description) %><td><%= record.description %></td><% end %>
+        <% if policy.readable?(:approved) %><td><%= record.approved %></td><% end %>
         <td>
           <%= link_to "Show", [:admin, record] %>
           <%= link_to "Edit", edit_polymorphic_path([:admin, record]) %>

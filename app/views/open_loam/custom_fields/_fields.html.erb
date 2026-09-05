@@ -3,6 +3,10 @@
     rendering lives once in the gem instead of being inlined per entity. %>
 <% mode = local_assigns.fetch(:mode, :edit) %>
 <% record.class.custom_field_definitions.each do |definition| %>
+  <%# Not readable by this role: omit the field entirely. Falling through to the
+      read-only branch below would print the value to anyone who merely lacks
+      WRITE access, which is a different question. %>
+  <% next unless policy.custom_field_readable?(definition.name) %>
   <% param_name = "#{record.model_name.param_key}[custom_fields][#{definition.name}]" %>
   <% value = record.custom_field(definition.name) %>
   <p>

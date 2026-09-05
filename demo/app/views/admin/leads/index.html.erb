@@ -1,3 +1,7 @@
+<%# One policy for the whole table: readable? keys off the actor's ROLE, not the
+    row, so building it per record would only add a membership query per row. %>
+<% policy = OpenLoam::Policy.for_model(Lead, current_actor) %>
+
 <h1><%= Lead.model_name.human(count: 2) %></h1>
 
 <% if @index_partial %>
@@ -52,10 +56,10 @@
       <tr>
         <th><input type="checkbox" onclick="document.querySelectorAll('.bulk-select').forEach(function(c){c.checked=this.checked}.bind(this))"></th>
         <th><%= t("open_loam.labels.id") %></th>
-        <th><%= sort_link("company_id", Lead.human_attribute_name("company_id")) %></th>
-        <th><%= sort_link("source", Lead.human_attribute_name("source")) %></th>
-        <th><%= sort_link("value", Lead.human_attribute_name("value")) %></th>
-        <th><%= sort_link("state", Lead.human_attribute_name("state")) %></th>
+        <% if policy.readable?(:company_id) %><th><%= sort_link("company_id", Lead.human_attribute_name("company_id")) %></th><% end %>
+        <% if policy.readable?(:source) %><th><%= sort_link("source", Lead.human_attribute_name("source")) %></th><% end %>
+        <% if policy.readable?(:value) %><th><%= sort_link("value", Lead.human_attribute_name("value")) %></th><% end %>
+        <% if policy.readable?(:state) %><th><%= sort_link("state", Lead.human_attribute_name("state")) %></th><% end %>
         <th></th>
       </tr>
     </thead>
@@ -64,10 +68,10 @@
         <tr>
           <td><%= check_box_tag "ids[]", record.id, false, class: "bulk-select" %></td>
           <td><%= record.id %></td>
-          <td><%= record.company_id %></td>
-          <td><%= record.source %></td>
-          <td><%= record.value %></td>
-          <td><%= record.state %></td>
+          <% if policy.readable?(:company_id) %><td><%= record.company_id %></td><% end %>
+          <% if policy.readable?(:source) %><td><%= record.source %></td><% end %>
+          <% if policy.readable?(:value) %><td><%= record.value %></td><% end %>
+          <% if policy.readable?(:state) %><td><%= record.state %></td><% end %>
           <td>
             <%= link_to t("open_loam.actions.show"), [:admin, record] %>
             <%= link_to t("open_loam.actions.edit"), edit_polymorphic_path([:admin, record]) %>

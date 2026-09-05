@@ -9,8 +9,9 @@ module OpenLoam
   # * an ENCRYPTED column is NEVER exported in the clear — its cell is
   #   "[encrypted]" (the same redaction as the audit trail), so a bulk export can
   #   never become a plaintext dump of PII a role shouldn't see;
-  # * declared custom fields are included (a dictionary field exports its stored
-  #   code, so the file round-trips back through OpenLoam::Import);
+  # * declared custom fields go through the same read check
+  #   (OpenLoam::Policy#custom_field_readable?) — a dictionary field exports its
+  #   stored code, so the file round-trips back through OpenLoam::Import;
   # * tenant isolation is free — the relation is already scoped.
   #
   # Prototype scale: builds the CSV in memory with the stdlib CSV. A very large
@@ -48,6 +49,8 @@ module OpenLoam
 
       if model.respond_to?(:custom_field_definitions)
         model.custom_field_definitions.order(:name).each do |definition|
+          next unless policy.custom_field_readable?(definition.name)
+
           columns << { header: definition.name, name: definition.name, kind: :custom }
         end
       end
@@ -65,10 +68,7 @@ module OpenLoam
     end
 
     def policy_for(model, actor)
-      klass = "#{model.name}Policy".safe_constantize
-      # A blank instance as the record: readable? keys off the role, but the
-      # policy's custom-field checks read record.class.
-      (klass || OpenLoam::Policy).new(actor, model.new)
+      OpenLoam::Policy.for_model(model, actor)
     end
   end
 end

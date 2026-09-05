@@ -2,9 +2,15 @@
 
 <h1><%= t("open_loam.actions.show_title", name: Equipment.model_name.human, id: @record.id) %></h1>
 
+<% if policy.readable?(:name) %>
 <p><strong><%= Equipment.human_attribute_name("name") %>:</strong> <%= @record.name %></p>
+<% end %>
+<% if policy.readable?(:daily_rate) %>
 <p><strong><%= Equipment.human_attribute_name("daily_rate") %>:</strong> <%= @record.daily_rate %></p>
+<% end %>
+<% if policy.readable?(:status) %>
 <p><strong><%= Equipment.human_attribute_name("status") %>:</strong> <%= @record.status %></p>
+<% end %>
 
 <%= render "open_loam/custom_fields/fields", record: @record, policy: policy, mode: :show %>
 
@@ -31,6 +37,10 @@
   <%= link_to t("open_loam.actions.back"), [:admin, Equipment] %>
 </p>
 
+<%# Prefilled with the current rate, so it is gated on the same field rule as the
+    rest of the screen — otherwise it would hand the value to a role that may
+    neither read nor write it. %>
+<% if policy.writable?(:daily_rate) %>
 <fieldset>
   <legend>Propose a price change (staged for approval)</legend>
   <%# Simulates an AI agent under confirm-mode: this stages the change rather
@@ -40,6 +50,7 @@
     <%= submit_tag "Propose" %>
   <% end %>
 </fieldset>
+<% end %>
 
 <%= render "open_loam/attachments/attachments", record: @record %>
 

@@ -74,22 +74,34 @@ module Api
             "`skip_authorization! \"<why>\"` if it is authorized structurally."
     end
 
-    # The JSON shape of an entity: its columns, custom fields included (they
-    # live in the `custom_fields` column that every generated entity carries).
+    # The JSON shape of an entity: the columns this actor's role may READ, plus
+    # the readable custom fields (which live in the `custom_fields` column that
+    # every generated entity carries).
+    #
+    # The read check is the same one the CSV export and the admin screens apply.
+    # Without it the API is a way around every `field readable:` rule in the app:
+    # the record is already loaded and `record.attributes` emits everything on it.
     #
     # Encrypted fields (OpenLoam::Encryptable) are returned DECRYPTED — the caller is
     # authenticated, tenant-scoped and policy-gated, exactly like the admin show
     # screen — and their blind-index `<field>_hash` column is dropped, so the
-    # equality-leaking hash never goes over the wire. `record.attributes` alone
-    # would emit the raw ciphertext plus the hash.
+    # equality-leaking hash never goes over the wire.
     def entity_json(record, enrichments: nil)
-      json = record.attributes
+      policy = policy_for(record)
+      json = record.attributes.slice(*policy.readable_fields(record.attribute_names))
 
       if record.class.respond_to?(:open_loam_encrypted_attributes)
         record.class.open_loam_encrypted_attributes.each do |name|
-          json[name] = record.public_send(name)
+          json[name] = record.public_send(name) if json.key?(name)
           json.delete("#{name}_hash")
         end
+      end
+
+      # `custom_fields` is one JSON column, so it is all-or-nothing at the
+      # column level — filter its contents per definition instead.
+      if json.key?("custom_fields") && record.class.respond_to?(:custom_field_definitions)
+        readable = record.class.custom_field_definitions.map(&:name).select { |n| policy.custom_field_readable?(n) }
+        json["custom_fields"] = json["custom_fields"].to_h.slice(*readable)
       end
 
       # Computed cross-module blocks (OpenLoam::Enrichers), under a separate key so

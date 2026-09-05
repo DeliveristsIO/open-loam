@@ -159,10 +159,7 @@ module OpenLoam
     end
 
     def policy_for(model, actor)
-      klass = "#{model.name}Policy".safe_constantize
-      # A blank instance as the record: readable?/writable? key off the role, but
-      # custom_field_writable? reads record.class.custom_field_definitions.
-      (klass || OpenLoam::Policy).new(actor, model.new)
+      OpenLoam::Policy.for_model(model, actor)
     end
   end
 end

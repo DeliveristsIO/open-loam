@@ -36,13 +36,16 @@
     </ul>
   <%% end %>
 
+<%%# Three states per field: writable (input), readable-only (shown, labelled
+    read-only), or neither (absent). There is no branch for the third case on
+    purpose — a field the role may not read is not rendered at all. %>
 <% attributes.each do |attribute| -%>
   <%% if policy.writable?(:<%= attribute.name %>) %>
     <p>
       <%%= f.label :<%= attribute.name %> %><br>
       <%%= f.<%= form_field_helper(attribute) %> :<%= attribute.name %> %>
     </p>
-  <%% else %>
+  <%% elsif policy.readable?(:<%= attribute.name %>) %>
     <p>
       <%%= f.label :<%= attribute.name %> %>: <%%= @record.<%= attribute.name %> %>
       <em><%%= t("open_loam.form.read_only") %></em>

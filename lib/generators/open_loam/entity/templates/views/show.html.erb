@@ -3,7 +3,9 @@
 <h1><%%= t("open_loam.actions.show_title", name: <%= class_name %>.model_name.human, id: @record.id) %></h1>
 
 <% attributes.each do |attribute| -%>
+<%% if policy.readable?(:<%= attribute.name %>) %>
 <p><strong><%%= <%= class_name %>.human_attribute_name("<%= attribute.name %>") %>:</strong> <%%= @record.<%= attribute.name %> %></p>
+<%% end %>
 <% end -%>
 
 <%%= render "open_loam/custom_fields/fields", record: @record, policy: policy, mode: :show %>

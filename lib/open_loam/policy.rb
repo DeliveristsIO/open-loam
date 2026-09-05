@@ -19,10 +19,23 @@ module OpenLoam
       end
 
       def for(record)
-        policy_class = "#{record.class.name}Policy".safe_constantize
-        raise Error, "No policy defined for #{record.class.name} (expected #{record.class.name}Policy)" unless policy_class
+        policy_class_for(record.class).new(OpenLoam::Current.actor, record)
+      end
 
-        policy_class.new(OpenLoam::Current.actor, record)
+      # A policy for a MODEL rather than one record — for bulk paths (export,
+      # import) that decide the column set once, before any row is read. The
+      # blank instance is a stand-in: the field checks key off the role, but
+      # the custom-field ones need record.class to find the definitions.
+      def for_model(model, actor)
+        policy_class_for(model).new(actor, model.new)
+      end
+
+      # Falling back to the base Policy for a model with no policy class would
+      # fail OPEN — every check there answers "any member", so a missing policy
+      # would silently grant what an explicit one restricts.
+      def policy_class_for(model)
+        "#{model.name}Policy".safe_constantize ||
+          raise(Error, "No policy defined for #{model.name} (expected #{model.name}Policy)")
       end
     end
 

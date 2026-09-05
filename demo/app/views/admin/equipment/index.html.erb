@@ -1,3 +1,7 @@
+<%# One policy for the whole table: readable? keys off the actor's ROLE, not the
+    row, so building it per record would only add a membership query per row. %>
+<% policy = OpenLoam::Policy.for_model(Equipment, current_actor) %>
+
 <h1><%= Equipment.model_name.human(count: 2) %></h1>
 
 <% if @index_partial %>
@@ -53,9 +57,9 @@
       <tr>
         <th><input type="checkbox" onclick="document.querySelectorAll('.bulk-select').forEach(function(c){c.checked=this.checked}.bind(this))"></th>
         <th><%= t("open_loam.labels.id") %></th>
-        <th><%= sort_link("name", Equipment.human_attribute_name("name")) %></th>
-        <th><%= sort_link("daily_rate", Equipment.human_attribute_name("daily_rate")) %></th>
-        <th><%= sort_link("status", Equipment.human_attribute_name("status")) %></th>
+        <% if policy.readable?(:name) %><th><%= sort_link("name", Equipment.human_attribute_name("name")) %></th><% end %>
+        <% if policy.readable?(:daily_rate) %><th><%= sort_link("daily_rate", Equipment.human_attribute_name("daily_rate")) %></th><% end %>
+        <% if policy.readable?(:status) %><th><%= sort_link("status", Equipment.human_attribute_name("status")) %></th><% end %>
         <th></th>
       </tr>
     </thead>
@@ -64,9 +68,9 @@
         <tr>
           <td><%= check_box_tag "ids[]", record.id, false, class: "bulk-select", id: "sel-#{record.id}" %></td>
           <td><%= record.id %></td>
-          <td><%= record.name %></td>
-          <td><%= record.daily_rate %></td>
-          <td><%= record.status %></td>
+          <% if policy.readable?(:name) %><td><%= record.name %></td><% end %>
+          <% if policy.readable?(:daily_rate) %><td><%= record.daily_rate %></td><% end %>
+          <% if policy.readable?(:status) %><td><%= record.status %></td><% end %>
           <td>
             <%= link_to t("open_loam.actions.show"), [:admin, record] %>
             <%= link_to t("open_loam.actions.edit"), edit_polymorphic_path([:admin, record]) %>

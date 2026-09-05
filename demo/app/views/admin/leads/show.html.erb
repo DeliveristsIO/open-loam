@@ -2,10 +2,18 @@
 
 <h1><%= t("open_loam.actions.show_title", name: Lead.model_name.human, id: @record.id) %></h1>
 
+<% if policy.readable?(:company_id) %>
 <p><strong><%= Lead.human_attribute_name("company_id") %>:</strong> <%= @record.company_id %></p>
+<% end %>
+<% if policy.readable?(:source) %>
 <p><strong><%= Lead.human_attribute_name("source") %>:</strong> <%= @record.source %></p>
+<% end %>
+<% if policy.readable?(:value) %>
 <p><strong><%= Lead.human_attribute_name("value") %>:</strong> <%= @record.value %></p>
+<% end %>
+<% if policy.readable?(:state) %>
 <p><strong><%= Lead.human_attribute_name("state") %>:</strong> <%= @record.state %></p>
+<% end %>
 
 <%= render "open_loam/custom_fields/fields", record: @record, policy: policy, mode: :show %>
 

@@ -36,12 +36,15 @@
     </ul>
   <% end %>
 
+<%# Three states per field: writable (input), readable-only (shown, labelled
+    read-only), or neither (absent). There is no branch for the third case on
+    purpose — a field the role may not read is not rendered at all. %>
   <% if policy.writable?(:company_id) %>
     <p>
       <%= f.label :company_id %><br>
       <%= f.number_field :company_id %>
     </p>
-  <% else %>
+  <% elsif policy.readable?(:company_id) %>
     <p>
       <%= f.label :company_id %>: <%= @record.company_id %>
       <em><%= t("open_loam.form.read_only") %></em>
@@ -52,7 +55,7 @@
       <%= f.label :source %><br>
       <%= f.text_field :source %>
     </p>
-  <% else %>
+  <% elsif policy.readable?(:source) %>
     <p>
       <%= f.label :source %>: <%= @record.source %>
       <em><%= t("open_loam.form.read_only") %></em>
@@ -63,7 +66,7 @@
       <%= f.label :value %><br>
       <%= f.number_field :value %>
     </p>
-  <% else %>
+  <% elsif policy.readable?(:value) %>
     <p>
       <%= f.label :value %>: <%= @record.value %>
       <em><%= t("open_loam.form.read_only") %></em>
@@ -74,7 +77,7 @@
       <%= f.label :state %><br>
       <%= f.text_field :state %>
     </p>
-  <% else %>
+  <% elsif policy.readable?(:state) %>
     <p>
       <%= f.label :state %>: <%= @record.state %>
       <em><%= t("open_loam.form.read_only") %></em>

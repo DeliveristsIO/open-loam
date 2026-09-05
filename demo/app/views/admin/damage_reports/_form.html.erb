@@ -36,12 +36,15 @@
     </ul>
   <% end %>
 
+<%# Three states per field: writable (input), readable-only (shown, labelled
+    read-only), or neither (absent). There is no branch for the third case on
+    purpose — a field the role may not read is not rendered at all. %>
   <% if policy.writable?(:equipment_id) %>
     <p>
       <%= f.label :equipment_id %><br>
       <%= f.number_field :equipment_id %>
     </p>
-  <% else %>
+  <% elsif policy.readable?(:equipment_id) %>
     <p>
       <%= f.label :equipment_id %>: <%= @record.equipment_id %>
       <em>(read-only for your role)</em>
@@ -52,7 +55,7 @@
       <%= f.label :description %><br>
       <%= f.text_area :description %>
     </p>
-  <% else %>
+  <% elsif policy.readable?(:description) %>
     <p>
       <%= f.label :description %>: <%= @record.description %>
       <em>(read-only for your role)</em>
@@ -63,7 +66,7 @@
       <%= f.label :approved %><br>
       <%= f.check_box :approved %>
     </p>
-  <% else %>
+  <% elsif policy.readable?(:approved) %>
     <p>
       <%= f.label :approved %>: <%= @record.approved %>
       <em>(read-only for your role)</em>
