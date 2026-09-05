@@ -4,6 +4,9 @@ module Admin
   # member can watch; "Run a demo job" enqueues DemoProgressJob, and a running
   # job can be cancelled cooperatively.
   class ProgressJobsController < BaseController
+    skip_authorization! "A tenant-scoped list of the tenant's own jobs; cancel is the gated action.",
+                        only: %i[index run]
+
     def index
       @jobs = OpenLoam::ProgressJob.recent.limit(20)
     end
@@ -16,6 +19,7 @@ module Admin
     def cancel
       job = OpenLoam::ProgressJob.find(params[:id])
       # Manager-or-owner: a member must not cancel another user's job.
+      authorized!
       raise OpenLoam::NotAuthorizedError unless current_role == :manager || job.actor_id == current_actor&.id
       job.cancel! if job.running?
       redirect_to admin_progress_jobs_path, notice: "Job cancelled."

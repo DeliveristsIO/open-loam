@@ -4,6 +4,8 @@ module Admin
   # (or TOTP code, if the user has MFA) stamps a fresh sudo timestamp and returns
   # to wherever they were headed.
   class SudoController < BaseController
+    skip_authorization! "The step-up re-challenge itself — authorizing it would require the sudo it grants."
+
     def new
     end
 

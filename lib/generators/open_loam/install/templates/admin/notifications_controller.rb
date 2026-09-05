@@ -5,6 +5,8 @@ module Admin
   # OpenLoam::TenantRecord) and BaseController has already established that this
   # actor is signed in to this tenant. Recipient scoping is the whole rule.
   class NotificationsController < BaseController
+    skip_authorization! "Scoped to current_actor — there is no path to another user's notifications."
+
     def index
       @records = notifications.order(created_at: :desc).limit(100)
     end

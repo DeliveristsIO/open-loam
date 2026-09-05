@@ -295,7 +295,11 @@ So the block MUST be idempotent — `find_or_create_by!`, never `create!`.
   `OpenLoam::FieldDefinition` doesn't exist — create it, don't swallow the error.
 - **Never write raw SQL that touches tenant tables** without a `tenant_id` predicate.
 - **Every controller action checks a policy** (`authorize!`); every form uses
-  `policy.permitted_fields` — no hand-rolled `params.permit` lists.
+  `policy.permitted_fields` — no hand-rolled `params.permit` lists. This is
+  ENFORCED: an action that authorizes nothing raises
+  `OpenLoam::AuthorizationNotPerformedError` after it runs. If a screen really is
+  authorized structurally, say so with `skip_authorization! "<reason>"` — never
+  add a token `authorize!` to quiet the guard.
 - **Event names are `domain.thing.happened`** — three+ dot-separated segments.
 - **`OpenLoam.on_tenant_created` callbacks are idempotent** — `open_loam:sync` re-runs them.
 - **Never assign a workflow column directly** — call the transition, so the legal

@@ -7,6 +7,8 @@ module Admin
   # committed and there is no going back; that ordering is the whole safety of a
   # Live action.
   class EventsController < BaseController
+    skip_authorization! "OpenLoam::EventStream gates every message: declared pattern, matching tenant, and audience."
+
     include ActionController::Live
 
     HEARTBEAT_SECONDS = 20

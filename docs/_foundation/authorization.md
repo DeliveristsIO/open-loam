@@ -101,6 +101,30 @@ apps given the identical prompts enforced it 1/4.
   who's signed in. Don't reach for a flag when the real question is "who may
   do this."
 
+## The authorization-called guard
+
+Forgetting `authorize!` is otherwise silent: the action renders and nothing says
+the policy was never consulted. `verify_authorized!` runs after every admin and
+API action and raises `OpenLoam::AuthorizationNotPerformedError` unless the action
+called `authorize!`, `require_role!` or `require_permission!`.
+
+A screen authorized structurally rather than by a policy call declares the
+exemption, with a reason:
+
+```ruby
+class Admin::NotificationsController < Admin::BaseController
+  skip_authorization! "Scoped to current_actor — there is no path to another user's notifications."
+end
+```
+
+`require_feature!` and `require_sudo!` deliberately do **not** satisfy the guard:
+one gates a capability and the other is step-up auth, so neither answers "may
+this person do this".
+
+It runs *after* the action, so it catches the omission in development and in
+tests — a `destroy` that forgot to authorize has already run. It fails the build,
+it does not stop the request.
+
 ## Related pages
 
 - [Tenant isolation]({% link _foundation/tenant-isolation.md %}) — the

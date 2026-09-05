@@ -7,6 +7,25 @@ module Admin
     before_action :set_open_loam_context
     before_action :set_locale
 
+    # Fails an action that never authorized anything. Forgetting `authorize!` is
+    # otherwise silent — the screen renders, and nothing says the policy was
+    # never consulted.
+    #
+    # It runs AFTER the action, so it catches the omission in development and in
+    # tests; it is not a runtime access-control layer. A `destroy` that forgot to
+    # authorize has already destroyed the record by the time this raises.
+    after_action :verify_authorized!
+
+    # For screens that are authorized STRUCTURALLY rather than by a policy call —
+    # a list scoped to current_actor, a pre-auth screen. The reason is required
+    # and shows up in the source, so every exemption is a documented claim rather
+    # than a silent opt-out.
+    def self.skip_authorization!(reason, **options)
+      raise ArgumentError, "skip_authorization! needs a reason" if reason.to_s.strip.empty?
+
+      skip_after_action :verify_authorized!, **options
+    end
+
     rescue_from OpenLoam::NotAuthorizedError do
       render plain: "403 Forbidden — your role does not permit this action.", status: :forbidden
     end
@@ -103,7 +122,27 @@ module Admin
     end
 
     def authorize!(policy, action)
+      authorized!
       raise OpenLoam::NotAuthorizedError unless policy.public_send(action)
+    end
+
+    # Records that this action asked a person-authorization question — marked
+    # whether the answer was yes or no, since a refusal is still a check.
+    #
+    # Call it directly only where the check is an inline `raise` rather than one
+    # of the helpers below. Deliberately NOT called by require_feature! (a
+    # capability gate) or require_sudo! (step-up), since either marking the
+    # action would let a feature-gated screen skip authorization silently.
+    def authorized!
+      @open_loam_authorized = true
+    end
+
+    def verify_authorized!
+      return if @open_loam_authorized
+
+      raise OpenLoam::AuthorizationNotPerformedError,
+            "#{self.class.name}##{action_name} finished without authorizing. Call authorize!/require_role!/" \
+            "require_permission!, or declare `skip_authorization! \"<why>\"` if it is authorized structurally."
     end
 
     # For admin screens with no per-record policy (e.g. field definitions,
@@ -113,6 +152,7 @@ module Admin
     end
 
     def require_role!(*roles)
+      authorized!
       raise OpenLoam::NotAuthorizedError unless roles.include?(current_role)
     end
 
@@ -124,6 +164,7 @@ module Admin
     end
 
     def require_permission!(permission)
+      authorized!
       raise OpenLoam::NotAuthorizedError unless OpenLoam.can?(permission)
     end
 

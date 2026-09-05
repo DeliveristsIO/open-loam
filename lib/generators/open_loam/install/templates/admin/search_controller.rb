@@ -6,6 +6,8 @@ module Admin
   # tenant-scoped relation, so this can only ever find records the current
   # tenant owns.
   class SearchController < BaseController
+    skip_authorization! "Each model's `search` returns its own tenant-scoped relation; reads only."
+
     PER_ENTITY = 10
 
     helper_method :search_result_label

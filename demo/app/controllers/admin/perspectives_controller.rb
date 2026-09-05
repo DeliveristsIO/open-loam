@@ -8,6 +8,9 @@ module Admin
   # ones. A private view of someone else's is invisible here by construction
   # (OpenLoam::Perspectives.visible_to never returns it).
   class PerspectivesController < BaseController
+    skip_authorization! "index lists views visible to the actor; create only ever makes a private one, owned by them.",
+                        only: %i[index create]
+
     before_action :set_perspective, only: %i[update destroy set_default]
     before_action :authorize_manage!, only: %i[update destroy set_default]
 
@@ -68,6 +71,7 @@ module Admin
     end
 
     def authorize_manage!
+      authorized!
       raise OpenLoam::NotAuthorizedError unless can_manage?(@perspective)
     end
 

@@ -1,5 +1,7 @@
 module Admin
   class DashboardController < BaseController
+    skip_authorization! "Widgets are filtered by role in OpenLoam::Dashboard.for; there is no per-record subject."
+
     def index
       # Configurable, role-visible widgets (OpenLoam::Dashboard) — a raising widget
       # is isolated into an error tile, never breaking the page. Register your

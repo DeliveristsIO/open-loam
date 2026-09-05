@@ -15,6 +15,7 @@ module Admin
     end
 
     def index
+      authorize!(policy_for(Lead.new), :read?)
       @perspective = OpenLoam::Perspectives.resolve("Lead", user: current_actor, id: params[:perspective_id])
       @perspectives = OpenLoam::Perspectives.visible_to("Lead", user: current_actor)
       @records, @page, @has_next = paginate(index_scope)
@@ -32,6 +33,10 @@ module Admin
     # Datatable bulk actions on the selected ids — each is policy-checked per
     # record and tenant-scoped (OpenLoam::Bulk). Zero selection is a no-op.
     def bulk
+      # OpenLoam::Bulk checks the policy PER record (destroy? for soft_delete,
+      # update? + writable? for set_field) and silently skips what the actor may
+      # not touch, so the authorization is real — it just lives there, not here.
+      authorized!
       ids = Array(params[:ids])
       case params[:bulk_action]
       when "soft_delete"

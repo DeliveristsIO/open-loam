@@ -5,6 +5,7 @@ module Admin
     before_action :set_record, only: %i[show edit update destroy]
 
     def index
+      authorize!(policy_for(Customer.new), :read?)
       # id breaks ties on created_at, so a record can never slip between pages.
       scope = Customer.order(created_at: :desc, id: :desc)
       scope = scope.search(params[:q])

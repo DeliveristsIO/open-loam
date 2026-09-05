@@ -14,6 +14,17 @@ module Api
   class BaseController < ActionController::API
     before_action :authenticate_api_token!
 
+    # Same guard as the admin base controller: an endpoint that never authorized
+    # anything fails loudly rather than silently serving. Runs after the action,
+    # so it catches the omission in tests, not at runtime.
+    after_action :verify_authorized!
+
+    def self.skip_authorization!(reason, **options)
+      raise ArgumentError, "skip_authorization! needs a reason" if reason.to_s.strip.empty?
+
+      skip_after_action :verify_authorized!, **options
+    end
+
     rescue_from OpenLoam::NotAuthorizedError do
       render json: { error: "forbidden" }, status: :forbidden
     end
@@ -46,7 +57,21 @@ module Api
     end
 
     def authorize!(policy, action)
+      authorized!
       raise OpenLoam::NotAuthorizedError unless policy.public_send(action)
+    end
+
+    # Marked whether the answer was yes or no — a refusal is still a check.
+    def authorized!
+      @open_loam_authorized = true
+    end
+
+    def verify_authorized!
+      return if @open_loam_authorized
+
+      raise OpenLoam::AuthorizationNotPerformedError,
+            "#{self.class.name}##{action_name} finished without authorizing. Call authorize!, or declare " \
+            "`skip_authorization! \"<why>\"` if it is authorized structurally."
     end
 
     # The JSON shape of an entity: its columns, custom fields included (they

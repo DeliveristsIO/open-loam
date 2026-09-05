@@ -8,6 +8,7 @@ module Api
     before_action :set_record, only: %i[show update destroy]
 
     def index
+      authorize!(policy_for(<%= class_name %>.new), :read?)
       records = <%= class_name %>.order(created_at: :desc).to_a
       enriched = OpenLoam::Enrichers.enrich_many(records)   # one batched pass, no N+1
       render json: records.map { |record| entity_json(record, enrichments: enriched[record.id]) }

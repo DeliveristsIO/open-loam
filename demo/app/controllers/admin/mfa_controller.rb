@@ -6,6 +6,8 @@ module Admin
   # old secret stays valid until the new one is proven — so neither a cross-site
   # GET nor an abandoned re-enrollment can downgrade an active credential.
   class MfaController < BaseController
+    skip_authorization! "Your own MFA credentials; sensitive changes go through require_sudo! instead."
+
     ISSUER = "OpenLoam Demo".freeze
 
     # Replacing an ACTIVE credential (or disabling it) is sensitive, so gate those

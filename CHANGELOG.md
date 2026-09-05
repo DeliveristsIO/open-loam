@@ -25,6 +25,23 @@ frozen and what is not.
   `rails g open_loam:install`; existing apps need the
   `create_open_loam_event_records` migration.
 
+- **An authorization-called guard in the generated base controllers** (L-202).
+  `verify_authorized!` fails any admin or API action that finished without
+  calling `authorize!`, `require_role!` or `require_permission!`. Forgetting the
+  check was previously silent — the screen just rendered. Screens authorized
+  structurally declare `skip_authorization! "<reason>"`, and the reason is
+  required, so every exemption is a documented claim.
+
+  It runs *after* the action, so it is a development and test guard, not a
+  runtime access-control layer. It raises `OpenLoam::AuthorizationNotPerformedError`,
+  deliberately not a `NotAuthorizedError` — a developer bug must not render as a
+  polite 403.
+
+  Turning it on found two generated actions that never checked `read?` while
+  their `show`/`deleted` siblings did: the admin and JSON `index`. Both now
+  authorize. Existing apps will see the guard fire on any action of their own
+  that never authorized.
+
 ### Changed
 
 - **The four "wrap a proven gem" roadmap items are resolved**, recorded in

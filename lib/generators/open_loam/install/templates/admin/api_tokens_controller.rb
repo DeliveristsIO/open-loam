@@ -4,6 +4,8 @@ module Admin
   # acts as its user in this tenant, which is precisely why nobody else may
   # list, create or revoke one for you.
   class ApiTokensController < BaseController
+    skip_authorization! "Every query is scoped to current_actor — a token is only ever your own."
+
     def index
       @records = api_tokens.order(created_at: :desc)
     end
