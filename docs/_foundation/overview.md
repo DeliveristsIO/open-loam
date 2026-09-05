@@ -19,9 +19,11 @@ a coding agent doesn't have to rediscover any of it per task.
 > prototype instead ships **minimal in-gem implementations** behind OpenLoam's own
 > conventions — the smallest surface that proves the conventions and the agent
 > flow end to end (see [ADR 0002]({% link _adr/0002-in-gem-implementations.md %})).
-> Swapping the proven gems back in *behind the same public conventions* is the
-> roadmap, not a reversal: the `OpenLoam::` API is the contract, its internals are
-> replaceable.
+> Read one at a time against the code, those swaps are now settled: tenancy,
+> audit and authorization stay in-gem, and the one real gap — event capture —
+> was closed in-gem too
+> ([ADR 0007]({% link _adr/0007-proven-gem-swaps-resolved.md %})). The
+> `OpenLoam::` API remains the contract either way.
 
 ## Shape
 

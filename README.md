@@ -136,8 +136,10 @@ whole thesis in miniature.
 **How honest the "prototype" label is** — deliberately, each pillar is a
 *minimal in-gem implementation* rather than a wrapper around
 `acts_as_tenant`/`pundit`/`paper_trail`/Rails Event Store: the smallest surface
-that proves the conventions and the agent flow. Swapping the proven gems back in
-*behind the same `OpenLoam::` conventions* is the roadmap, not a reversal. Custom
+that proves the conventions and the agent flow. Those swaps have since been
+evaluated one at a time and settled — the in-gem versions stay, and the one real
+gap they exposed (event capture) was closed in-gem too, in
+[ADR 0007](docs/_adr/0007-proven-gem-swaps-resolved.md). Custom
 fields use the portable Rails `json` column (not Postgres `jsonb`/GIN) because
 the demo runs on SQLite. See [How OpenLoam works](docs/_foundation/overview.md) for
 the pillar-by-pillar breakdown and the decisions behind them.

@@ -108,5 +108,5 @@ apps given the identical prompts enforced it 1/4.
 - [Guardrails]({% link _agents/guardrails.md %})
 - [Golden tasks]({% link _agents/golden-tasks.md %}) — the measured
   role-gate comparison.
-- [Pillar implementation reference]({% link _reference/pillars.md %}) —
-  authorization's roadmap target (wrapping `pundit`).
+- [ADR 0007]({% link _adr/0007-proven-gem-swaps-resolved.md %}) — why
+  authorization stays in-gem rather than wrapping `pundit`.
