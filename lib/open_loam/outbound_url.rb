@@ -1,4 +1,5 @@
 require "ipaddr"
+require "socket"
 require "resolv"
 require "uri"
 
@@ -25,15 +26,16 @@ module OpenLoam
       "0.0.0.0/8", "10.0.0.0/8", "100.64.0.0/10", "127.0.0.0/8", "169.254.0.0/16",
       "172.16.0.0/12", "192.0.0.0/24", "192.168.0.0/16", "198.18.0.0/15",
       "224.0.0.0/4", "240.0.0.0/4",
-      "::1/128", "::/128", "fc00::/7", "fe80::/10", "ff00::/8"
+      "::1/128", "::/128", "fc00::/7", "fe80::/10", "ff00::/8",
+      "64:ff9b::/96" # NAT64 reaches IPv4 space through a gateway
     ].map { |range| IPAddr.new(range) }.freeze
 
     module_function
 
     # Shape only — no DNS. Model validations call this: saving must not depend on
     # the network, and a save-time lookup proves nothing resolve! doesn't re-prove.
-    def validate!(url, require_https: false)
-      uri = parse!(url, require_https: require_https)
+    def validate!(url, require_https: false, ports: nil)
+      uri = parse!(url, require_https: require_https, ports: ports)
       if literal_address(uri.host) && blocked?(uri.host)
         raise BlockedError, "#{uri.host} is not a public address"
       end
@@ -42,12 +44,12 @@ module OpenLoam
     end
 
     # Shape, DNS, and the address to connect to — call this at FETCH time.
-    def resolve!(url, require_https: false)
-      uri = validate!(url, require_https: require_https)
+    def resolve!(url, require_https: false, ports: nil)
+      uri = validate!(url, require_https: require_https, ports: ports)
       [ uri, address_for!(uri.host) ]
     end
 
-    def parse!(url, require_https: false)
+    def parse!(url, require_https: false, ports: nil)
       uri = begin
         URI.parse(url.to_s)
       rescue URI::InvalidURIError => error
@@ -60,6 +62,7 @@ module OpenLoam
       # Credentials in the URL are a redirect/parsing-confusion trick more often
       # than a real need, and nothing here has a use for them.
       raise BlockedError, "credentials in the URL are not allowed" if uri.userinfo.present?
+      raise BlockedError, "port #{uri.port} is not allowed" if ports && !Array(ports).include?(uri.port)
 
       uri
     end
@@ -91,10 +94,23 @@ module OpenLoam
     end
 
     def blocked?(address)
-      ip = IPAddr.new(address.to_s)
-      BLOCKED.any? { |range| range.include?(ip) }
+      ip = normalize(IPAddr.new(address.to_s))
+      BLOCKED.any? { |range| range.family == ip.family && range.include?(ip) }
     rescue IPAddr::Error
       true # unparseable is not provably public
+    end
+
+    # ::ffff:a.b.c.d (mapped) and ::a.b.c.d (compatible) reach the IPv4 host,
+    # so they are judged by the IPv4 ranges. IPAddr never matches across
+    # families, which is exactly how "[::ffff:127.0.0.1]" slipped through.
+    def normalize(ip)
+      return ip unless ip.ipv6?
+
+      value = ip.to_i
+      high = value >> 32
+      return IPAddr.new(value & 0xffff_ffff, Socket::AF_INET) if high == 0xffff || (high.zero? && value > 1)
+
+      ip
     end
   end
 end
