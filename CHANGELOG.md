@@ -5,6 +5,68 @@ with the caveat that 0.x releases may break the public surface; the
 [backward-compatibility contract](BACKWARD_COMPATIBILITY.md) names what is
 frozen and what is not.
 
+## 0.4.0 — 2026-11-20
+
+### Fixed
+
+- **Outbound webhooks dropped data on any receiver error.** The response code
+  was never read, so a 500 or a timeout lost the event. Deliveries are now rows
+  (`open_loam_webhook_deliveries`) retried by response code.
+- **SSRF through IPv4-mapped IPv6 literals** (`http://[::ffff:127.0.0.1]/`,
+  `[::ffff:169.254.169.254]`). `OutboundUrl` judges mapped and compatible
+  addresses by the IPv4 ranges and blocks NAT64 (`64:ff9b::/96`,
+  `64:ff9b:1::/48`).
+
+### Added
+
+- Webhook delivery ledger, retry schedule, `Retry-After`, auto-disable,
+  `open_loam.webhook.endpoint_disabled` event, sweep job, retention prune,
+  `send_test!`, `redeliver!` (finished deliveries only; resets `attempts`).
+- Auto-disable needs BOTH `disable_after_failures` (default 50) failures in a row
+  AND a streak older than `disable_after_duration` (default 24h; new
+  `failing_since` column). 410 and a blocked URL still disable at once. Errors
+  raised by a host `body_builder` (other than `SkipDelivery`) are retried without
+  counting against the endpoint.
+- The transport bounds the whole request at 3 x `timeout`, ignores `http_proxy`,
+  and stores a UTF-8-safe, NUL-free excerpt. A stuck row past the retry schedule
+  is failed (`last_error: "stuck"`) by the sweep instead of resent.
+- The admin shows a new endpoint's signing secret once, on the page rendered
+  after create (`webhook_endpoints/created.html.erb`, `Cache-Control: no-store`).
+- `<prefix>-Signature-V2` (timestamped) plus `-Event-Id`, `-Delivery`,
+  `-Timestamp` headers; configurable prefix and user agent. The transport sends
+  `Accept-Encoding: identity` and reads at most 512 bytes of the response.
+- Secret rotation with a grace period; optional sealing of secrets
+  (`encrypt_secrets`).
+- `event_patterns` (several per endpoint), `metadata` and `description` on
+  endpoints; host `body_builder` and `SkipDelivery`.
+- `OutboundUrl` `ports:` allowlist; `require_https`/`allowed_ports` for webhooks.
+- `OpenLoam::OutboundUrl::UnresolvableError` (a `BlockedError` subclass) for a
+  host that resolves to nothing. Webhook deliveries retry it like a network
+  error; only a URL that resolves to a non-public address fails and disables the
+  endpoint (`blocked_url`).
+
+#### Migration
+
+Copy `demo/db/migrate/20261120090000_add_open_loam_webhook_reliability.rb`.
+Existing endpoints keep working unchanged (single pattern, plaintext secret).
+Jobs enqueued by 0.3.0 are still accepted. Apps that do not tick
+`OpenLoam::Scheduler` must schedule `OpenLoam::WebhookSweepJob` every minute.
+An error raised by a subscriber to `open_loam.webhook.endpoint_disabled`
+propagates out of the delivery job rather than being retried.
+The admin endpoints index no longer prints the secret; re-copy it if you
+generated it. Generated apps get a new `admin/webhook_endpoints/created.html.erb`
+and an updated controller (create renders it with status 201).
+
+The migration adds `open_loam_webhook_endpoints.failing_since` and indexes on
+`open_loam_webhook_deliveries` `(status, next_attempt_at)` and
+`(status, updated_at)` for the per-minute cross-tenant sweep lookup. It is tagged
+`Migration[8.2]` and uses bigint keys: adjust the version for your Rails, and the
+`references ... type:` for uuid or string primary keys.
+
+With `require_https` or `allowed_ports` switched on, an existing `http://` or
+non-allowed-port endpoint fails its first delivery and is disabled as
+`blocked_url`. Review existing endpoints before turning these on.
+
 ## 0.3.0 — 2026-09-05
 
 ### Security

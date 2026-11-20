@@ -1,6 +1,6 @@
 <h1>New webhook endpoint</h1>
 
-<%%= form_with model: @record, url: admin_webhook_endpoints_path do |f| %>
+<%%= form_with model: @record, scope: :webhook_endpoint, url: admin_webhook_endpoints_path do |f| %>
   <%% if @record.errors.any? %>
     <ul>
       <%% @record.errors.full_messages.each do |message| %>
@@ -25,4 +25,4 @@
   <%%= f.submit "Create endpoint" %>
 <%% end %>
 
-<p>A signing secret is generated for you and shown on the list.</p>
+<p>A signing secret is generated for you and shown once after you save.</p>

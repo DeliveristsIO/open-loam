@@ -8,25 +8,27 @@ domain ("rental."); anything else is one exact event name.</p>
 <table>
   <thead>
     <tr>
-      <th>Event pattern</th>
+      <th>Event patterns</th>
       <th>URL</th>
       <th>Active</th>
-      <th>Secret</th>
+      <th>Status</th>
       <th></th>
     </tr>
   </thead>
   <tbody>
     <%% @records.each do |record| %>
       <tr>
-        <td><%%= record.event_pattern %></td>
+        <td><%%= record.patterns.join(", ") %></td>
         <td><%%= record.url %></td>
         <td><%%= record.active? ? "yes" : "no" %></td>
-        <td><code><%%= record.secret %></code></td>
+        <td><%%= record.active? ? "active" : "disabled (#{record.disabled_reason})" %></td>
         <td><%%= button_to "Delete", admin_webhook_endpoint_path(record), method: :delete, form: { style: "display:inline" } %></td>
       </tr>
     <%% end %>
   </tbody>
 </table>
 
-<p>Each delivery is signed: <code>X-OpenLoam-Signature: sha256=HMAC-SHA256(secret, body)</code>.
-Recompute it on your side and reject anything that does not match.</p>
+<p>Each delivery is signed twice: <code>X-OpenLoam-Signature: sha256=HMAC-SHA256(secret, body)</code> (kept for
+existing receivers) and <code>X-OpenLoam-Signature-V2: t=&lt;unix&gt;,v1=HMAC-SHA256(secret, "&lt;t&gt;.&lt;body&gt;")</code>,
+which new receivers should verify. Read the secret with <code>OpenLoam::WebhookEndpoint#secret</code> in a console;
+it is not shown here.</p>

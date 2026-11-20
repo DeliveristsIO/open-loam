@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_09_05_100000) do
+ActiveRecord::Schema[8.2].define(version: 2026_11_20_090000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -521,14 +521,52 @@ ActiveRecord::Schema[8.2].define(version: 2026_09_05_100000) do
     t.index ["translatable_type", "translatable_id", "locale", "field"], name: "index_loam_translations_unique", unique: true
   end
 
+  create_table "open_loam_webhook_deliveries", force: :cascade do |t|
+    t.integer "tenant_id", null: false
+    t.integer "endpoint_id", null: false
+    t.string "event_id", null: false
+    t.string "delivery_id", null: false
+    t.string "event_name", null: false
+    t.json "payload", null: false
+    t.string "status", default: "pending", null: false
+    t.integer "attempts", default: 0, null: false
+    t.datetime "next_attempt_at"
+    t.datetime "sending_at"
+    t.integer "last_response_code"
+    t.string "last_error"
+    t.integer "last_duration_ms"
+    t.string "response_excerpt", limit: 512
+    t.datetime "delivered_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["delivery_id"], name: "index_open_loam_webhook_deliveries_on_delivery_id", unique: true
+    t.index ["endpoint_id", "created_at"], name: "idx_on_endpoint_id_created_at_f2863811f6"
+    t.index ["endpoint_id", "event_id"], name: "index_open_loam_webhook_deliveries_on_endpoint_id_and_event_id", unique: true
+    t.index ["endpoint_id"], name: "index_open_loam_webhook_deliveries_on_endpoint_id"
+    t.index ["status", "next_attempt_at"], name: "idx_on_status_next_attempt_at_404b05a59b"
+    t.index ["status", "updated_at"], name: "index_open_loam_webhook_deliveries_on_status_and_updated_at"
+    t.index ["tenant_id", "status", "next_attempt_at"], name: "idx_on_tenant_id_status_next_attempt_at_c9453bbb28"
+    t.index ["tenant_id"], name: "index_open_loam_webhook_deliveries_on_tenant_id"
+  end
+
   create_table "open_loam_webhook_endpoints", force: :cascade do |t|
     t.integer "tenant_id", null: false
     t.string "url", null: false
-    t.string "event_pattern", null: false
-    t.string "secret", null: false
+    t.string "event_pattern"
+    t.text "secret", null: false
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.json "event_patterns", default: [], null: false
+    t.text "previous_secret"
+    t.datetime "previous_secret_expires_at"
+    t.string "description"
+    t.json "metadata", default: {}, null: false
+    t.string "disabled_reason"
+    t.integer "consecutive_failures", default: 0, null: false
+    t.datetime "last_success_at"
+    t.datetime "last_failure_at"
+    t.datetime "failing_since"
     t.index ["tenant_id", "active"], name: "index_open_loam_webhook_endpoints_on_tenant_id_and_active"
     t.index ["tenant_id"], name: "index_open_loam_webhook_endpoints_on_tenant_id"
   end
@@ -585,5 +623,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_09_05_100000) do
   add_foreign_key "open_loam_sso_identities", "open_loam_tenants", column: "tenant_id"
   add_foreign_key "open_loam_sso_providers", "open_loam_tenants", column: "tenant_id"
   add_foreign_key "open_loam_translations", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_webhook_deliveries", "open_loam_tenants", column: "tenant_id"
+  add_foreign_key "open_loam_webhook_deliveries", "open_loam_webhook_endpoints", column: "endpoint_id", on_delete: :cascade
   add_foreign_key "open_loam_webhook_endpoints", "open_loam_tenants", column: "tenant_id"
 end

@@ -127,6 +127,7 @@ number = higher priority.
 - ~~L-712 — observability seam~~ — ✅ shipped: `OpenLoam::Telemetry.span` wraps the
   scheduler tick, durable delivery, and inbound ingest; default emits
   `open_loam.span.*` notifications, pluggable to OTLP via `Telemetry.backend`.
+- ~~Reliable outbound webhooks~~ — ✅ ledger, retries, v2 signature (0.4.0). See docs/_agents/webhooks.md.
 
 ### P4 — Admin & UX polish
 - ~~L-401 — pagination + search on generated admin index views~~ — ✅ shipped:

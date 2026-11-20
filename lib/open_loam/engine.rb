@@ -27,6 +27,12 @@ module OpenLoam
         key: OpenLoam::EventLog::PRUNE_KEY, name: "Event log prune",
         job_class: "OpenLoam::EventLogPruneJob", schedule: "interval:86400", scope: "tenant"
       )
+
+      # Webhook ledger sweep: lost/stuck deliveries and retention, every minute.
+      OpenLoam::Scheduler.register(
+        key: OpenLoam::Webhooks::SWEEP_KEY, name: "Webhook delivery sweep",
+        job_class: "OpenLoam::WebhookSweepJob", schedule: "interval:60", scope: "tenant"
+      )
     end
 
     # OpenLoam's Active Record layer — TenantRecord, Auditable, Eventful and the

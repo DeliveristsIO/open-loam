@@ -1,0 +1,9 @@
+<h1>Webhook endpoint created</h1>
+
+<p><strong>Copy the signing secret now.</strong> The receiver at
+<code><%%= @record.url %></code> needs it to verify signatures. This is the only
+time it is shown.</p>
+
+<p><code><%%= @record.secret %></code></p>
+
+<p><%%= link_to "Back to webhook endpoints", admin_webhook_endpoints_path %></p>
