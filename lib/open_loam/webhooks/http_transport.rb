@@ -20,22 +20,6 @@ module OpenLoam
       module_function
 
       def post(url, body:, headers:, timeout:)
-        uri, address = OpenLoam::OutboundUrl.resolve!(url, require_https: Webhooks.require_https?,
-                                                           ports: Webhooks.allowed_ports)
-        # nil proxy: an http_proxy in ENV must not bypass the pinned address.
-        http = Net::HTTP.new(uri.host, uri.port, nil)
-        http.ipaddr = address
-        http.use_ssl = uri.scheme == "https"
-        http.verify_mode = OpenSSL::SSL::VERIFY_PEER if http.use_ssl?
-        http.open_timeout = timeout
-        http.read_timeout = timeout
-        http.write_timeout = timeout
-
-        request = Net::HTTP::Post.new(uri.request_uri)
-        headers.each { |name, value| request[name] = value }
-        request["Accept-Encoding"] = "identity" # a compressed body could inflate past the excerpt cap
-        request.body = body
-
         started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         code = nil
         retry_after = nil
@@ -43,6 +27,23 @@ module OpenLoam
         # Timeout::Error is a StandardError: Webhooks.deliver retries it as a
         # network error, counted against the endpoint like any other.
         Timeout.timeout(timeout * 3) do
+          # DNS resolution is inside the deadline too.
+          uri, address = OpenLoam::OutboundUrl.resolve!(url, require_https: Webhooks.require_https?,
+                                                             ports: Webhooks.allowed_ports)
+          # nil proxy: an http_proxy in ENV must not bypass the pinned address.
+          http = Net::HTTP.new(uri.host, uri.port, nil)
+          http.ipaddr = address
+          http.use_ssl = uri.scheme == "https"
+          http.verify_mode = OpenSSL::SSL::VERIFY_PEER if http.use_ssl?
+          http.open_timeout = timeout
+          http.read_timeout = timeout
+          http.write_timeout = timeout
+
+          request = Net::HTTP::Post.new(uri.request_uri)
+          headers.each { |name, value| request[name] = value }
+          request["Accept-Encoding"] = "identity" # a compressed body could inflate past the excerpt cap
+          request.body = body
+
           http.start do |connection|
             connection.request(request) do |response|
               code = response.code.to_i

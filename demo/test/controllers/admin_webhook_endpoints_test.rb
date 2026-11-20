@@ -29,5 +29,6 @@ class AdminWebhookEndpointsTest < ActionDispatch::IntegrationTest
     get new_admin_webhook_endpoint_path
     assert_response :success
     assert_match(/shown once after you save/, response.body)
+    assert_includes response.body, 'name="webhook_endpoint[url]"'
   end
 end

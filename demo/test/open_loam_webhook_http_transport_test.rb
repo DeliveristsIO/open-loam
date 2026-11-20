@@ -17,7 +17,7 @@ class OpenLoamWebhookHttpTransportTest < ActiveSupport::TestCase
   teardown do
     OpenLoam::OutboundUrl.singleton_class.send(:define_method, :resolve!, @original_resolve)
     @server.close unless @server.closed?
-    @thread&.kill
+    @thread&.kill&.join(1)
     OpenLoam::Webhooks.reset_configuration!
   end
 
