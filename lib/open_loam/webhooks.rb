@@ -20,7 +20,7 @@ module OpenLoam
     CONFIG_IVARS = %i[
       @header_prefix @user_agent @retry_schedule @disable_after_failures @delivery_retention @body_builder
       @transport @require_https @allowed_ports @encrypt_secrets @test_event_name @timeout
-      @secret_rotation_grace @stuck_after
+      @secret_rotation_grace @stuck_after @disable_after_duration
     ].freeze
 
     Response = Struct.new(:code, :headers, :excerpt, :duration_ms, keyword_init: true)
@@ -36,12 +36,16 @@ module OpenLoam
     class << self
       attr_writer :header_prefix, :user_agent, :retry_schedule, :disable_after_failures, :delivery_retention,
                   :body_builder, :transport, :require_https, :allowed_ports, :encrypt_secrets, :test_event_name,
-                  :timeout, :secret_rotation_grace, :stuck_after
+                  :timeout, :secret_rotation_grace, :stuck_after, :disable_after_duration
 
       def header_prefix = @header_prefix || "X-OpenLoam"
       def user_agent = @user_agent || "OpenLoam-Webhooks/#{OpenLoam::VERSION}"
       def retry_schedule = @retry_schedule || DEFAULT_RETRY_SCHEDULE
       def disable_after_failures = defined?(@disable_after_failures) ? @disable_after_failures : 50
+      # An endpoint is disabled for failing only when it has failed
+      # disable_after_failures times in a row AND has been failing for at least
+      # this long, so a short outage with heavy traffic does not switch it off.
+      def disable_after_duration = defined?(@disable_after_duration) ? @disable_after_duration : 24.hours
       def delivery_retention = defined?(@delivery_retention) ? @delivery_retention : 30.days
       def body_builder = @body_builder
       def transport = @transport || HttpTransport
@@ -70,12 +74,21 @@ module OpenLoam
           return
         end
 
+        # Building the request is the host's code: SkipDelivery cancels, any
+        # other error is retried without counting against the receiver.
         begin
           body = body_for(endpoint, delivery)
-          response = transport.post(endpoint.url, body: body, headers: headers_for(endpoint, delivery, body, now), timeout: timeout)
+          headers = headers_for(endpoint, delivery, body, now)
         rescue SkipDelivery => error
           delivery.update!(status: "cancelled", sending_at: nil, last_error: short(error.message))
           return
+        rescue StandardError => error
+          retry_later(delivery, endpoint, now, error: short("#{error.class}: #{error.message}"), count_failure: false)
+          return
+        end
+
+        begin
+          response = transport.post(endpoint.url, body: body, headers: headers, timeout: timeout)
         rescue OpenLoam::OutboundUrl::UnresolvableError => error
           # DNS being down is the network's fault, not the receiver's: retry.
           retry_later(delivery, endpoint, now, error: short("#{error.class}: #{error.message}"))
@@ -190,8 +203,13 @@ module OpenLoam
       # Inside one tenant: stuck rows go back to pending (at-least-once — the
       # receiver dedupes by event id), every overdue row gets a job, and final
       # rows past the retention are deleted. Returns the number re-enqueued.
+      # A stuck row that has used up the retry schedule fails instead, so a
+      # persistent error after the send cannot resend it forever.
       def sweep(now: Time.current, limit: 500)
-        OpenLoam::WebhookDelivery.stuck(now).update_all(status: "pending", sending_at: nil, next_attempt_at: now, updated_at: now)
+        stuck = OpenLoam::WebhookDelivery.stuck(now)
+        stuck.where("attempts > ?", retry_schedule.size)
+             .update_all(status: "failed", sending_at: nil, last_error: "stuck", updated_at: now)
+        stuck.update_all(status: "pending", sending_at: nil, next_attempt_at: now, updated_at: now)
 
         tenant_id = OpenLoam.tenant!.id
         ids = OpenLoam::WebhookDelivery.overdue(now).order(:id).limit(limit).pluck(:id)
@@ -237,8 +255,9 @@ module OpenLoam
         end
       end
 
-      def retry_later(delivery, endpoint, now, error:, retry_after: nil)
-        endpoint&.record_failure!(now)
+      # count_failure: false for errors that are the host's, not the receiver's.
+      def retry_later(delivery, endpoint, now, error:, retry_after: nil, count_failure: true)
+        endpoint&.record_failure!(now) if count_failure
         delay = retry_schedule[delivery.attempts - 1]
         if delay.nil?
           delivery.update!(status: "failed", sending_at: nil, last_error: error)

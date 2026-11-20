@@ -52,6 +52,7 @@ class OpenLoamWebhookEndpointTest < ActiveSupport::TestCase
 
   test "consecutive failures disable the endpoint once and publish an event; a success resets the count" do
     OpenLoam::Webhooks.disable_after_failures = 3
+    OpenLoam::Webhooks.disable_after_duration = 0
     events = []
     subscription = OpenLoam::Events.subscribe("open_loam.webhook.") { |name, payload| events << [ name, payload ] }
 
@@ -73,6 +74,56 @@ class OpenLoamWebhookEndpointTest < ActiveSupport::TestCase
       assert hook.reload.active?
       assert_nil hook.disabled_reason
       assert_equal 0, hook.consecutive_failures
+    end
+  ensure
+    ActiveSupport::Notifications.unsubscribe(subscription) if subscription
+  end
+
+  test "a short outage does not disable the endpoint, however many failures it produces" do
+    now = Time.zone.parse("2026-11-20 10:00:00")
+    with_tenant(@tenant) do
+      hook = endpoint
+      60.times { |i| hook.record_failure!(now + i.minutes) }
+      hook.reload
+      assert hook.active?
+      assert_equal 60, hook.consecutive_failures
+      assert_equal now, hook.failing_since
+    end
+  end
+
+  test "failures past the limit AND spanning the duration disable; a success resets failing_since" do
+    OpenLoam::Webhooks.disable_after_failures = 3
+    now = Time.zone.parse("2026-11-20 10:00:00")
+    with_tenant(@tenant) do
+      hook = endpoint
+      hook.record_failure!(now)
+      hook.record_success!(now + 1.minute)
+      assert_nil hook.reload.failing_since
+
+      hook.record_failure!(now + 1.hour)
+      hook.record_failure!(now + 2.hours)
+      hook.record_failure!(now + 3.hours)
+      assert hook.reload.active?, "3 failures inside a day keep the endpoint on"
+      hook.record_failure!(now + 25.hours + 1.second)
+      hook.reload
+      refute hook.active?
+      assert_equal "consecutive_failures", hook.disabled_reason
+
+      hook.enable!
+      assert_nil hook.reload.failing_since
+    end
+  end
+
+  test "disable! flips the row only once even from a stale copy" do
+    events = []
+    subscription = OpenLoam::Events.subscribe("open_loam.webhook.") { |name, payload| events << name }
+    with_tenant(@tenant) do
+      hook = endpoint
+      stale = OpenLoam::WebhookEndpoint.find(hook.id)
+      hook.disable!("gone")
+      stale.disable!("blocked_url")
+      assert_equal "gone", hook.reload.disabled_reason
+      assert_equal 1, events.size
     end
   ensure
     ActiveSupport::Notifications.unsubscribe(subscription) if subscription

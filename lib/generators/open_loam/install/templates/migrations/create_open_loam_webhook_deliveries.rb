@@ -22,5 +22,8 @@ class CreateOpenLoamWebhookDeliveries < ActiveRecord::Migration[<%= ActiveRecord
     add_index :open_loam_webhook_deliveries, :delivery_id, unique: true
     add_index :open_loam_webhook_deliveries, %i[tenant_id status next_attempt_at]
     add_index :open_loam_webhook_deliveries, %i[endpoint_id created_at]
+    # The per-minute cross-tenant sweep lookup (overdue / stuck / prunable).
+    add_index :open_loam_webhook_deliveries, %i[status next_attempt_at]
+    add_index :open_loam_webhook_deliveries, %i[status updated_at]
   end
 end

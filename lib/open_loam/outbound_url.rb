@@ -31,7 +31,7 @@ module OpenLoam
       "172.16.0.0/12", "192.0.0.0/24", "192.168.0.0/16", "198.18.0.0/15",
       "224.0.0.0/4", "240.0.0.0/4",
       "::1/128", "::/128", "fc00::/7", "fe80::/10", "ff00::/8",
-      "64:ff9b::/96" # NAT64 reaches IPv4 space through a gateway
+      "64:ff9b::/96", "64:ff9b:1::/48" # NAT64 (well-known and local-use) reaches IPv4 space through a gateway
     ].map { |range| IPAddr.new(range) }.freeze
 
     module_function

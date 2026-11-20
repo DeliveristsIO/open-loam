@@ -543,6 +543,8 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_20_090000) do
     t.index ["endpoint_id", "created_at"], name: "idx_on_endpoint_id_created_at_f2863811f6"
     t.index ["endpoint_id", "event_id"], name: "index_open_loam_webhook_deliveries_on_endpoint_id_and_event_id", unique: true
     t.index ["endpoint_id"], name: "index_open_loam_webhook_deliveries_on_endpoint_id"
+    t.index ["status", "next_attempt_at"], name: "idx_on_status_next_attempt_at_404b05a59b"
+    t.index ["status", "updated_at"], name: "index_open_loam_webhook_deliveries_on_status_and_updated_at"
     t.index ["tenant_id", "status", "next_attempt_at"], name: "idx_on_tenant_id_status_next_attempt_at_c9453bbb28"
     t.index ["tenant_id"], name: "index_open_loam_webhook_deliveries_on_tenant_id"
   end
@@ -564,6 +566,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_20_090000) do
     t.integer "consecutive_failures", default: 0, null: false
     t.datetime "last_success_at"
     t.datetime "last_failure_at"
+    t.datetime "failing_since"
     t.index ["tenant_id", "active"], name: "index_open_loam_webhook_endpoints_on_tenant_id_and_active"
     t.index ["tenant_id"], name: "index_open_loam_webhook_endpoints_on_tenant_id"
   end

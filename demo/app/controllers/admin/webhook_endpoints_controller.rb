@@ -17,7 +17,10 @@ module Admin
       @record = OpenLoam::WebhookEndpoint.new(permitted_params)
 
       if @record.save
-        redirect_to admin_webhook_endpoints_path
+        # The only screen that shows the secret: the receiver needs it to verify
+        # signatures, and it is never displayed again.
+        response.headers["Cache-Control"] = "no-store"
+        render :created, status: :created
       else
         render :new, status: :unprocessable_entity
       end

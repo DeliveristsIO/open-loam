@@ -15,6 +15,7 @@ class CreateOpenLoamWebhookEndpoints < ActiveRecord::Migration[<%= ActiveRecord:
       t.integer :consecutive_failures, null: false, default: 0
       t.datetime :last_success_at
       t.datetime :last_failure_at
+      t.datetime :failing_since                # start of the current failure streak
       t.timestamps
     end
     add_index :open_loam_webhook_endpoints, %i[tenant_id active]

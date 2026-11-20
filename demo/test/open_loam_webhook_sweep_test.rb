@@ -38,6 +38,23 @@ class OpenLoamWebhookSweepTest < ActiveSupport::TestCase
     refute_includes ids, future.id
   end
 
+  test "a stuck row past the retry schedule fails instead of going back to pending" do
+    OpenLoam::Webhooks.retry_schedule = [ 60, 300 ]
+    over = row(status: "sending", sending_at: @now - 10.minutes, attempts: 3)
+    within = row(status: "sending", sending_at: @now - 10.minutes, attempts: 2)
+
+    enqueued = with_tenant(@tenant) { OpenLoam::Webhooks.sweep(now: @now) }
+
+    assert_equal 1, enqueued
+    with_tenant(@tenant) do
+      over.reload
+      assert_equal "failed", over.status
+      assert_equal "stuck", over.last_error
+      assert_nil over.sending_at
+      assert_equal "pending", within.reload.status
+    end
+  end
+
   test "final rows older than the retention are pruned" do
     old = row(status: "succeeded", updated_at: @now - 31.days)
     recent = row(status: "failed", updated_at: @now - 1.day)

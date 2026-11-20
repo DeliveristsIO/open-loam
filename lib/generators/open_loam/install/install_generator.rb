@@ -136,6 +136,7 @@ module OpenLoam
         template "admin/notifications_index.html.erb", "app/views/admin/notifications/index.html.erb"
         template "admin/webhook_endpoints_index.html.erb", "app/views/admin/webhook_endpoints/index.html.erb"
         template "admin/webhook_endpoints_new.html.erb", "app/views/admin/webhook_endpoints/new.html.erb"
+        template "admin/webhook_endpoints_created.html.erb", "app/views/admin/webhook_endpoints/created.html.erb"
         template "admin/api_tokens_index.html.erb", "app/views/admin/api_tokens/index.html.erb"
         template "admin/configs_index.html.erb", "app/views/admin/configs/index.html.erb"
         template "admin/configs_edit.html.erb", "app/views/admin/configs/edit.html.erb"

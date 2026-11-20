@@ -13,6 +13,7 @@ class AddOpenLoamWebhookReliability < ActiveRecord::Migration[8.2]
     add_column :open_loam_webhook_endpoints, :consecutive_failures, :integer, null: false, default: 0
     add_column :open_loam_webhook_endpoints, :last_success_at, :datetime
     add_column :open_loam_webhook_endpoints, :last_failure_at, :datetime
+    add_column :open_loam_webhook_endpoints, :failing_since, :datetime
 
     create_table :open_loam_webhook_deliveries do |t|
       t.references :tenant, null: false, foreign_key: { to_table: :open_loam_tenants }
@@ -36,12 +37,15 @@ class AddOpenLoamWebhookReliability < ActiveRecord::Migration[8.2]
     add_index :open_loam_webhook_deliveries, :delivery_id, unique: true
     add_index :open_loam_webhook_deliveries, %i[tenant_id status next_attempt_at]
     add_index :open_loam_webhook_deliveries, %i[endpoint_id created_at]
+    # The per-minute cross-tenant sweep lookup (overdue / stuck / prunable).
+    add_index :open_loam_webhook_deliveries, %i[status next_attempt_at]
+    add_index :open_loam_webhook_deliveries, %i[status updated_at]
   end
 
   def down
     drop_table :open_loam_webhook_deliveries
     %i[event_patterns previous_secret previous_secret_expires_at description metadata disabled_reason
-       consecutive_failures last_success_at last_failure_at].each do |column|
+       consecutive_failures last_success_at last_failure_at failing_since].each do |column|
       remove_column :open_loam_webhook_endpoints, column
     end
     change_column :open_loam_webhook_endpoints, :secret, :string, null: false

@@ -102,6 +102,22 @@ class OpenLoamWebhookDeliveryTest < ActiveSupport::TestCase
     assert_empty transport.requests
   end
 
+  test "a host body builder error is retried without counting against the endpoint" do
+    OpenLoam::Webhooks.body_builder = ->(**) { raise "host bug" }
+    transport = deliver(200)
+    assert_equal "pending", @delivery.status
+    assert_not_nil @delivery.next_attempt_at
+    assert_match(/host bug/, @delivery.last_error)
+    assert_empty transport.requests
+    assert_equal 0, @endpoint.reload.consecutive_failures
+    assert_nil @endpoint.last_failure_at
+  end
+
+  test "a network error still counts against the endpoint" do
+    deliver(Errno::ECONNREFUSED.new)
+    assert_equal 1, @endpoint.reload.consecutive_failures
+  end
+
   test "5xx, 408, 429 and network errors are retried on the schedule; Retry-After wins, capped at an hour" do
     deliver(503)
     assert_equal "pending", @delivery.status

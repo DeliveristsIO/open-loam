@@ -73,30 +73,45 @@ module OpenLoam
     end
 
     def record_success!(at = Time.current)
-      update_columns(consecutive_failures: 0, last_success_at: at, updated_at: at)
+      update_columns(consecutive_failures: 0, failing_since: nil, last_success_at: at, updated_at: at)
     end
 
     # SQL increment, so two failing deliveries at once still count twice.
+    # Disabled only when the streak is both long (disable_after_failures) and
+    # old (failing_since at least disable_after_duration ago): a busy endpoint
+    # can rack up many failures during a short outage and should survive it.
     def record_failure!(at = Time.current)
-      self.class.where(id: id).update_all([ "consecutive_failures = consecutive_failures + 1, last_failure_at = ?, updated_at = ?", at, at ])
+      self.class.where(id: id).update_all([ "consecutive_failures = consecutive_failures + 1, " \
+                                            "failing_since = COALESCE(failing_since, ?), last_failure_at = ?, updated_at = ?",
+                                            at, at, at ])
       reload
-      limit = OpenLoam::Webhooks.disable_after_failures
-      disable!("consecutive_failures") if limit && consecutive_failures >= limit
+      disable!("consecutive_failures") if failing_long_enough?(at)
     end
 
-    # Idempotent: only the switch from on to off publishes the event.
+    # Idempotent and race-safe: only the caller whose UPDATE flips the row from
+    # on to off publishes the event.
     def disable!(reason)
-      return unless active?
+      flipped = self.class.where(id: id, active: true)
+                    .update_all(active: false, disabled_reason: reason.to_s, updated_at: Time.current) == 1
+      return unless flipped
 
-      update_columns(active: false, disabled_reason: reason.to_s, updated_at: Time.current)
+      reload
       OpenLoam::Events.publish(OpenLoam::Webhooks::DISABLED_EVENT, { endpoint_id: id, reason: reason.to_s })
     end
 
     def enable!
-      update!(active: true, disabled_reason: nil, consecutive_failures: 0)
+      update!(active: true, disabled_reason: nil, consecutive_failures: 0, failing_since: nil)
     end
 
     private
+
+    def failing_long_enough?(at)
+      limit = OpenLoam::Webhooks.disable_after_failures
+      return false unless limit && consecutive_failures >= limit
+
+      duration = OpenLoam::Webhooks.disable_after_duration
+      duration.nil? || (failing_since && failing_since <= at - duration)
+    end
 
     def at_least_one_pattern
       errors.add(:event_pattern, :blank) if patterns.empty?
