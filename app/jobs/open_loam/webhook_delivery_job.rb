@@ -2,23 +2,16 @@ require "net/http"
 require "openssl"
 
 module OpenLoam
-  # Delivers one event to one endpoint. Inherits ActiveJob::Base rather than
-  # the host app's ApplicationJob: the gem must not depend on a class the app
-  # owns and may have configured for its own retries.
+  # Runs one attempt for one ledger row (OpenLoam::WebhookDelivery). Inherits
+  # ActiveJob::Base rather than the host's ApplicationJob, and keeps no retry
+  # state: OpenLoam::Webhooks.deliver moves the row and schedules the next try.
   #
-  # Signing: the receiver recomputes HMAC-SHA256 of the exact body with the
-  # endpoint's secret and compares it to X-OpenLoam-Signature. Body building and
-  # signing are class methods so both sides — and the tests — can call them
-  # without a network.
+  # The 4-argument form is what 0.3.0 enqueued (endpoint id, event, payload); a
+  # job still in the queue at upgrade time becomes a ledger row and is delivered.
   class WebhookDeliveryJob < ActiveJob::Base
     queue_as :default
 
-    # A URL that points inside the perimeter will never become deliverable by
-    # retrying, and retrying is itself the SSRF attempt repeated.
-    discard_on OpenLoam::OutboundUrl::BlockedError
-
-    TIMEOUT_SECONDS = 5
-
+    # Frozen (BACKWARD_COMPATIBILITY.md §6): the default body and the v1 signature.
     def self.body_for(event_name, payload, tenant_id)
       JSON.generate(event: event_name, payload: payload, tenant_id: tenant_id)
     end
@@ -27,42 +20,27 @@ module OpenLoam
       "sha256=#{OpenSSL::HMAC.hexdigest('SHA256', secret.to_s, body)}"
     end
 
-    def perform(tenant_id, endpoint_id, event_name, payload)
+    def perform(tenant_id, delivery_id, legacy_event_name = nil, legacy_payload = nil)
       tenant = OpenLoam::Tenant.find_by(id: tenant_id)
       return if tenant.nil?
 
       OpenLoam.as_tenant(tenant) do
-        endpoint = OpenLoam::WebhookEndpoint.find_by(id: endpoint_id)
-        # The endpoint may have been deleted or switched off between enqueue
-        # and delivery — that is an answer, not an error.
-        next if endpoint.nil? || !endpoint.active?
+        delivery =
+          if legacy_event_name
+            endpoint = OpenLoam::WebhookEndpoint.find_by(id: delivery_id)
+            next if endpoint.nil? || !endpoint.active?
 
-        deliver(endpoint, self.class.body_for(event_name, payload, tenant_id), event_name)
+            endpoint.deliveries.create!(event_id: SecureRandom.uuid, event_name: legacy_event_name.to_s,
+                                        payload: legacy_payload || {})
+          else
+            OpenLoam::WebhookDelivery.find_by(id: delivery_id)
+          end
+        # Not visible yet (the creating transaction has not committed) or gone:
+        # the sweep covers the first case.
+        next if delivery.nil?
+
+        OpenLoam::Webhooks.deliver(delivery)
       end
-    end
-
-    private
-
-    def deliver(endpoint, body, event_name)
-      # Re-checked at delivery, not just at save: the URL was validated when the
-      # tenant entered it, but DNS can be repointed at an internal address any
-      # time afterwards. Connecting to the address we just checked closes the
-      # window between the check and the connection.
-      uri, address = OpenLoam::OutboundUrl.resolve!(endpoint.url)
-
-      http = Net::HTTP.new(uri.host, uri.port)
-      http.ipaddr = address
-      http.use_ssl = uri.scheme == "https"
-      http.open_timeout = TIMEOUT_SECONDS
-      http.read_timeout = TIMEOUT_SECONDS
-
-      request = Net::HTTP::Post.new(uri.request_uri)
-      request["Content-Type"] = "application/json"
-      request["X-OpenLoam-Event"] = event_name
-      request["X-OpenLoam-Signature"] = self.class.signature(endpoint.secret, body)
-      request.body = body
-
-      http.request(request)
     end
   end
 end

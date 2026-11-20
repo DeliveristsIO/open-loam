@@ -133,6 +133,55 @@ module OpenLoam
         parts.any? { |key, value| key == "v1" && value && ActiveSupport::SecurityUtils.secure_compare(value, expected) }
       end
 
+      # Runs inline in whatever published the event, inside its transaction when
+      # there is one: the ledger rows commit or roll back with the change itself,
+      # and the jobs are enqueued only after that commit.
+      def dispatch(event_name, payload)
+        tenant = OpenLoam::Tenant.find_by(id: payload[:tenant_id])
+        return if tenant.nil?
+
+        deliverable = payload.transform_keys(&:to_s)
+        event_id = SecureRandom.uuid
+
+        OpenLoam.as_tenant(tenant) do
+          OpenLoam::WebhookEndpoint.active.each do |endpoint|
+            next unless endpoint.matches?(event_name)
+
+            enqueue(endpoint.deliveries.create!(event_id: event_id, event_name: event_name.to_s, payload: deliverable))
+          end
+        end
+      end
+
+      def send_test!(endpoint)
+        delivery = endpoint.deliveries.create!(event_id: SecureRandom.uuid, event_name: test_event_name,
+                                               payload: { "test" => true, "tenant_id" => endpoint.tenant_id })
+        enqueue(delivery)
+        delivery
+      end
+
+      def redeliver!(delivery)
+        delivery.update!(status: "pending", next_attempt_at: nil, sending_at: nil)
+        enqueue(delivery)
+        delivery
+      end
+
+      def enqueue(delivery)
+        tenant_id = delivery.tenant_id
+        delivery_id = delivery.id
+        after_commit { OpenLoam::WebhookDeliveryJob.perform_later(tenant_id, delivery_id) }
+      end
+
+      # Rails >= 7.2 defers to the outermost commit (and runs at once when no
+      # transaction is open). On 7.1 the job may start before the row is visible;
+      # it then finds nothing and the sweep picks the row up.
+      def after_commit(&block)
+        if ActiveRecord.respond_to?(:after_all_transactions_commit)
+          ActiveRecord.after_all_transactions_commit(&block)
+        else
+          block.call
+        end
+      end
+
       private
 
       def claim(delivery, now)
@@ -187,25 +236,6 @@ module OpenLoam
     # every event twice.
     def self.subscribe!
       @subscription ||= Events.subscribe_all { |event_name, payload| dispatch(event_name, payload) }
-    end
-
-    # Runs inline in whatever published the event, so it stays cheap: one
-    # query for the tenant's active endpoints, then the HTTP call is a job.
-    def self.dispatch(event_name, payload)
-      tenant = Tenant.find_by(id: payload[:tenant_id])
-      return if tenant.nil?
-
-      # Only JSON-safe primitives cross into the job — event payloads are ids
-      # and scalars by convention, never records.
-      deliverable = payload.transform_keys(&:to_s)
-
-      OpenLoam.as_tenant(tenant) do
-        WebhookEndpoint.active.each do |endpoint|
-          next unless endpoint.matches?(event_name)
-
-          WebhookDeliveryJob.perform_later(tenant.id, endpoint.id, event_name, deliverable)
-        end
-      end
     end
   end
 end
