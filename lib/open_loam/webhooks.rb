@@ -13,6 +13,7 @@ module OpenLoam
     DEFAULT_RETRY_SCHEDULE = [ 60, 300, 1_800, 7_200, 21_600, 43_200, 86_400 ].freeze
     DISABLED_EVENT = "open_loam.webhook.endpoint_disabled".freeze
     TEST_EVENT = "open_loam.webhook.test".freeze
+    SWEEP_KEY = "open_loam_webhook_sweep".freeze
     EXCERPT_BYTES = 512
     TIMESTAMP_TOLERANCE = 300
 
@@ -184,6 +185,29 @@ module OpenLoam
         else
           block.call
         end
+      end
+
+      # Inside one tenant: stuck rows go back to pending (at-least-once — the
+      # receiver dedupes by event id), every overdue row gets a job, and final
+      # rows past the retention are deleted. Returns the number re-enqueued.
+      def sweep(now: Time.current, limit: 500)
+        OpenLoam::WebhookDelivery.stuck(now).update_all(status: "pending", sending_at: nil, next_attempt_at: now, updated_at: now)
+
+        tenant_id = OpenLoam.tenant!.id
+        ids = OpenLoam::WebhookDelivery.overdue(now).order(:id).limit(limit).pluck(:id)
+        ids.each { |id| OpenLoam::WebhookDeliveryJob.perform_later(tenant_id, id) }
+
+        OpenLoam::WebhookDelivery.prunable(now, delivery_retention).delete_all if delivery_retention
+        ids.size
+      end
+
+      # Blessed cross-tenant lookup (BACKWARD_COMPATIBILITY.md §1), the webhook
+      # twin of the scheduler's due-job claim: tenant ids only, never rows.
+      def tenant_ids_needing_sweep(now: Time.current)
+        all = OpenLoam::WebhookDelivery.unscoped
+        work = all.overdue(now).or(all.stuck(now))
+        work = work.or(all.prunable(now, delivery_retention)) if delivery_retention
+        work.distinct.pluck(:tenant_id)
       end
 
       private
