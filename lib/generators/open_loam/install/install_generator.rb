@@ -44,6 +44,7 @@ module OpenLoam
         migration_template "migrations/create_open_loam_event_deliveries.rb", "db/migrate/create_open_loam_event_deliveries.rb"
         migration_template "migrations/create_open_loam_event_records.rb", "db/migrate/create_open_loam_event_records.rb"
         migration_template "migrations/create_open_loam_inbound_webhooks.rb", "db/migrate/create_open_loam_inbound_webhooks.rb"
+        migration_template "migrations/create_open_loam_webhook_deliveries.rb", "db/migrate/create_open_loam_webhook_deliveries.rb"
       end
 
       # Attachments (OpenLoam::Attachable, included in every generated entity) are
