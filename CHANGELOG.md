@@ -14,14 +14,24 @@ frozen and what is not.
   (`open_loam_webhook_deliveries`) retried by response code.
 - **SSRF through IPv4-mapped IPv6 literals** (`http://[::ffff:127.0.0.1]/`,
   `[::ffff:169.254.169.254]`). `OutboundUrl` judges mapped and compatible
-  addresses by the IPv4 ranges and blocks NAT64 (`64:ff9b::/96`).
+  addresses by the IPv4 ranges and blocks NAT64 (`64:ff9b::/96`,
+  `64:ff9b:1::/48`).
 
 ### Added
 
-- Webhook delivery ledger, retry schedule, `Retry-After`, auto-disable after
-  `disable_after_failures`, `open_loam.webhook.endpoint_disabled` event, sweep job,
-  retention prune, `send_test!`, `redeliver!` (finished deliveries only; resets
-  `attempts`).
+- Webhook delivery ledger, retry schedule, `Retry-After`, auto-disable,
+  `open_loam.webhook.endpoint_disabled` event, sweep job, retention prune,
+  `send_test!`, `redeliver!` (finished deliveries only; resets `attempts`).
+- Auto-disable needs BOTH `disable_after_failures` (default 50) failures in a row
+  AND a streak older than `disable_after_duration` (default 24h; new
+  `failing_since` column). 410 and a blocked URL still disable at once. Errors
+  raised by a host `body_builder` (other than `SkipDelivery`) are retried without
+  counting against the endpoint.
+- The transport bounds the whole request at 3 x `timeout`, ignores `http_proxy`,
+  and stores a UTF-8-safe, NUL-free excerpt. A stuck row past the retry schedule
+  is failed (`last_error: "stuck"`) by the sweep instead of resent.
+- The admin shows a new endpoint's signing secret once, on the page rendered
+  after create (`webhook_endpoints/created.html.erb`, `Cache-Control: no-store`).
 - `<prefix>-Signature-V2` (timestamped) plus `-Event-Id`, `-Delivery`,
   `-Timestamp` headers; configurable prefix and user agent. The transport sends
   `Accept-Encoding: identity` and reads at most 512 bytes of the response.
@@ -44,7 +54,18 @@ Jobs enqueued by 0.3.0 are still accepted. Apps that do not tick
 An error raised by a subscriber to `open_loam.webhook.endpoint_disabled`
 propagates out of the delivery job rather than being retried.
 The admin endpoints index no longer prints the secret; re-copy it if you
-generated it.
+generated it. Generated apps get a new `admin/webhook_endpoints/created.html.erb`
+and an updated controller (create renders it with status 201).
+
+The migration adds `open_loam_webhook_endpoints.failing_since` and indexes on
+`open_loam_webhook_deliveries` `(status, next_attempt_at)` and
+`(status, updated_at)` for the per-minute cross-tenant sweep lookup. It is tagged
+`Migration[8.2]` and uses bigint keys: adjust the version for your Rails, and the
+`references ... type:` for uuid or string primary keys.
+
+With `require_https` or `allowed_ports` switched on, an existing `http://` or
+non-allowed-port endpoint fails its first delivery and is disabled as
+`blocked_url`. Review existing endpoints before turning these on.
 
 ## 0.3.0 — 2026-09-05
 

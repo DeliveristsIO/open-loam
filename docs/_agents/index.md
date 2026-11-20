@@ -56,6 +56,7 @@ subsystem.
 - [Scheduler]({% link _agents/scheduler.md %})
 - [Undo / redo]({% link _agents/undo.md %})
 - [Inbound webhooks]({% link _agents/inbound-webhooks.md %})
+- [Outbound webhooks]({% link _agents/webhooks.md %}) — delivery ledger, retries, signatures
 - [Bulk import / export]({% link _agents/bulk-import-export.md %})
 
 ## Related pages
