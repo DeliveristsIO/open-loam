@@ -60,6 +60,13 @@ class OpenLoamOutboundUrlTest < ActiveSupport::TestCase
     assert_match(/does not resolve/, error.message)
   end
 
+  test "an unresolvable host raises UnresolvableError, still a BlockedError" do
+    error = assert_raises(OpenLoam::OutboundUrl::UnresolvableError) do
+      OpenLoam::OutboundUrl.resolve!("https://nothing.invalid/hook")
+    end
+    assert_kind_of OpenLoam::OutboundUrl::BlockedError, error
+  end
+
   test "resolve! returns the address the caller must connect to" do
     # Pinning the connection to the address that was CHECKED is what closes the
     # DNS-rebinding window between the check and the connect.

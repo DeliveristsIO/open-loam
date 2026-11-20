@@ -18,6 +18,10 @@ module OpenLoam
   module OutboundUrl
     class BlockedError < OpenLoam::Error; end
 
+    # The host did not resolve (NXDOMAIN, timeout, no records). Not a verdict on
+    # the address, so callers that retry may treat it as a network error.
+    class UnresolvableError < BlockedError; end
+
     SCHEMES = %w[http https].freeze
 
     # Loopback, link-local (incl. the 169.254.169.254 cloud metadata service),
@@ -71,7 +75,7 @@ module OpenLoam
     # public and one private A record is still an internal reach.
     def address_for!(host)
       addresses = resolve_all(host)
-      raise BlockedError, "#{host} does not resolve" if addresses.empty?
+      raise UnresolvableError, "#{host} does not resolve" if addresses.empty?
 
       addresses.each do |address|
         raise BlockedError, "#{host} resolves to the non-public address #{address}" if blocked?(address)

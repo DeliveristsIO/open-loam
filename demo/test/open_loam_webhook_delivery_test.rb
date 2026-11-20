@@ -164,4 +164,41 @@ class OpenLoamWebhookDeliveryTest < ActiveSupport::TestCase
     assert_equal "failed", @delivery.reload.status
     assert_equal "blocked_url", @endpoint.reload.disabled_reason
   end
+
+  test "an unresolvable host is a retryable network error, not a disabled endpoint" do
+    OpenLoam::Webhooks.transport = Class.new do
+      def self.post(*, **) = raise(OpenLoam::OutboundUrl::UnresolvableError, "example.test does not resolve")
+    end
+    with_tenant(@tenant) { OpenLoam::Webhooks.deliver(@delivery.reload, now: @now) }
+    @delivery.reload
+    assert_equal "pending", @delivery.status
+    assert_not_nil @delivery.next_attempt_at
+    assert @endpoint.reload.active?
+  end
+
+  test "Retry-After is clamped to an hour" do
+    deliver([ 503, "99999" ])
+    assert_equal @now + 3600, @delivery.next_attempt_at
+  end
+
+  test "408 is retried" do
+    deliver(408)
+    assert_equal "pending", @delivery.status
+    assert_equal "HTTP 408", @delivery.last_error
+  end
+
+  test "a bookkeeping error after the response propagates instead of becoming a retry" do
+    original = OpenLoam::WebhookEndpoint.instance_method(:record_success!)
+    OpenLoam::WebhookEndpoint.send(:define_method, :record_success!) { |*| raise "bookkeeping broke" }
+    begin
+      OpenLoam::Webhooks.transport = ScriptedTransport.new(200)
+      error = assert_raises(RuntimeError) do
+        with_tenant(@tenant) { OpenLoam::Webhooks.deliver(@delivery.reload, now: @now) }
+      end
+      assert_equal "bookkeeping broke", error.message
+    ensure
+      OpenLoam::WebhookEndpoint.send(:define_method, :record_success!, original)
+    end
+    assert_equal 0, @endpoint.reload.consecutive_failures
+  end
 end

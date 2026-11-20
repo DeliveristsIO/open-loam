@@ -25,6 +25,7 @@ module OpenLoam
 
         request = Net::HTTP::Post.new(uri.request_uri)
         headers.each { |name, value| request[name] = value }
+        request["Accept-Encoding"] = "identity" # a compressed body could inflate past the excerpt cap
         request.body = body
 
         started = Process.clock_gettime(Process::CLOCK_MONOTONIC)

@@ -69,16 +69,27 @@ module OpenLoam
           return
         end
 
-        body = body_for(endpoint, delivery)
-        response = transport.post(endpoint.url, body: body, headers: headers_for(endpoint, delivery, body, now), timeout: timeout)
+        begin
+          body = body_for(endpoint, delivery)
+          response = transport.post(endpoint.url, body: body, headers: headers_for(endpoint, delivery, body, now), timeout: timeout)
+        rescue SkipDelivery => error
+          delivery.update!(status: "cancelled", sending_at: nil, last_error: short(error.message))
+          return
+        rescue OpenLoam::OutboundUrl::UnresolvableError => error
+          # DNS being down is the network's fault, not the receiver's: retry.
+          retry_later(delivery, endpoint, now, error: short("#{error.class}: #{error.message}"))
+          return
+        rescue OpenLoam::OutboundUrl::BlockedError => error
+          delivery.update!(status: "failed", sending_at: nil, last_error: short("blocked: #{error.message}"))
+          endpoint.disable!("blocked_url")
+          return
+        rescue StandardError => error
+          retry_later(delivery, endpoint, now, error: short("#{error.class}: #{error.message}"))
+          return
+        end
+
+        # Outside the rescue: a bookkeeping error must surface, not become a retry.
         record_response(delivery, endpoint, response, now)
-      rescue SkipDelivery => error
-        delivery.update!(status: "cancelled", sending_at: nil, last_error: short(error.message))
-      rescue OpenLoam::OutboundUrl::BlockedError => error
-        delivery.update!(status: "failed", sending_at: nil, last_error: short("blocked: #{error.message}"))
-        endpoint&.disable!("blocked_url")
-      rescue StandardError => error
-        retry_later(delivery, endpoint, now, error: short("#{error.class}: #{error.message}"))
       end
 
       def body_for(endpoint, delivery)
