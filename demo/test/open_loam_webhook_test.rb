@@ -151,6 +151,20 @@ class OpenLoamWebhookTest < ActiveSupport::TestCase
       end
       assert_equal "pending", test_delivery.reload.status
       assert_nil test_delivery.next_attempt_at
+      assert_equal 0, test_delivery.attempts
+    end
+  end
+
+  test "redeliver! on a sending row changes nothing and enqueues no job" do
+    with_tenant(@warsaw) do
+      endpoint = OpenLoam::WebhookEndpoint.create!(url: "https://example.test/hook", event_pattern: "rental.")
+      delivery = endpoint.deliveries.create!(event_id: SecureRandom.uuid, event_name: "rental.x", payload: {})
+      delivery.update!(status: "sending", attempts: 2, sending_at: Time.current)
+      assert_no_enqueued_jobs { OpenLoam::Webhooks.redeliver!(delivery) }
+      delivery.reload
+      assert_equal "sending", delivery.status
+      assert_equal 2, delivery.attempts
+      assert_not_nil delivery.sending_at
     end
   end
 end

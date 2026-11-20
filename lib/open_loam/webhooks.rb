@@ -159,8 +159,12 @@ module OpenLoam
         delivery
       end
 
+      # Manual redelivery of a finished row: restarts the full retry schedule
+      # (attempts reset). Non-final (pending/sending) rows are returned untouched.
       def redeliver!(delivery)
-        delivery.update!(status: "pending", next_attempt_at: nil, sending_at: nil)
+        return delivery unless delivery.final?
+
+        delivery.update!(status: "pending", attempts: 0, next_attempt_at: nil, sending_at: nil)
         enqueue(delivery)
         delivery
       end
