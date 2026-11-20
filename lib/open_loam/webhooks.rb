@@ -1,3 +1,7 @@
+require "json"
+require "openssl"
+require "securerandom"
+
 module OpenLoam
   # Domain events, delivered over HTTP to whoever asked for them.
   #
@@ -17,6 +21,16 @@ module OpenLoam
       @transport @require_https @allowed_ports @encrypt_secrets @test_event_name @timeout
       @secret_rotation_grace @stuck_after
     ].freeze
+
+    Response = Struct.new(:code, :headers, :excerpt, :duration_ms, keyword_init: true)
+
+    # Raised by a host body builder to drop one delivery on purpose (the record
+    # it describes is gone, the receiver may not see this event). The row is
+    # cancelled, not failed, and the endpoint's health is untouched.
+    class SkipDelivery < OpenLoam::Error; end
+
+    RETRYABLE_CODES = [ 408, 429 ].freeze
+    MAX_RETRY_AFTER = 3_600
 
     class << self
       attr_writer :header_prefix, :user_agent, :retry_schedule, :disable_after_failures, :delivery_retention,
@@ -42,6 +56,120 @@ module OpenLoam
       def reset_configuration!
         CONFIG_IVARS.each { |ivar| remove_instance_variable(ivar) if instance_variable_defined?(ivar) }
       end
+
+      # One attempt for one row, inside the row's tenant. Safe to call twice:
+      # only the caller that flips pending -> sending sends.
+      def deliver(delivery, now: Time.current)
+        return unless claim(delivery, now)
+
+        delivery.reload
+        endpoint = delivery.endpoint
+        unless endpoint&.active?
+          delivery.update!(status: "cancelled", sending_at: nil, last_error: "endpoint inactive")
+          return
+        end
+
+        body = body_for(endpoint, delivery)
+        response = transport.post(endpoint.url, body: body, headers: headers_for(endpoint, delivery, body, now), timeout: timeout)
+        record_response(delivery, endpoint, response, now)
+      rescue SkipDelivery => error
+        delivery.update!(status: "cancelled", sending_at: nil, last_error: short(error.message))
+      rescue OpenLoam::OutboundUrl::BlockedError => error
+        delivery.update!(status: "failed", sending_at: nil, last_error: short("blocked: #{error.message}"))
+        endpoint&.disable!("blocked_url")
+      rescue StandardError => error
+        retry_later(delivery, endpoint, now, error: short("#{error.class}: #{error.message}"))
+      end
+
+      def body_for(endpoint, delivery)
+        if body_builder
+          JSON.generate(body_builder.call(endpoint: endpoint, delivery: delivery))
+        else
+          OpenLoam::WebhookDeliveryJob.body_for(delivery.event_name, delivery.payload_hash, delivery.tenant_id)
+        end
+      end
+
+      def headers_for(endpoint, delivery, body, now)
+        timestamp = now.to_i
+        prefix = header_prefix
+        {
+          "Content-Type" => "application/json",
+          "User-Agent" => user_agent,
+          "#{prefix}-Event" => delivery.event_name,
+          "#{prefix}-Event-Id" => delivery.event_id,
+          "#{prefix}-Delivery" => delivery.delivery_id,
+          "#{prefix}-Timestamp" => timestamp.to_s,
+          "#{prefix}-Signature" => OpenLoam::WebhookDeliveryJob.signature(endpoint.secret, body),
+          "#{prefix}-Signature-V2" => signature_v2(endpoint.signing_secrets(now), body, timestamp)
+        }
+      end
+
+      # "t=<unix>,v1=<hex>[,v1=<hex>]" — HMAC-SHA256 of "<t>.<body>" under each
+      # signing secret. The timestamp is inside the MAC, so a captured request
+      # cannot be replayed after the receiver's tolerance window.
+      def signature_v2(secrets, body, timestamp)
+        macs = Array(secrets).map { |secret| "v1=#{OpenSSL::HMAC.hexdigest('SHA256', secret.to_s, "#{timestamp}.#{body}")}" }
+        ([ "t=#{timestamp}" ] + macs).join(",")
+      end
+
+      # Reference verifier (docs and tests): constant-time compare, bounded clock skew.
+      def verify_v2(header, body, secret, now: Time.current, tolerance: TIMESTAMP_TOLERANCE)
+        parts = header.to_s.split(",").map { |part| part.split("=", 2) }
+        timestamp = parts.find { |key, _| key == "t" }&.last.to_i
+        return false if timestamp.zero? || (now.to_i - timestamp).abs > tolerance
+
+        expected = OpenSSL::HMAC.hexdigest("SHA256", secret.to_s, "#{timestamp}.#{body}")
+        parts.any? { |key, value| key == "v1" && value && ActiveSupport::SecurityUtils.secure_compare(value, expected) }
+      end
+
+      private
+
+      def claim(delivery, now)
+        OpenLoam::WebhookDelivery.where(id: delivery.id, status: "pending")
+                                 .where("next_attempt_at IS NULL OR next_attempt_at <= ?", now)
+                                 .update_all([ "status = 'sending', sending_at = ?, attempts = attempts + 1, updated_at = ?", now, now ]) == 1
+      end
+
+      def record_response(delivery, endpoint, response, now)
+        attrs = { last_response_code: response.code, last_duration_ms: response.duration_ms,
+                  response_excerpt: response.excerpt, sending_at: nil }
+        case response.code
+        when 200..299
+          delivery.update!(attrs.merge(status: "succeeded", delivered_at: now, last_error: nil, next_attempt_at: nil))
+          endpoint.record_success!(now)
+        when 410
+          delivery.update!(attrs.merge(status: "failed", last_error: "HTTP 410"))
+          endpoint.disable!("gone")
+        when *RETRYABLE_CODES, 500..599
+          delivery.assign_attributes(attrs)
+          retry_later(delivery, endpoint, now, error: "HTTP #{response.code}", retry_after: retry_after_seconds(response))
+        else
+          delivery.update!(attrs.merge(status: "failed", last_error: "HTTP #{response.code}"))
+          endpoint.record_failure!(now)
+        end
+      end
+
+      def retry_later(delivery, endpoint, now, error:, retry_after: nil)
+        endpoint&.record_failure!(now)
+        delay = retry_schedule[delivery.attempts - 1]
+        if delay.nil?
+          delivery.update!(status: "failed", sending_at: nil, last_error: error)
+          return
+        end
+
+        wait = retry_after || (delay * (0.9 + (rand * 0.2))).round
+        delivery.update!(status: "pending", sending_at: nil, last_error: error, next_attempt_at: now + wait)
+        OpenLoam::WebhookDeliveryJob.set(wait: wait).perform_later(delivery.tenant_id, delivery.id)
+      end
+
+      def retry_after_seconds(response)
+        value = response.headers.to_h["retry-after"].to_s
+        return nil unless value.match?(/\A\d+\z/)
+
+        value.to_i.clamp(1, MAX_RETRY_AFTER)
+      end
+
+      def short(message) = message.to_s.truncate(255)
     end
 
     # Wired once from OpenLoam::Engine. Idempotent: subscribing twice would deliver
