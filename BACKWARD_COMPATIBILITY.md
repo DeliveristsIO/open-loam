@@ -26,7 +26,7 @@ changing a format, or tightening semantics is a breaking change.
 
 Blessed cross-tenant lookups (the only code allowed to bypass the scope, all in
 the gem): `Membership.tenants_for`, `ApiToken.authenticate`, `Sso.provider_for`,
-`InboundWebhookSource.resolve`, the scheduler's due-job claim. A host app doing
+`InboundWebhookSource.resolve`, `Webhooks.tenant_ids_needing_sweep`, the scheduler's due-job claim. A host app doing
 `.unscoped` in `app/` fails the guardrail lint.
 
 ## 2. Domain events
@@ -73,6 +73,9 @@ the gem): `Membership.tenants_for`, `ApiToken.authenticate`, `Sso.provider_for`,
 |---|---|
 | Outbound signature | `X-OpenLoam-Signature: sha256=<hex>` where hex = `HMAC-SHA256(endpoint.secret, exact_body)`. **Pinned by a fixed test vector** — changing it breaks every receiver. |
 | Outbound body | `{ "event": …, "payload": …, "tenant_id": … }`. |
+| Outbound signature v2 | `<prefix>-Signature-V2: t=<unix>,v1=<hex>` where hex = `HMAC-SHA256(secret, "<t>.<exact_body>")`, one `v1=` per signing secret. **Pinned by a fixed test vector** (`t=1700000000`, secret `s3cr3t`, body `{"a":1}`). |
+| Outbound delivery guarantee | At-least-once, unordered; `<prefix>-Event-Id` is stable across endpoints and retries. |
+| Outbound header prefix | `X-OpenLoam` by default; `OpenLoam::Webhooks.header_prefix` renames every header including the v1 signature. |
 | Inbound receiver | `POST /webhooks/:token`; HMAC over the raw body in the source's `signature_header`; `(source, external_id)` replay ledger; uniform `401` on any auth failure. As of 0.3.0 `external_id` is **SHA-256 of the raw body** — the only signed material. The `delivery_id_header` setting is gone: deriving the ledger key from an unsigned header let one captured delivery be replayed indefinitely. |
 
 ## 7. JSON API

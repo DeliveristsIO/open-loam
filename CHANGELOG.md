@@ -5,6 +5,47 @@ with the caveat that 0.x releases may break the public surface; the
 [backward-compatibility contract](BACKWARD_COMPATIBILITY.md) names what is
 frozen and what is not.
 
+## Unreleased
+
+### Fixed
+
+- **Outbound webhooks dropped data on any receiver error.** The response code
+  was never read, so a 500 or a timeout lost the event. Deliveries are now rows
+  (`open_loam_webhook_deliveries`) retried by response code.
+- **SSRF through IPv4-mapped IPv6 literals** (`http://[::ffff:127.0.0.1]/`,
+  `[::ffff:169.254.169.254]`). `OutboundUrl` judges mapped and compatible
+  addresses by the IPv4 ranges and blocks NAT64 (`64:ff9b::/96`).
+
+### Added
+
+- Webhook delivery ledger, retry schedule, `Retry-After`, auto-disable after
+  `disable_after_failures`, `open_loam.webhook.endpoint_disabled` event, sweep job,
+  retention prune, `send_test!`, `redeliver!` (finished deliveries only; resets
+  `attempts`).
+- `<prefix>-Signature-V2` (timestamped) plus `-Event-Id`, `-Delivery`,
+  `-Timestamp` headers; configurable prefix and user agent. The transport sends
+  `Accept-Encoding: identity` and reads at most 512 bytes of the response.
+- Secret rotation with a grace period; optional sealing of secrets
+  (`encrypt_secrets`).
+- `event_patterns` (several per endpoint), `metadata` and `description` on
+  endpoints; host `body_builder` and `SkipDelivery`.
+- `OutboundUrl` `ports:` allowlist; `require_https`/`allowed_ports` for webhooks.
+- `OpenLoam::OutboundUrl::UnresolvableError` (a `BlockedError` subclass) for a
+  host that resolves to nothing. Webhook deliveries retry it like a network
+  error; only a URL that resolves to a non-public address fails and disables the
+  endpoint (`blocked_url`).
+
+#### Migration
+
+Copy `demo/db/migrate/20261120090000_add_open_loam_webhook_reliability.rb`.
+Existing endpoints keep working unchanged (single pattern, plaintext secret).
+Jobs enqueued by 0.3.0 are still accepted. Apps that do not tick
+`OpenLoam::Scheduler` must schedule `OpenLoam::WebhookSweepJob` every minute.
+An error raised by a subscriber to `open_loam.webhook.endpoint_disabled`
+propagates out of the delivery job rather than being retried.
+The admin endpoints index no longer prints the secret; re-copy it if you
+generated it.
+
 ## 0.3.0 — 2026-09-05
 
 ### Security
